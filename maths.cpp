@@ -2,20 +2,39 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <assert.h>
+#include <printf.h>
+
+#ifdef RM128
+#ifndef __GNUC__
+#error "RM128 only supported under GCC"
+#endif
+#endif
+
+// gcc specific
+#ifdef RM128
+typedef __int128 int128_t;
+typedef unsigned __int128 uint128_t;
+
+typedef int128_t intBIG_t;
+typedef uint128_t uintBIG_t;
+#else
+typedef int64_t intBIG_t;
+typedef uint64_t uintBIG_t;
+#endif
 
 extern "C" {
    char *gets(char *);
 }
 
-static int64_t gcd(int64_t x, int64_t y) {
+static intBIG_t gcd(intBIG_t x, intBIG_t y) {
    // euclid
-   int64_t a = x;
-   int64_t b = y;
+   intBIG_t a = x;
+   intBIG_t b = y;
 //   if (y > x) {
 //      a = y;
 //      b = x;
 //   }
-   int64_t c = a % b;
+   intBIG_t c = a % b;
    while (c != 0) {
       a = b;
       b = c;
@@ -24,16 +43,16 @@ static int64_t gcd(int64_t x, int64_t y) {
    return b;
 }
 
-static int64_t lcm(int64_t x, int64_t y) {
+static intBIG_t lcm(intBIG_t x, intBIG_t y) {
    return (x * y) / gcd(x,y);
 }
 
 class Rational {
    private:
       int8_t sign;
-      uint64_t whl;
-      uint64_t num;
-      uint64_t den;
+      uintBIG_t whl;
+      uintBIG_t num;
+      uintBIG_t den;
 
    public:
       Rational() {
@@ -43,7 +62,7 @@ class Rational {
          den = 1;
       }
 
-      Rational(int8_t s, uint64_t w, uint64_t n, uint64_t d) {
+      Rational(int8_t s, uintBIG_t w, uintBIG_t n, uintBIG_t d) {
          assert(d != 0);
          assert(s == -1 || s == 1);
          sign = s;
@@ -56,12 +75,12 @@ class Rational {
          Rational res;
 
          // TODO FIX can probably be done in a way that avoids overflow
-         int64_t n =
+         intBIG_t n =
             whl * den * obj.den * sign +
             obj.whl * den * obj.den * obj.sign +
             num * obj.den * sign +
             obj.num * den * obj.sign;
-         int64_t d = den * obj.den;
+         intBIG_t d = den * obj.den;
 
          int8_t s;
          if (n * d >= 0) {
@@ -71,7 +90,7 @@ class Rational {
             s = -1;
          }
 
-         int64_t g = gcd(n,d);
+         intBIG_t g = gcd(n,d);
          n /= g;
          d /= g;
 
@@ -87,12 +106,12 @@ class Rational {
          Rational res;
 
          // TODO FIX can probably be done in a way that avoids overflow
-         int64_t n =
+         intBIG_t n =
             whl * den * obj.den * sign -
             obj.whl * den * obj.den * obj.sign +
             num * obj.den * sign -
             obj.num * den * obj.sign;
-         int64_t d = den * obj.den;
+         intBIG_t d = den * obj.den;
 
          int8_t s;
          if (n * d >= 0) {
@@ -102,7 +121,7 @@ class Rational {
             s = -1;
          }
 
-         int64_t g = gcd(n,d);
+         intBIG_t g = gcd(n,d);
          n /= g;
          d /= g;
 
@@ -118,13 +137,13 @@ class Rational {
          Rational res;
 
          // TODO FIX can probably be done in a way that avoids overflow
-         int64_t n =
+         intBIG_t n =
             whl * obj.whl * den * obj.den +
             whl * obj.num * den  +
             obj.whl * num * obj.den  +
             num * obj.num;
          n *= sign * obj.sign;
-         int64_t d = den * obj.den;
+         intBIG_t d = den * obj.den;
 
          int8_t s;
          if (n * d >= 0) {
@@ -134,7 +153,7 @@ class Rational {
             s = -1;
          }
 
-         int64_t g = gcd(n,d);
+         intBIG_t g = gcd(n,d);
          n /= g;
          d /= g;
 
@@ -150,9 +169,9 @@ class Rational {
          Rational res;
 
          // TODO FIX can probably be done in a way that avoids overflow
-         int64_t n =
+         intBIG_t n =
             obj.den * sign * (whl * den + num);
-         int64_t d =
+         intBIG_t d =
             den * obj.sign * (obj.whl * obj.den + obj.num);
 
          int8_t s;
@@ -163,7 +182,7 @@ class Rational {
             s = -1;
          }
 
-         int64_t g = gcd(n,d);
+         intBIG_t g = gcd(n,d);
          n /= g;
          d /= g;
 
@@ -176,11 +195,18 @@ class Rational {
       }
 
       void print(void) {
+#ifdef RM128
+         printf("%c%Y:%Y/%Y", sign > 0 ? '+' : '-', whl, llabs(num), den);
+#else
          printf("%c%ld:%ld/%ld", sign > 0 ? '+' : '-', whl, labs(num), den);
+#endif
       }
 };
 
 int main(int argc, char **argv) {
+#ifdef RM128
+   register_printf_function('Y', Y_handler, Y_parse_printf_format);
+#endif
    char buf[1024];
    int a,b,c,d,e,f;
    char sa, sd;
@@ -204,7 +230,7 @@ int main(int argc, char **argv) {
          if (x == '/') {
             Rational x = l / r; x.print(); printf("\n");
          }
-
+         printf("\n");
       }
    }
 }
