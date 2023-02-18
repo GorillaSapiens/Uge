@@ -31,7 +31,7 @@ static sBIG_t gcd(sBIG_t x, sBIG_t y) {
    // euclid
    sBIG_t a = x;
    sBIG_t b = y;
-   sBIG_t c = a % b;
+   sBIG_t c = a % b; // TODO FIX divide by zero
    while (c != 0) {
       a = b;
       b = c;
@@ -93,8 +93,8 @@ class Rational {
          d /= g;
 
          res.sign = s;
-         res.whl = n / d;
-         res.num = n % d;
+         res.whl = n / d;  // TODO FIX possible divide by zero here
+         res.num = n % d;  // TODO FIX possible divide by zero here
          res.den = d;
 
          return res;
@@ -125,8 +125,8 @@ class Rational {
          d /= g;
 
          res.sign = s;
-         res.whl = n / d;
-         res.num = n % d;
+         res.whl = n / d;  // TODO FIX possible divide by zero here
+         res.num = n % d;  // TODO FIX possible divide by zero here
          res.den = d;
 
          return res;
@@ -156,8 +156,8 @@ class Rational {
          }
 
          res.sign = s;
-         res.whl = n / d;
-         res.num = n % d;
+         res.whl = n / d;  // TODO FIX possible divide by zero here
+         res.num = n % d;  // TODO FIX possible divide by zero here
          res.den = d;
 
          return res;
@@ -185,8 +185,8 @@ class Rational {
          }
 
          res.sign = s;
-         res.whl = n / d;
-         res.num = n % d;
+         res.whl = n / d;  // TODO FIX possible divide by zero here
+         res.num = n % d;  // TODO FIX possible divide by zero here
          res.den = d;
 
          return res;
