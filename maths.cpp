@@ -1,3 +1,5 @@
+// in development, so we're a little loosey goosey here...
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -192,8 +194,57 @@ class Rational {
          return res;
       }
 
+      Rational(const char *p) {
+         // i hate writing hand parsers
+         sign = 1;
+         if (*p == '-') {
+            sign = -1;
+            p++;
+         }
+         if (*p == '+') {
+            p++;
+         }
+         // ok
+         char *colon = strchr((char *)p, ':');
+         char *slash = strchr((char *)p, '/');
+         if (!colon) {
+            if (!slash) {
+               whl = atoi(p);
+               num = 0;
+               den = 1;
+            }
+            else {
+               whl = 0;
+               sscanf(p, "%ld/%ld", &num, &den);
+            }
+         }
+         else {
+            whl = atoi(p);
+            sscanf(colon + 1, "%ld/%ld", &num, &den);
+         }
+      }
+
       void print(void) {
          printf("%c%ld:%ld/%ld", sign > 0 ? '+' : '-', whl, labs(num), labs(den));
+      }
+
+      void prettyprint(void) {
+         if (whl == 0 && num == 0) {
+            printf("0");
+            return;
+         }
+         if (sign < 0) {
+            printf("-");
+         }
+         if (num == 0) {
+            printf("%ld", whl);
+            return;
+         }
+         if (whl == 0) {
+            printf("%ld/%ld", num, den);
+            return;
+         }
+         printf("%ld:%ld/%ld", whl, num, den);
       }
 
       operator double() const {
@@ -203,30 +254,33 @@ class Rational {
 
 int main(int argc, char **argv) {
    char buf[1024];
-   uint64_t a,b,c,d,e,f;
-   char sa, sd;
    char x;
    while (gets(buf)) {
-      if (9 == sscanf(buf, "%c%lu:%lu/%lu %c %c%lu:%lu/%lu\n",
-                     &sa, &a, &b, &c, &x, &sd, &d, &e, &f)) {
-         Rational l(sa == '+' ? 1 : -1, a, b, c);
-         Rational r(sd == '+' ? 1 : -1, d, e, f);
+      char bufl[512];
+      char bufr[512];
+      if (3 == sscanf(buf, "%s %c %s\n", bufl, &x, bufr)) {
+         Rational l(bufl);
+         Rational r(bufr);
 
          l.print(); printf(" %c ", x); r.print(); printf("\n");
          if (x == '+') {
             Rational x = l + r; x.print(); printf("\n");
+            x.prettyprint(); printf("\n");
             printf("%0.16f\n", (double) x);
          }
          if (x == '-') {
             Rational x = l - r; x.print(); printf("\n");
+            x.prettyprint(); printf("\n");
             printf("%0.16f\n", (double) x);
          }
          if (x == '*') {
             Rational x = l * r; x.print(); printf("\n");
+            x.prettyprint(); printf("\n");
             printf("%0.16f\n", (double) x);
          }
          if (x == '/') {
             Rational x = l / r; x.print(); printf("\n");
+            x.prettyprint(); printf("\n");
             printf("%0.16f\n", (double) x);
          }
          printf("\n");
