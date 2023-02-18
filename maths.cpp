@@ -203,7 +203,7 @@ class Rational {
          char den_buffer[64]; Y_handler(den_buffer, den);
          printf("%c%s:%s/%s", sign > 0 ? '+' : '-', whl_buffer, num_buffer, den_buffer);
 #else
-         printf("%c%ld:%ld/%ld", sign > 0 ? '+' : '-', whl, labs(num), den);
+         printf("%c%ld:%ld/%ld", sign > 0 ? '+' : '-', whl, labs(num), labs(den));
 #endif
       }
 };

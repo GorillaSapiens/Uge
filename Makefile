@@ -11,4 +11,4 @@ powers.h: powers.pl
 
 .PHONY: clean
 clean:
-	rm rm64 rm128
+	rm rm64 rm128 powers.h
