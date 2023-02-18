@@ -1,14 +1,11 @@
-all: rm64 rm128
+all: rational
 
-rm64: maths.cpp
-	g++ maths.cpp -o rm64
-
-rm128: maths.cpp powers.h
-	g++ -DRM128 -Wformat=0 maths.cpp y.c -o rm128
+rational: maths.cpp
+	g++ -g maths.cpp -o rational
 
 powers.h: powers.pl
 	./powers.pl > powers.h
 
 .PHONY: clean
 clean:
-	rm rm64 rm128 powers.h
+	rm rational powers.h
