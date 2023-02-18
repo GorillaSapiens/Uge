@@ -3,11 +3,13 @@
 #include <stdint.h>
 #include <assert.h>
 #include <printf.h>
+#include <string.h>
 
 #ifdef RM128
 #ifndef __GNUC__
 #error "RM128 only supported under GCC"
 #endif
+#include "y.h"
 #endif
 
 // gcc specific
@@ -196,7 +198,10 @@ class Rational {
 
       void print(void) {
 #ifdef RM128
-         printf("%c%Y:%Y/%Y", sign > 0 ? '+' : '-', whl, llabs(num), den);
+         char whl_buffer[64]; Y_handler(whl_buffer, whl);
+         char num_buffer[64]; Y_handler(num_buffer, num);
+         char den_buffer[64]; Y_handler(den_buffer, den);
+         printf("%c%s:%s/%s", sign > 0 ? '+' : '-', whl_buffer, num_buffer, den_buffer);
 #else
          printf("%c%ld:%ld/%ld", sign > 0 ? '+' : '-', whl, labs(num), den);
 #endif
@@ -204,9 +209,6 @@ class Rational {
 };
 
 int main(int argc, char **argv) {
-#ifdef RM128
-   register_printf_function('Y', Y_handler, Y_parse_printf_format);
-#endif
    char buf[1024];
    int a,b,c,d,e,f;
    char sa, sd;
