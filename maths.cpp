@@ -203,11 +203,11 @@ class Rational {
 
 int main(int argc, char **argv) {
    char buf[1024];
-   int a,b,c,d,e,f;
+   uint64_t a,b,c,d,e,f;
    char sa, sd;
    char x;
    while (gets(buf)) {
-      if (9 == sscanf(buf, "%c%d:%d/%d %c %c%d:%d/%d\n",
+      if (9 == sscanf(buf, "%c%lu:%lu/%lu %c %c%lu:%lu/%lu\n",
                      &sa, &a, &b, &c, &x, &sd, &d, &e, &f)) {
          Rational l(sa == '+' ? 1 : -1, a, b, c);
          Rational r(sd == '+' ? 1 : -1, d, e, f);
@@ -215,19 +215,19 @@ int main(int argc, char **argv) {
          l.print(); printf(" %c ", x); r.print(); printf("\n");
          if (x == '+') {
             Rational x = l + r; x.print(); printf("\n");
-            printf("%lf\n", (double) x);
+            printf("%0.16f\n", (double) x);
          }
          if (x == '-') {
             Rational x = l - r; x.print(); printf("\n");
-            printf("%lf\n", (double) x);
+            printf("%0.16f\n", (double) x);
          }
          if (x == '*') {
             Rational x = l * r; x.print(); printf("\n");
-            printf("%lf\n", (double) x);
+            printf("%0.16f\n", (double) x);
          }
          if (x == '/') {
             Rational x = l / r; x.print(); printf("\n");
-            printf("%lf\n", (double) x);
+            printf("%0.16f\n", (double) x);
          }
          printf("\n");
       }
