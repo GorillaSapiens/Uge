@@ -9,9 +9,9 @@ This package works by representing numbers as
 
 (sign) * ( whole + (numerator / denominator))
 
-operators for common operations of addition, subtraction, multiplication,
-and division are provided.  fractions are preserved throughout, and
-denominators are preserved as much as possible.
+operators for the common functions of addition, subtraction,
+multiplication, and division are provided.  fractions and denominators
+are preserved throughout as much as possible.
 
 various comparison operators (==, !=, >, <, >=, and <=) are provided.
 
