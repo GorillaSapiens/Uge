@@ -1,7 +1,7 @@
 all: rational
 
-rational: maths.cpp
-	g++ -g maths.cpp -o rational
+rational: main.cpp rational.cpp rational.h
+	g++ -g main.cpp rational.cpp -o rational
 
 .PHONY: clean
 clean:

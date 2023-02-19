@@ -1,0 +1,291 @@
+// in development, so we're a little loosey goosey here...
+
+#include "rational.h"
+
+static sBIG_t gcd(sBIG_t x, sBIG_t y) {
+   // euclid
+   sBIG_t a = x;
+   sBIG_t b = y;
+   sBIG_t c = a % b; // TODO FIX divide by zero
+   while (c != 0) {
+      a = b;
+      b = c;
+      c = a % b;
+   }
+   return b;
+}
+
+static sBIG_t lcm(sBIG_t x, sBIG_t y) {
+   return (x * y) / gcd(x,y);
+}
+
+void Rational::simplify(void) {
+   uBIG_t nn = (uBIG_t) whl * (uBIG_t) den + (uBIG_t) num;
+   uBIG_t dd = (uBIG_t) den;
+
+   uBIG_t g = gcd(nn,dd);
+   nn /= g;
+   dd /= g;
+
+   whl = nn / dd;  // TODO FIX possible divide by zero here
+   num = nn % dd;  // TODO FIX possible divide by zero here
+   den = dd;
+}
+
+Rational::Rational() {
+   sign = 1;
+   whl = 0;
+   num = 0;
+   den = 1;
+}
+
+Rational::Rational(const Rational &orig) {
+   sign = orig.sign;
+   whl = orig.whl;
+   num = orig.num;
+   den = orig.den;
+}
+
+Rational::Rational(int8_t s, uREG_t w, uREG_t n, uREG_t d) {
+   assert(d != 0);
+   assert(s == -1 || s == 1);
+   sign = s;
+   whl = w;
+   num = n;
+   den = d;
+
+   simplify();
+}
+
+Rational::Rational(const char *p) {
+   // i hate writing hand parsers
+   sign = 1;
+   if (*p == '-') {
+      sign = -1;
+      p++;
+   }
+   if (*p == '+') {
+      p++;
+   }
+   // ok
+   char *colon = strchr((char *)p, ':');
+   char *slash = strchr((char *)p, '/');
+   if (!colon) {
+      if (!slash) {
+         whl = atoi(p);
+         num = 0;
+         den = 1;
+      }
+      else {
+         whl = 0;
+         sscanf(p, "%ld/%ld", &num, &den);
+      }
+   }
+   else {
+      whl = atoi(p);
+      sscanf(colon + 1, "%ld/%ld", &num, &den);
+   }
+
+   simplify();
+}
+
+Rational Rational::operator + (Rational const & obj) {
+   Rational res;
+
+   // TODO FIX can probably be done in a way that avoids overflow
+   sBIG_t n =
+      (((uBIG_t) whl *     (uBIG_t) den *     (uBIG_t) obj.den ) * (sBIG_t) sign) +
+      (((uBIG_t) obj.whl * (uBIG_t) den *     (uBIG_t) obj.den ) * (sBIG_t) obj.sign) +
+      (((uBIG_t) num *     (uBIG_t) obj.den                    ) * (sBIG_t) sign) +
+      (((uBIG_t) obj.num * (uBIG_t) den                        ) * (sBIG_t) obj.sign);
+   uBIG_t d = (uBIG_t) den * (uBIG_t) obj.den;
+
+   int8_t s;
+   if (n >= 0) {
+      s = 1;
+   }
+   else {
+      s = -1;
+      n = -n;
+   }
+
+   uBIG_t g = gcd(n,d);
+   n /= g;
+   d /= g;
+
+   res.sign = s;
+   res.whl = n / d;  // TODO FIX possible divide by zero here
+   res.num = n % d;  // TODO FIX possible divide by zero here
+   res.den = d;
+
+   return res;
+}
+
+Rational Rational::operator - (Rational const & obj) {
+   Rational res;
+
+   // TODO FIX can probably be done in a way that avoids overflow
+   sBIG_t n =
+      (((uBIG_t)whl     * (uBIG_t)den * (uBIG_t)obj.den) * (sBIG_t) sign) -
+      (((uBIG_t)obj.whl * (uBIG_t)den * (uBIG_t)obj.den) * (sBIG_t) obj.sign) +
+      (((uBIG_t)num     * (uBIG_t)obj.den)               * (sBIG_t) sign) -
+      (((uBIG_t)obj.num * (uBIG_t)den)                   * (sBIG_t) obj.sign);
+   uBIG_t d = den * obj.den;
+
+   int8_t s;
+   if (n >= 0) {
+      s = 1;
+   }
+   else {
+      s = -1;
+      n = -n;
+   }
+
+   uBIG_t g = gcd(n,d);
+   n /= g;
+   d /= g;
+
+   res.sign = s;
+   res.whl = n / d;  // TODO FIX possible divide by zero here
+   res.num = n % d;  // TODO FIX possible divide by zero here
+   res.den = d;
+
+   return res;
+}
+
+Rational Rational::operator * (Rational const & obj) {
+   Rational res;
+
+   // TODO FIX can probably be done in a way that avoids overflow
+   uBIG_t n =
+      ((uBIG_t)whl     * (uBIG_t)obj.whl * (uBIG_t)den * (uBIG_t)obj.den) +
+      ((uBIG_t)whl     * (uBIG_t)obj.num * (uBIG_t)den)  +
+      ((uBIG_t)obj.whl * (uBIG_t)num     * (uBIG_t)obj.den)  +
+      ((uBIG_t)num     * (uBIG_t)obj.num);
+   uBIG_t d = (uBIG_t)den * (uBIG_t)obj.den;
+
+   uBIG_t g = gcd(n,d);
+   n /= g;
+   d /= g;
+
+   int8_t s;
+   if (sign == obj.sign) {
+      s = 1;
+   }
+   else {
+      s = -1;
+   }
+
+   res.sign = s;
+   res.whl = n / d;  // TODO FIX possible divide by zero here
+   res.num = n % d;  // TODO FIX possible divide by zero here
+   res.den = d;
+
+   return res;
+}
+
+Rational Rational::operator / (Rational const & obj) {
+   Rational res;
+
+   // TODO FIX can probably be done in a way that avoids overflow
+   uBIG_t n =
+      (uBIG_t)obj.den * ((uBIG_t)whl * (uBIG_t)den + (uBIG_t)num);
+   uBIG_t d =
+      (uBIG_t)den * ((uBIG_t)obj.whl * (uBIG_t)obj.den + (uBIG_t)obj.num);
+
+   uBIG_t g = gcd(n,d);
+   n /= g;
+   d /= g;
+
+   int8_t s;
+   if (sign == obj.sign) {
+      s = 1;
+   }
+   else {
+      s = -1;
+   }
+
+   res.sign = s;
+   res.whl = n / d;  // TODO FIX possible divide by zero here
+   res.num = n % d;  // TODO FIX possible divide by zero here
+   res.den = d;
+
+   return res;
+}
+
+bool Rational::operator == (const Rational &other) {
+   sBIG_t l =
+      ((sBIG_t) sign * ((sBIG_t) whl * (sBIG_t) den + (sBIG_t) num)) * (sBIG_t) other.den;
+   sBIG_t r =
+      ((sBIG_t) other.sign * ((sBIG_t) other.whl * (sBIG_t) other.den + (sBIG_t) other.num)) * (sBIG_t) den;
+   return (l == r);
+}
+
+bool Rational::operator != (const Rational &other) {
+   sBIG_t l =
+      ((sBIG_t) sign * ((sBIG_t) whl * (sBIG_t) den + (sBIG_t) num)) * (sBIG_t) other.den;
+   sBIG_t r =
+      ((sBIG_t) other.sign * ((sBIG_t) other.whl * (sBIG_t) other.den + (sBIG_t) other.num)) * (sBIG_t) den;
+   return (l != r);
+}
+
+
+bool Rational::operator < (const Rational &other) {
+   sBIG_t l =
+      ((sBIG_t) sign * ((sBIG_t) whl * (sBIG_t) den + (sBIG_t) num)) * (sBIG_t) other.den;
+   sBIG_t r =
+      ((sBIG_t) other.sign * ((sBIG_t) other.whl * (sBIG_t) other.den + (sBIG_t) other.num)) * (sBIG_t) den;
+   return (l < r);
+}
+
+bool Rational::operator > (const Rational &other) {
+   sBIG_t l =
+      ((sBIG_t) sign * ((sBIG_t) whl * (sBIG_t) den + (sBIG_t) num)) * (sBIG_t) other.den;
+   sBIG_t r =
+      ((sBIG_t) other.sign * ((sBIG_t) other.whl * (sBIG_t) other.den + (sBIG_t) other.num)) * (sBIG_t) den;
+   return (l > r);
+}
+
+
+bool Rational::operator <= (const Rational &other) {
+   sBIG_t l =
+      ((sBIG_t) sign * ((sBIG_t) whl * (sBIG_t) den + (sBIG_t) num)) * (sBIG_t) other.den;
+   sBIG_t r =
+      ((sBIG_t) other.sign * ((sBIG_t) other.whl * (sBIG_t) other.den + (sBIG_t) other.num)) * (sBIG_t) den;
+   return (l <= r);
+}
+
+bool Rational::operator >= (const Rational &other) {
+   sBIG_t l =
+      ((sBIG_t) sign * ((sBIG_t) whl * (sBIG_t) den + (sBIG_t) num)) * (sBIG_t) other.den;
+   sBIG_t r =
+      ((sBIG_t) other.sign * ((sBIG_t) other.whl * (sBIG_t) other.den + (sBIG_t) other.num)) * (sBIG_t) den;
+   return (l >= r);
+}
+
+void Rational::print(void) {
+   printf("%c%ld:%ld/%ld", sign > 0 ? '+' : '-', whl, labs(num), labs(den));
+}
+
+void Rational::prettyprint(void) {
+   if (whl == 0 && num == 0) {
+      printf("0");
+      return;
+   }
+   if (sign < 0) {
+      printf("-");
+   }
+   if (num == 0) {
+      printf("%ld", whl);
+      return;
+   }
+   if (whl == 0) {
+      printf("%ld/%ld", num, den);
+      return;
+   }
+   printf("%ld:%ld/%ld", whl, num, den);
+}
+
+Rational::operator double() const {
+   return ((double)sign * ((double)whl + ((double)num / (double)den)));
+}
