@@ -1,3 +1,6 @@
+#include <string>
+#include <iostream>
+
 #include "rational.h"
 
 // not sure why this is needed, maybe deprecateed
@@ -20,49 +23,54 @@ int main(int argc, char **argv) {
          l.print(); printf(" %s ", op); r.print(); printf("\n");
          l.prettyprint(); printf(" %s ", op); r.prettyprint(); printf("\n");
 
-         if (!strcmp(op, "+")) {
-            Rational x = l + r; x.print(); printf("\n");
-            x.prettyprint(); printf("\n");
-            printf("%0.16f\n", (double) x);
+         try {
+            if (!strcmp(op, "+")) {
+               Rational x = l + r; x.print(); printf("\n");
+               x.prettyprint(); printf("\n");
+               printf("%0.16f\n", (double) x);
+            }
+            if (!strcmp(op, "-")) {
+               Rational x = l - r; x.print(); printf("\n");
+               x.prettyprint(); printf("\n");
+               printf("%0.16f\n", (double) x);
+            }
+            if (!strcmp(op, "*")) {
+               Rational x = l * r; x.print(); printf("\n");
+               x.prettyprint(); printf("\n");
+               printf("%0.16f\n", (double) x);
+            }
+            if (!strcmp(op, "/")) {
+               Rational x = l / r; x.print(); printf("\n");
+               x.prettyprint(); printf("\n");
+               printf("%0.16f\n", (double) x);
+            }
+            if (!strcmp(op, "==")) {
+               bool result = (l == r);
+               printf("%s\n", result ? "true" : "false");
+            }
+            if (!strcmp(op, "!=")) {
+               bool result = (l != r);
+               printf("%s\n", result ? "true" : "false");
+            }
+            if (!strcmp(op, "<")) {
+               bool result = (l < r);
+               printf("%s\n", result ? "true" : "false");
+            }
+            if (!strcmp(op, ">")) {
+               bool result = (l > r);
+               printf("%s\n", result ? "true" : "false");
+            }
+            if (!strcmp(op, "<=")) {
+               bool result = (l <= r);
+               printf("%s\n", result ? "true" : "false");
+            }
+            if (!strcmp(op, ">=")) {
+               bool result = (l >= r);
+               printf("%s\n", result ? "true" : "false");
+            }
          }
-         if (!strcmp(op, "-")) {
-            Rational x = l - r; x.print(); printf("\n");
-            x.prettyprint(); printf("\n");
-            printf("%0.16f\n", (double) x);
-         }
-         if (!strcmp(op, "*")) {
-            Rational x = l * r; x.print(); printf("\n");
-            x.prettyprint(); printf("\n");
-            printf("%0.16f\n", (double) x);
-         }
-         if (!strcmp(op, "/")) {
-            Rational x = l / r; x.print(); printf("\n");
-            x.prettyprint(); printf("\n");
-            printf("%0.16f\n", (double) x);
-         }
-         if (!strcmp(op, "==")) {
-            bool result = (l == r);
-            printf("%s\n", result ? "true" : "false");
-         }
-         if (!strcmp(op, "!=")) {
-            bool result = (l != r);
-            printf("%s\n", result ? "true" : "false");
-         }
-         if (!strcmp(op, "<")) {
-            bool result = (l < r);
-            printf("%s\n", result ? "true" : "false");
-         }
-         if (!strcmp(op, ">")) {
-            bool result = (l > r);
-            printf("%s\n", result ? "true" : "false");
-         }
-         if (!strcmp(op, "<=")) {
-            bool result = (l <= r);
-            printf("%s\n", result ? "true" : "false");
-         }
-         if (!strcmp(op, ">=")) {
-            bool result = (l >= r);
-            printf("%s\n", result ? "true" : "false");
+         catch (std::string e) {
+            std::cerr << e;
          }
          printf("\n");
       }

@@ -20,3 +20,8 @@ methods are provided, as well as conversion to (double).
 
 noticiably absent are functions which may return irrational results:
 trig functions, logs, powers, etc...
+
+on modern GNU/Linux machines which support 128 bit integers, the
+represented range is from +2^64 to -2^64, with 128 bits of precision.
+on other machines without 128 bit integers, the represented range is
++2^32 to -2^32, with 64 bits of precision.

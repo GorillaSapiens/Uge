@@ -1,15 +1,33 @@
 // in development, so we're a little loosey goosey here...
 
+#include <string>
+
 #include "rational.h"
+
+#define STRINGIFY(x) #x
+#define TOSTRING(x) STRINGIFY(x)
+#define AT __FILE__ ":" TOSTRING(__LINE__)
+
+#define ERR(x) std::string(x " at " AT)
 
 static sBIG_t gcd(sBIG_t x, sBIG_t y) {
    // euclid
    sBIG_t a = x;
    sBIG_t b = y;
-   sBIG_t c = a % b; // TODO FIX divide by zero
+   if (b == 0) {
+      a = y;
+      b = x;
+   }
+   if (b == 0) {
+      throw (ERR("divide by zero in gcd"));
+   }
+   sBIG_t c = a % b;
    while (c != 0) {
       a = b;
       b = c;
+      if (b == 0) {
+         throw (ERR("divide by zero in gcd"));
+      }
       c = a % b;
    }
    return b;
@@ -27,8 +45,11 @@ void Rational::simplify(void) {
    nn /= g;
    dd /= g;
 
-   whl = nn / dd;  // TODO FIX possible divide by zero here
-   num = nn % dd;  // TODO FIX possible divide by zero here
+   if (dd == 0) {
+      throw(ERR("divide by zero in simplify"));
+   }
+   whl = nn / dd;
+   num = nn % dd;
    den = dd;
 }
 
@@ -114,8 +135,11 @@ Rational Rational::operator + (Rational const & obj) {
    d /= g;
 
    res.sign = s;
-   res.whl = n / d;  // TODO FIX possible divide by zero here
-   res.num = n % d;  // TODO FIX possible divide by zero here
+   if (d == 0) {
+      throw(ERR("divide by zero in operator +"));
+   }
+   res.whl = n / d;
+   res.num = n % d;
    res.den = d;
 
    return res;
@@ -146,8 +170,11 @@ Rational Rational::operator - (Rational const & obj) {
    d /= g;
 
    res.sign = s;
-   res.whl = n / d;  // TODO FIX possible divide by zero here
-   res.num = n % d;  // TODO FIX possible divide by zero here
+   if (d == 0) {
+      throw(ERR("divide by zero in operator -"));
+   }
+   res.whl = n / d;
+   res.num = n % d;
    res.den = d;
 
    return res;
@@ -165,6 +192,9 @@ Rational Rational::operator * (Rational const & obj) {
    uBIG_t d = (uBIG_t)den * (uBIG_t)obj.den;
 
    uBIG_t g = gcd(n,d);
+   if (g == 0) {
+      throw(ERR("divide by zero in operator *"));
+   }
    n /= g;
    d /= g;
 
@@ -177,8 +207,11 @@ Rational Rational::operator * (Rational const & obj) {
    }
 
    res.sign = s;
-   res.whl = n / d;  // TODO FIX possible divide by zero here
-   res.num = n % d;  // TODO FIX possible divide by zero here
+   if (d == 0) {
+      throw(ERR("divide by zero in operator *"));
+   }
+   res.whl = n / d;
+   res.num = n % d;
    res.den = d;
 
    return res;
@@ -194,6 +227,9 @@ Rational Rational::operator / (Rational const & obj) {
       (uBIG_t)den * ((uBIG_t)obj.whl * (uBIG_t)obj.den + (uBIG_t)obj.num);
 
    uBIG_t g = gcd(n,d);
+   if (g == 0) {
+      throw(ERR("divide by zero in operator /"));
+   }
    n /= g;
    d /= g;
 
@@ -206,8 +242,11 @@ Rational Rational::operator / (Rational const & obj) {
    }
 
    res.sign = s;
-   res.whl = n / d;  // TODO FIX possible divide by zero here
-   res.num = n % d;  // TODO FIX possible divide by zero here
+   if (d == 0) {
+      throw(ERR("divide by zero in operator /"));
+   }
+   res.whl = n / d;
+   res.num = n % d;
    res.den = d;
 
    return res;
