@@ -74,6 +74,13 @@ class Rational {
          den = 1;
       }
 
+      Rational(const Rational &orig) {
+         sign = orig.sign;
+         whl = orig.whl;
+         num = orig.num;
+         den = orig.den;
+      }
+
       Rational(int8_t s, uREG_t w, uREG_t n, uREG_t d) {
          assert(d != 0);
          assert(s == -1 || s == 1);
@@ -241,6 +248,56 @@ class Rational {
          return res;
       }
 
+      bool operator == (const Rational &other) {
+         sBIG_t l =
+            ((sBIG_t) sign * ((sBIG_t) whl * (sBIG_t) den + (sBIG_t) num)) * (sBIG_t) other.den;
+         sBIG_t r =
+            ((sBIG_t) other.sign * ((sBIG_t) other.whl * (sBIG_t) other.den + (sBIG_t) other.num)) * (sBIG_t) den;
+         return (l == r);
+      }
+
+      bool operator != (const Rational &other) {
+         sBIG_t l =
+            ((sBIG_t) sign * ((sBIG_t) whl * (sBIG_t) den + (sBIG_t) num)) * (sBIG_t) other.den;
+         sBIG_t r =
+            ((sBIG_t) other.sign * ((sBIG_t) other.whl * (sBIG_t) other.den + (sBIG_t) other.num)) * (sBIG_t) den;
+         return (l != r);
+      }
+
+
+      bool operator < (const Rational &other) {
+         sBIG_t l =
+            ((sBIG_t) sign * ((sBIG_t) whl * (sBIG_t) den + (sBIG_t) num)) * (sBIG_t) other.den;
+         sBIG_t r =
+            ((sBIG_t) other.sign * ((sBIG_t) other.whl * (sBIG_t) other.den + (sBIG_t) other.num)) * (sBIG_t) den;
+         return (l < r);
+      }
+
+      bool operator > (const Rational &other) {
+         sBIG_t l =
+            ((sBIG_t) sign * ((sBIG_t) whl * (sBIG_t) den + (sBIG_t) num)) * (sBIG_t) other.den;
+         sBIG_t r =
+            ((sBIG_t) other.sign * ((sBIG_t) other.whl * (sBIG_t) other.den + (sBIG_t) other.num)) * (sBIG_t) den;
+         return (l > r);
+      }
+
+
+      bool operator <= (const Rational &other) {
+         sBIG_t l =
+            ((sBIG_t) sign * ((sBIG_t) whl * (sBIG_t) den + (sBIG_t) num)) * (sBIG_t) other.den;
+         sBIG_t r =
+            ((sBIG_t) other.sign * ((sBIG_t) other.whl * (sBIG_t) other.den + (sBIG_t) other.num)) * (sBIG_t) den;
+         return (l <= r);
+      }
+
+      bool operator >= (const Rational &other) {
+         sBIG_t l =
+            ((sBIG_t) sign * ((sBIG_t) whl * (sBIG_t) den + (sBIG_t) num)) * (sBIG_t) other.den;
+         sBIG_t r =
+            ((sBIG_t) other.sign * ((sBIG_t) other.whl * (sBIG_t) other.den + (sBIG_t) other.num)) * (sBIG_t) den;
+         return (l >= r);
+      }
+
       void print(void) {
          printf("%c%ld:%ld/%ld", sign > 0 ? '+' : '-', whl, labs(num), labs(den));
       }
@@ -274,33 +331,59 @@ int main(int argc, char **argv) {
    char x;
    while (gets(buf)) {
       char bufl[512];
+      char op[32];
       char bufr[512];
-      if (3 == sscanf(buf, "%s %c %s\n", bufl, &x, bufr)) {
+
+      if (3 == sscanf(buf, "%s %s %s\n", bufl, op, bufr)) {
          Rational l(bufl);
          Rational r(bufr);
 
-         l.print(); printf(" %c ", x); r.print(); printf("\n");
-         l.prettyprint(); printf(" %c ", x); r.prettyprint(); printf("\n");
+         l.print(); printf(" %s ", op); r.print(); printf("\n");
+         l.prettyprint(); printf(" %s ", op); r.prettyprint(); printf("\n");
 
-         if (x == '+') {
+         if (!strcmp(op, "+")) {
             Rational x = l + r; x.print(); printf("\n");
             x.prettyprint(); printf("\n");
             printf("%0.16f\n", (double) x);
          }
-         if (x == '-') {
+         if (!strcmp(op, "-")) {
             Rational x = l - r; x.print(); printf("\n");
             x.prettyprint(); printf("\n");
             printf("%0.16f\n", (double) x);
          }
-         if (x == '*') {
+         if (!strcmp(op, "*")) {
             Rational x = l * r; x.print(); printf("\n");
             x.prettyprint(); printf("\n");
             printf("%0.16f\n", (double) x);
          }
-         if (x == '/') {
+         if (!strcmp(op, "/")) {
             Rational x = l / r; x.print(); printf("\n");
             x.prettyprint(); printf("\n");
             printf("%0.16f\n", (double) x);
+         }
+         if (!strcmp(op, "==")) {
+            bool result = (l == r);
+            printf("%s\n", result ? "true" : "false");
+         }
+         if (!strcmp(op, "!=")) {
+            bool result = (l != r);
+            printf("%s\n", result ? "true" : "false");
+         }
+         if (!strcmp(op, "<")) {
+            bool result = (l < r);
+            printf("%s\n", result ? "true" : "false");
+         }
+         if (!strcmp(op, ">")) {
+            bool result = (l > r);
+            printf("%s\n", result ? "true" : "false");
+         }
+         if (!strcmp(op, "<=")) {
+            bool result = (l <= r);
+            printf("%s\n", result ? "true" : "false");
+         }
+         if (!strcmp(op, ">=")) {
+            bool result = (l >= r);
+            printf("%s\n", result ? "true" : "false");
          }
          printf("\n");
       }
