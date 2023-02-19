@@ -53,6 +53,19 @@ class Rational {
       uREG_t num;
       uREG_t den;
 
+      void simplify(void) {
+         uBIG_t nn = (uBIG_t) whl * (uBIG_t) den + (uBIG_t) num;
+         uBIG_t dd = (uBIG_t) den;
+
+         uBIG_t g = gcd(nn,dd);
+         nn /= g;
+         dd /= g;
+
+         whl = nn / dd;  // TODO FIX possible divide by zero here
+         num = nn % dd;  // TODO FIX possible divide by zero here
+         den = dd;
+      }
+
    public:
       Rational() {
          sign = 1;
@@ -68,6 +81,40 @@ class Rational {
          whl = w;
          num = n;
          den = d;
+
+         simplify();
+      }
+
+      Rational(const char *p) {
+         // i hate writing hand parsers
+         sign = 1;
+         if (*p == '-') {
+            sign = -1;
+            p++;
+         }
+         if (*p == '+') {
+            p++;
+         }
+         // ok
+         char *colon = strchr((char *)p, ':');
+         char *slash = strchr((char *)p, '/');
+         if (!colon) {
+            if (!slash) {
+               whl = atoi(p);
+               num = 0;
+               den = 1;
+            }
+            else {
+               whl = 0;
+               sscanf(p, "%ld/%ld", &num, &den);
+            }
+         }
+         else {
+            whl = atoi(p);
+            sscanf(colon + 1, "%ld/%ld", &num, &den);
+         }
+
+         simplify();
       }
 
       Rational operator + (Rational const & obj) {
@@ -194,36 +241,6 @@ class Rational {
          return res;
       }
 
-      Rational(const char *p) {
-         // i hate writing hand parsers
-         sign = 1;
-         if (*p == '-') {
-            sign = -1;
-            p++;
-         }
-         if (*p == '+') {
-            p++;
-         }
-         // ok
-         char *colon = strchr((char *)p, ':');
-         char *slash = strchr((char *)p, '/');
-         if (!colon) {
-            if (!slash) {
-               whl = atoi(p);
-               num = 0;
-               den = 1;
-            }
-            else {
-               whl = 0;
-               sscanf(p, "%ld/%ld", &num, &den);
-            }
-         }
-         else {
-            whl = atoi(p);
-            sscanf(colon + 1, "%ld/%ld", &num, &den);
-         }
-      }
-
       void print(void) {
          printf("%c%ld:%ld/%ld", sign > 0 ? '+' : '-', whl, labs(num), labs(den));
       }
@@ -263,6 +280,8 @@ int main(int argc, char **argv) {
          Rational r(bufr);
 
          l.print(); printf(" %c ", x); r.print(); printf("\n");
+         l.prettyprint(); printf(" %c ", x); r.prettyprint(); printf("\n");
+
          if (x == '+') {
             Rational x = l + r; x.print(); printf("\n");
             x.prettyprint(); printf("\n");
