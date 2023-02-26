@@ -80,6 +80,9 @@ Rational::Rational(int8_t s, uREG_t w, uREG_t n, uREG_t d) {
 
 Rational::Rational(const char *p) {
    // i hate writing hand parsers
+
+   p++; // skip the leading hash
+
    sign = 1;
    if (*p == '-') {
       sign = -1;
@@ -89,9 +92,9 @@ Rational::Rational(const char *p) {
       p++;
    }
    // ok
-   char *colon = strchr((char *)p, ':');
+   char *tick = strchr((char *)p, '\'');
    char *slash = strchr((char *)p, '/');
-   if (!colon) {
+   if (!tick) {
       if (!slash) {
          whl = atoi(p);
          num = 0;
@@ -104,13 +107,13 @@ Rational::Rational(const char *p) {
    }
    else {
       whl = atoi(p);
-      sscanf(colon + 1, "%ld/%ld", &num, &den);
+      sscanf(tick + 1, "%ld/%ld", &num, &den);
    }
 
    simplify();
 }
 
-Rational Rational::operator + (Rational const & obj) {
+Rational Rational::operator + (Rational const & obj) const {
    Rational res;
 
    // TODO FIX can probably be done in a way that avoids overflow
@@ -145,7 +148,7 @@ Rational Rational::operator + (Rational const & obj) {
    return res;
 }
 
-Rational Rational::operator - (Rational const & obj) {
+Rational Rational::operator - (Rational const & obj) const {
    Rational res;
 
    // TODO FIX can probably be done in a way that avoids overflow
@@ -180,7 +183,7 @@ Rational Rational::operator - (Rational const & obj) {
    return res;
 }
 
-Rational Rational::operator * (Rational const & obj) {
+Rational Rational::operator * (Rational const & obj) const {
    Rational res;
 
    // TODO FIX can probably be done in a way that avoids overflow
@@ -217,7 +220,7 @@ Rational Rational::operator * (Rational const & obj) {
    return res;
 }
 
-Rational Rational::operator / (Rational const & obj) {
+Rational Rational::operator / (Rational const & obj) const {
    Rational res;
 
    // TODO FIX can probably be done in a way that avoids overflow
@@ -252,7 +255,7 @@ Rational Rational::operator / (Rational const & obj) {
    return res;
 }
 
-bool Rational::operator == (const Rational &other) {
+bool Rational::operator == (const Rational &other) const {
    sBIG_t l =
       ((sBIG_t) sign * ((sBIG_t) whl * (sBIG_t) den + (sBIG_t) num)) * (sBIG_t) other.den;
    sBIG_t r =
@@ -260,7 +263,7 @@ bool Rational::operator == (const Rational &other) {
    return (l == r);
 }
 
-bool Rational::operator != (const Rational &other) {
+bool Rational::operator != (const Rational &other) const {
    sBIG_t l =
       ((sBIG_t) sign * ((sBIG_t) whl * (sBIG_t) den + (sBIG_t) num)) * (sBIG_t) other.den;
    sBIG_t r =
@@ -269,7 +272,7 @@ bool Rational::operator != (const Rational &other) {
 }
 
 
-bool Rational::operator < (const Rational &other) {
+bool Rational::operator < (const Rational &other) const {
    sBIG_t l =
       ((sBIG_t) sign * ((sBIG_t) whl * (sBIG_t) den + (sBIG_t) num)) * (sBIG_t) other.den;
    sBIG_t r =
@@ -277,7 +280,7 @@ bool Rational::operator < (const Rational &other) {
    return (l < r);
 }
 
-bool Rational::operator > (const Rational &other) {
+bool Rational::operator > (const Rational &other) const {
    sBIG_t l =
       ((sBIG_t) sign * ((sBIG_t) whl * (sBIG_t) den + (sBIG_t) num)) * (sBIG_t) other.den;
    sBIG_t r =
@@ -286,7 +289,7 @@ bool Rational::operator > (const Rational &other) {
 }
 
 
-bool Rational::operator <= (const Rational &other) {
+bool Rational::operator <= (const Rational &other) const {
    sBIG_t l =
       ((sBIG_t) sign * ((sBIG_t) whl * (sBIG_t) den + (sBIG_t) num)) * (sBIG_t) other.den;
    sBIG_t r =
@@ -294,7 +297,7 @@ bool Rational::operator <= (const Rational &other) {
    return (l <= r);
 }
 
-bool Rational::operator >= (const Rational &other) {
+bool Rational::operator >= (const Rational &other) const {
    sBIG_t l =
       ((sBIG_t) sign * ((sBIG_t) whl * (sBIG_t) den + (sBIG_t) num)) * (sBIG_t) other.den;
    sBIG_t r =
@@ -302,29 +305,53 @@ bool Rational::operator >= (const Rational &other) {
    return (l >= r);
 }
 
-void Rational::print(void) {
-   printf("%c%ld:%ld/%ld", sign > 0 ? '+' : '-', whl, labs(num), labs(den));
+void Rational::print(char *buf, size_t buflen) const {
+   snprintf(buf, buflen, "#%c%ld'%ld/%ld",
+      sign > 0 ? '+' : '-', whl, labs(num), labs(den));
 }
 
-void Rational::prettyprint(void) {
+void Rational::shortprint(char *buf, size_t buflen) const {
    if (whl == 0 && num == 0) {
-      printf("0");
+      snprintf(buf, buflen, "#0");
       return;
    }
+   char mark[2] = {0, 0};
    if (sign < 0) {
-      printf("-");
+      mark[0] = '-';
    }
    if (num == 0) {
-      printf("%ld", whl);
+      snprintf(buf, buflen, "#%s%ld", mark, whl);
       return;
    }
    if (whl == 0) {
-      printf("%ld/%ld", num, den);
+      snprintf(buf, buflen, "#%s%ld/%ld", mark, num, den);
       return;
    }
-   printf("%ld:%ld/%ld", whl, num, den);
+   snprintf(buf, buflen, "#%s%ld'%ld/%ld", mark, whl, num, den);
 }
 
 Rational::operator double() const {
    return ((double)sign * ((double)whl + ((double)num / (double)den)));
+}
+
+Rational::operator sREG_t() const {
+   return ((sREG_t)sign * (sREG_t)whl);
+}
+
+Rational Rational::abs(void) const {
+   Rational ret(*this);
+   ret.sign = 1;
+   return ret;
+}
+
+Rational Rational::floor(void) const {
+   Rational ret(*this);
+   if (ret.sign > 0) { ret.num = 0; ret.den = 1; }
+   if (ret.sign < 0 && ret.num > 0) { ret.whl++; ret.num = 0; ret.den = 1; }
+   return ret;
+}
+
+int Rational::sgn(void) const {
+   if(num == 0 && whl == 0) { return 0; }
+   return sign;
 }

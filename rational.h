@@ -1,3 +1,5 @@
+#ifndef _INCLUDE_RATIONAL_H_
+#define _INCLUDE_RATIONAL_H_
 // in development, so we're a little loosey goosey here...
 
 #include <stdio.h>
@@ -39,17 +41,26 @@ class Rational {
       Rational(const Rational &orig);
       Rational(int8_t s, uREG_t w, uREG_t n, uREG_t d);
       Rational(const char *p);
-      Rational operator + (Rational const & obj);
-      Rational operator - (Rational const & obj);
-      Rational operator * (Rational const & obj);
-      Rational operator / (Rational const & obj);
-      bool operator == (const Rational &other);
-      bool operator != (const Rational &other);
-      bool operator < (const Rational &other);
-      bool operator > (const Rational &other);
-      bool operator <= (const Rational &other);
-      bool operator >= (const Rational &other);
-      void print(void);
-      void prettyprint(void);
-      operator double() const;
+
+      Rational operator + (Rational const & obj) const;
+      Rational operator - (Rational const & obj) const;
+      Rational operator * (Rational const & obj) const;
+      Rational operator / (Rational const & obj) const;
+      bool operator == (const Rational &other) const;
+      bool operator != (const Rational &other) const;
+      bool operator < (const Rational &other) const;
+      bool operator > (const Rational &other) const;
+      bool operator <= (const Rational &other) const;
+      bool operator >= (const Rational &other) const;
+
+      void print(char *buf, size_t buflen) const;
+      void shortprint(char *buf, size_t buflen) const;
+
+      explicit operator sREG_t() const;
+      explicit operator double() const;
+      Rational abs(void) const;
+      Rational floor(void) const;
+      int sgn(void) const;
 };
+
+#endif // _INCLUDE_RATIONAL_H_
