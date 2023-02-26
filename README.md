@@ -16,7 +16,9 @@ are preserved throughout as much as possible.
 various comparison operators (==, !=, >, <, >=, and <=) are provided.
 
 "print" (includes all details) and "prettyprint" (human readable)
-methods are provided, as well as conversion to (double).
+methods are provided, as well as conversion to (double) and (int).
+
+abs(), floor(), and sgn() methods are also provided.
 
 noticiably absent are functions which may return irrational results:
 trig functions, logs, powers, etc...
