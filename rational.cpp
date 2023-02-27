@@ -11,6 +11,8 @@
 
 #define ERR(x) std::string(x " at " AT)
 
+#define BIGPOWEROF2 512
+
 static sBIG_t gcd(sBIG_t x, sBIG_t y) {
    // euclid
    sBIG_t a = x;
@@ -115,6 +117,7 @@ Rational::Rational(const char *p) {
 }
 
 Rational::Rational(double d) {
+   whl = 0;
    sign = 1;
    if (d < 0.0) {
       sign = -1;
@@ -130,14 +133,14 @@ Rational::Rational(double d) {
    sREG_t n = 1;
    sREG_t dens[1024];
    int spot = 0;
-   while(isfinite(i) && i != 0 && n > 0 && n < 1024) {
+   while(isfinite(i) && i != 0 && n > 0 && n < (BIGPOWEROF2 >> spot)) {
       n = (sREG_t) i;
 #if 0
       printf("%f -> %d\n", i, (int)i);
 #endif
       i = i - (double)((sREG_t)i);
       i = 1.0 / i;
-      if (n > 0 && n < 1024) {
+      if (n > 0 && n < (BIGPOWEROF2 >> spot)) {
          dens[spot++] = n;
       }
    }
