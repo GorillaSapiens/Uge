@@ -1,6 +1,7 @@
 // in development, so we're a little loosey goosey here...
 
 #include <string>
+#include <math.h>
 
 #include "rational.h"
 
@@ -111,6 +112,60 @@ Rational::Rational(const char *p) {
    }
 
    simplify();
+}
+
+Rational::Rational(double d) {
+   sign = 1;
+   if (d < 0.0) {
+      sign = -1;
+      d = -d;
+   }
+   if (d > 1.0) {
+      whl = int(d);
+      d -= (double)whl;
+   }
+
+   // and now the repeated fraction magic
+   double i = 1.0/d;
+   sREG_t n = 1;
+   sREG_t dens[1024];
+   int spot = 0;
+   while(isfinite(i) && i != 0 && n > 0 && n < 1024) {
+      n = (sREG_t) i;
+#if 0
+      printf("%f -> %d\n", i, (int)i);
+#endif
+      i = i - (double)((sREG_t)i);
+      i = 1.0 / i;
+      if (n > 0 && n < 1024) {
+         dens[spot++] = n;
+      }
+   }
+
+#if 0
+   printf("==\n");
+   for (int i = 0; i < spot; i++) {
+      printf("%d ", dens[i]);
+   }
+   printf("\n");
+   printf("==\n");
+#endif
+
+   // a + b / c
+   sREG_t a, b, c, nb, nc;
+   b = 0;
+   c = 1;
+
+   while (spot > 0) {
+      a = dens[--spot];
+      nc = a * c + b;
+      nb = c;
+      c = nc;
+      b = nb;
+   }
+
+   num = b;
+   den = c;
 }
 
 Rational Rational::operator + (Rational const & obj) const {
