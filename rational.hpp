@@ -1,13 +1,5 @@
-#ifndef _INCLUDE_RATIONAL_H_
-#define _INCLUDE_RATIONAL_H_
-// in development, so we're a little loosey goosey here...
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <assert.h>
-#include <printf.h>
-#include <string.h>
+#ifndef _INCLUDE_RATIONAL_HPP_
+#define _INCLUDE_RATIONAL_HPP_
 
 #if __GNUC__
 
@@ -38,13 +30,17 @@ class Rational {
 
    public:
       Rational();
-      Rational(const Rational &orig);
+      Rational(const Rational &orig); // copy constructor
       Rational(int8_t s, uREG_t w, uREG_t n, uREG_t d);
       Rational(const char *p);
       Rational(double d);
+      Rational(int64_t d);
+
+      Rational& operator=(const Rational& other); // assignment operator
 
       Rational operator + (Rational const & obj) const;
       Rational operator - (Rational const & obj) const;
+      Rational operator - () const;
       Rational operator * (Rational const & obj) const;
       Rational operator / (Rational const & obj) const;
       bool operator == (const Rational &other) const;
@@ -54,8 +50,8 @@ class Rational {
       bool operator <= (const Rational &other) const;
       bool operator >= (const Rational &other) const;
 
-      void print(char *buf, size_t buflen) const;
-      void shortprint(char *buf, size_t buflen) const;
+      char *print(char *buf, size_t buflen) const;
+      char *shortprint(char *buf, size_t buflen) const;
 
       explicit operator sREG_t() const;
       explicit operator double() const;
@@ -64,4 +60,4 @@ class Rational {
       int sgn(void) const;
 };
 
-#endif // _INCLUDE_RATIONAL_H_
+#endif // _INCLUDE_RATIONAL_HPP_

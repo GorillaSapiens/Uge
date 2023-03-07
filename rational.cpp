@@ -1,9 +1,12 @@
 // in development, so we're a little loosey goosey here...
 
 #include <string>
-#include <math.h>
 
-#include "rational.h"
+#include <math.h>
+#include <string.h>
+#include <assert.h>
+
+#include "rational.hpp"
 
 #define STRINGIFY(x) #x
 #define TOSTRING(x) STRINGIFY(x)
@@ -70,6 +73,15 @@ Rational::Rational(const Rational &orig) {
    den = orig.den;
 }
 
+Rational& Rational::operator=(const Rational& other) {
+   sign = other.sign;
+   whl = other.whl;
+   num = other.num;
+   den = other.den;
+
+   return *this;
+}
+
 Rational::Rational(int8_t s, uREG_t w, uREG_t n, uREG_t d) {
    assert(d != 0);
    assert(s == -1 || s == 1);
@@ -129,30 +141,19 @@ Rational::Rational(double d) {
    }
 
    // and now the repeated fraction magic
+   // https://en.wikipedia.org/wiki/Euler%27s_continued_fraction_formula
    double i = 1.0/d;
    sREG_t n = 1;
    sREG_t dens[1024];
    int spot = 0;
    while(isfinite(i) && i != 0 && n > 0 && n < (BIGPOWEROF2 >> spot)) {
       n = (sREG_t) i;
-#if 0
-      printf("%f -> %d\n", i, (int)i);
-#endif
       i = i - (double)((sREG_t)i);
       i = 1.0 / i;
       if (n > 0 && n < (BIGPOWEROF2 >> spot)) {
          dens[spot++] = n;
       }
    }
-
-#if 0
-   printf("==\n");
-   for (int i = 0; i < spot; i++) {
-      printf("%d ", dens[i]);
-   }
-   printf("\n");
-   printf("==\n");
-#endif
 
    // a + b / c
    sREG_t a, b, c, nb, nc;
@@ -169,6 +170,17 @@ Rational::Rational(double d) {
 
    num = b;
    den = c;
+}
+
+Rational::Rational(int64_t i) {
+   sign = 1;
+   if (i < 0) {
+      sign = -1;
+      i = -i;
+   }
+   whl = i;
+   num = 0;
+   den = 1;
 }
 
 Rational Rational::operator + (Rational const & obj) const {
@@ -239,6 +251,15 @@ Rational Rational::operator - (Rational const & obj) const {
    res.den = d;
 
    return res;
+}
+
+Rational Rational::operator - () const {
+   if (whl == 0 && num == 0) {
+      return Rational(1, 0, 0, 1);
+   }
+   else {
+      return Rational(-sign, whl, num, den);
+   }
 }
 
 Rational Rational::operator * (Rational const & obj) const {
@@ -363,15 +384,16 @@ bool Rational::operator >= (const Rational &other) const {
    return (l >= r);
 }
 
-void Rational::print(char *buf, size_t buflen) const {
+char *Rational::print(char *buf, size_t buflen) const {
    snprintf(buf, buflen, "#%c%ld'%ld/%ld",
       sign > 0 ? '+' : '-', whl, labs(num), labs(den));
+   return buf;
 }
 
-void Rational::shortprint(char *buf, size_t buflen) const {
+char *Rational::shortprint(char *buf, size_t buflen) const {
    if (whl == 0 && num == 0) {
       snprintf(buf, buflen, "#0");
-      return;
+      return buf;
    }
    char mark[2] = {0, 0};
    if (sign < 0) {
@@ -379,13 +401,14 @@ void Rational::shortprint(char *buf, size_t buflen) const {
    }
    if (num == 0) {
       snprintf(buf, buflen, "#%s%ld", mark, whl);
-      return;
+      return buf;
    }
    if (whl == 0) {
       snprintf(buf, buflen, "#%s%ld/%ld", mark, num, den);
-      return;
+      return buf;
    }
    snprintf(buf, buflen, "#%s%ld'%ld/%ld", mark, whl, num, den);
+   return buf;
 }
 
 Rational::operator double() const {
