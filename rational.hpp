@@ -1,40 +1,27 @@
 #ifndef _INCLUDE_RATIONAL_HPP_
 #define _INCLUDE_RATIONAL_HPP_
 
-#if __GNUC__
+#include <stdint.h>
 
-typedef __int128 sBIG_t;
-typedef unsigned __int128 uBIG_t;
-
-typedef int64_t sREG_t;
-typedef uint64_t uREG_t;
-
-#else
-
-typedef int64_t sBIG_t;
-typedef uint64_t uBIG_t;
-
-typedef int32_t sREG_t;
-typedef uint32_t uREG_t;
-
-#endif
+typedef __int128  int128_t;
+typedef unsigned __int128 uint128_t;
 
 class Rational {
    private:
       int8_t sign;
-      uREG_t whl;
-      uREG_t num;
-      uREG_t den;
+      uint128_t whl;
+      uint128_t num;
+      uint128_t den;
 
       void simplify(void);
 
    public:
       Rational();
       Rational(const Rational &orig); // copy constructor
-      Rational(int8_t s, uREG_t w, uREG_t n, uREG_t d);
+      Rational(int8_t s, uint128_t w, uint128_t n, uint128_t d);
       Rational(const char *p);
       Rational(double d);
-      Rational(int64_t d);
+      Rational(int128_t d);
 
       Rational& operator=(const Rational& other); // assignment operator
 
@@ -53,7 +40,7 @@ class Rational {
       char *print(char *buf, size_t buflen) const;
       char *shortprint(char *buf, size_t buflen) const;
 
-      explicit operator sREG_t() const;
+      explicit operator int128_t() const;
       explicit operator double() const;
       Rational abs(void) const;
       Rational floor(void) const;
