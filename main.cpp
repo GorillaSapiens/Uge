@@ -31,13 +31,13 @@ int main(int argc, char **argv) {
          Rational l(bufl);
          Rational r(bufr);
 
-         printf("%s %s %s\n",
+         printf("print: %s %s %s\n",
             l.print(outputl, sizeof(outputl)), op, r.print(outputr, sizeof(outputr)));
 
-         printf("%s %s %s\n",
+         printf("shortprint: %s %s %s\n",
             l.shortprint(outputl, sizeof(outputl)), op, r.shortprint(outputr, sizeof(outputr)));
 
-         printf("%s %s %s\n",
+         printf("retendprint: %s %s %s\n",
             l.retendprint(outputl, sizeof(outputl)), op, r.retendprint(outputr, sizeof(outputr)));
 
          try {
@@ -55,6 +55,7 @@ int main(int argc, char **argv) {
                double result = (double) l - (double) r;
                printf("%s\n", x.print(outputl, sizeof(outputl)));
                printf("%s\n", x.shortprint(outputl, sizeof(outputl)));
+               printf("%s\n", x.retendprint(outputl, sizeof(outputl)));
                printf("%0.16f %s %0.16f =\n%0.16f // double\n", (double) l, op, (double) r, result);
                printf("%0.16f // rational\n", (double) x);
             }
@@ -63,6 +64,7 @@ int main(int argc, char **argv) {
                double result = (double) l * (double) r;
                printf("%s\n", x.print(outputl, sizeof(outputl)));
                printf("%s\n", x.shortprint(outputl, sizeof(outputl)));
+               printf("%s\n", x.retendprint(outputl, sizeof(outputl)));
                printf("%0.16f %s %0.16f =\n%0.16f // double\n", (double) l, op, (double) r, result);
                printf("%0.16f // rational\n", (double) x);
             }
@@ -71,6 +73,7 @@ int main(int argc, char **argv) {
                double result = (double) l / (double) r;
                printf("%s\n", x.print(outputl, sizeof(outputl)));
                printf("%s\n", x.shortprint(outputl, sizeof(outputl)));
+               printf("%s\n", x.retendprint(outputl, sizeof(outputl)));
                printf("%0.16f %s %0.16f =\n%0.16f // double\n", (double) l, op, (double) r, result);
                printf("%0.16f // rational\n", (double) x);
             }

@@ -463,6 +463,7 @@ char *Rational::retendprint(char *buf, size_t buflen) const {
    if (sign < 0) {
       *buf++ = '-';
       buflen--;
+      *buf = 0;
    }
    int rc = print_u128_u(whl, buf);
    buf += rc;
@@ -470,49 +471,53 @@ char *Rational::retendprint(char *buf, size_t buflen) const {
 
    *buf++ = '.';
    buflen--;
+   *buf = 0;
 
    remchain_t *head = NULL;
    remchain_t *tail = NULL;
 
    uint128_t remainder = num;
 
+   head = tail = (remchain_t *) malloc(sizeof(remchain_t));
+   head->digit = -1;
+   head->remainder = remainder;
+   head->next = NULL;
+
    while(1) {
       remainder *= 10;
       uint128_t digit = remainder / den;
       remainder = remainder % den;
 
-      if (!head) {
-         head = tail = (remchain_t *) malloc(sizeof(remchain_t));
-         head->digit = digit;
-         head->remainder = remainder;
-         head->next = NULL;
-      }
-      else {
-         tail->next = (remchain_t *) malloc(sizeof(remchain_t));
-         tail->next->digit = digit;
-         tail->next->remainder = remainder;
-         tail->next->next = NULL;
-         tail = tail->next;
-      }
+      tail->next = (remchain_t *) malloc(sizeof(remchain_t));
+      tail->next->digit = digit;
+      tail->next->remainder = remainder;
+      tail->next->next = NULL;
+      tail = tail->next;
 
       if (remainder == 0) {
          for (remchain_t *tmp = head; tmp; tmp = tmp->next) {
-            *buf++ = '0' + tmp->digit;
-            buflen--;
-            *buf = 0;
+            if (tmp->digit >= 0) {
+               *buf++ = '0' + tmp->digit;
+               buflen--;
+               *buf = 0;
+            }
          }
          return ret;
       }
       else {
          for (remchain_t *tmp = head; tmp != tail; tmp = tmp->next) {
             if (tmp->remainder == tail->remainder) {
-               for (remchain_t *tmp2 = head; tmp2 != tail; tmp2 = tmp2->next) {
+               for (remchain_t *tmp2 = head; tmp2; tmp2 = tmp2->next) {
+                  if (tmp2->digit >= 0) {
+                     *buf++ = '0' + tmp2->digit;
+                     buflen--;
+                     *buf = 0;
+                  }
                   if (tmp2 == tmp) {
                      *buf++ = '(';
                      buflen--;
+                     *buf = 0;
                   }
-                  *buf++ = '0' + tmp2->digit;
-                  buflen--;
                }
                *buf++ = ')';
                buflen--;
