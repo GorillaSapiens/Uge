@@ -15,8 +15,9 @@ are preserved throughout as much as possible.
 
 various comparison operators (==, !=, >, <, >=, and <=) are provided.
 
-"print" (includes all details) and "prettyprint" (human readable)
-methods are provided, as well as conversion to (double) and (int).
+"debu\_print" (includes all details), "frac\_print" (human readable
+fraction), and "deci\_print" (human readable repeated decimal) methods
+are provided, as well as conversion to (double) and (int).
 
 abs(), floor(), and sgn() methods are also provided.
 
@@ -24,6 +25,4 @@ noticiably absent are functions which may return irrational results:
 trig functions, logs, powers, etc...
 
 on modern GNU/Linux machines which support 128 bit integers, the
-represented range is from +2^64 to -2^64, with 128 bits of precision.
-on other machines without 128 bit integers, the represented range is
-+2^32 to -2^32, with 64 bits of precision.
+represented range is from +2^128 to -2^128, with 256 bits of precision.
