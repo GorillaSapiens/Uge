@@ -26,6 +26,11 @@ Integer::~Integer() {
    }
 }
 
+void Integer::grow(void) {
+   // NB: caller responsible for changing size
+   data = (uint16_t *) realloc(data, sizeof(uint16_t) * (size + 1));
+}
+
 Integer::Integer(const Integer &orig) {
    size = orig.size;
    data = (uint16_t *) malloc(sizeof(uint16_t) * size);
@@ -34,7 +39,7 @@ Integer::Integer(const Integer &orig) {
 
 Integer& Integer::operator=(const Integer& other) {
    size = other.size;
-   data = (uint16_t *) malloc(sizeof(uint16_t) * size);
+   data = (uint16_t *) realloc(data, sizeof(uint16_t) * size);
    memcpy(data, other.data, sizeof(uint16_t) * size);
 
    return *this;
@@ -57,7 +62,7 @@ Integer::Integer(const char *orig) {
             place++;
          }
          if (carry) {
-            data = (uint16_t *) realloc(data, sizeof(uint16_t) * (size + 1));
+            grow();
             data[place] = carry;
             size++;
          }
@@ -78,7 +83,7 @@ Integer::Integer(const char *orig) {
             place++;
          }
          if (carry) {
-            data = (uint16_t *) realloc(data, sizeof(uint16_t) * (size + 1));
+            grow();
             data[place] = carry;
             size++;
          }
@@ -92,7 +97,7 @@ Integer::Integer(uint64_t i) {
    data = NULL;
 
    while (i) {
-      data = (uint16_t *)realloc(data, sizeof(uint16_t) * (size + 1));
+      grow();
       data[size] = i; // truncation happens here
       size++;
       i >>= 16;
@@ -109,14 +114,14 @@ Integer Integer::operator + (Integer const & obj) const {
       uint32_t b = (i < obj.size) ? obj.data[i] : 0;
       uint32_t result = a + b + carry;
 
-      res.data = (uint16_t *)realloc(res.data, sizeof(uint16_t) * (res.size + 1));
+      res.grow();
       res.data[res.size] = result; // truncation happens here
       res.size++;
       carry = result >> 16;
    }
 
    if (carry) {
-      res.data = (uint16_t *)realloc(res.data, sizeof(uint16_t) * (res.size + 1));
+      res.grow();
       res.data[res.size] = carry; // truncation happens here
       res.size++;
    }
@@ -153,9 +158,20 @@ Integer Integer::operator - (Integer const & obj) const {
 
       uint32_t result = a - b;
 
-      res.data = (uint16_t *)realloc(res.data, sizeof(uint16_t) * (res.size + 1));
+      res.grow();
       res.data[res.size] = result; // truncation happens here
       res.size++;
+   }
+
+   // shrink to fit
+   while (res.size && !res.data[res.size - 1]) {
+      res.size--;
+   }
+   if (!res.size) {
+      if (res.data) {
+         free((void *) res.data);
+      }
+      res.data = NULL;
    }
 
    return res;
@@ -171,7 +187,7 @@ Integer Integer::operator * (Integer const & obj) const {
 
          uint64_t place = ai + bi;
          while (res.size <= place) {
-            res.data = (uint16_t *)realloc(res.data, sizeof(uint16_t) * (res.size + 1));
+            res.grow();
             res.data[res.size] = 0;
             res.size++;
          }
@@ -183,7 +199,7 @@ Integer Integer::operator * (Integer const & obj) const {
 
          while (result) {
             while (res.size <= place) {
-               res.data = (uint16_t *)realloc(res.data, sizeof(uint16_t) * (res.size + 1));
+               res.grow();
                res.data[res.size] = 0;
                res.size++;
             }
@@ -236,6 +252,98 @@ void Integer::divide(
    }
 
    // and now the fun stuff...
+
+   // zero out quotient
+   quot.size = 0;
+   if (quot.data) {
+      free((void *)quot.data);
+      quot.data = NULL;
+   }
+
+   // zero out remainder
+   rem.size = 0;
+   if (rem.data) {
+      free((void *)rem.data);
+      rem.data = NULL;
+   }
+
+   // calculate 16 shifted versions of the denominator
+   Integer pieces[16];
+   pieces[0] = den;
+   for (int i = 1; i < 16; i++) {
+      // zero it out
+      pieces[i].size = 0;
+      pieces[i].data = NULL;
+
+      uint32_t carry = 0;
+      for (uint64_t o = 0; o < pieces[i - 1].size; o++) {
+         pieces[i].grow();
+         uint32_t tmp = pieces[i-1].data[o];
+         tmp = (tmp << 1) | carry;
+         pieces[i].data[pieces[i].size] = tmp; // truncation here
+         carry = tmp >> 16;
+         pieces[i].size++;
+      }
+      if (carry) {
+         pieces[i].grow();
+         pieces[i].data[pieces[i].size] = carry; // truncation here
+         pieces[i].size++;
+      }
+   }
+
+   // our starting index in the numerator
+   uint64_t place = num.size;
+
+   while (place > 0) {
+      while (rem < den && place > 0) {
+         // shift rem over
+         if (rem.size == 0) {
+            rem.size = 1;
+            rem.data = (uint16_t *) malloc(sizeof(uint16_t));
+         }
+         else {
+            rem.grow();
+            memmove(rem.data + 1, rem.data, sizeof(uint16_t) * rem.size);
+            rem.size++;
+         }
+         rem.data[0] = num.data[--place];
+
+         // put a zero in quot, if needed
+         if (quot.size) {
+            if (rem < den) {
+               quot.grow();
+               memmove(quot.data + 1, quot.data, sizeof(uint16_t) * quot.size);
+               quot.size++;
+               quot.data[0] = 0;
+            }
+         }
+      }
+
+      if (rem >= den) {
+         uint16_t digit = 0;
+         Integer accumulator;
+         accumulator.size = 0;
+         accumulator.data = 0;
+
+         for (int i = 15; i >= 0; i--) {
+            Integer tmp = accumulator + pieces[i];
+            if (tmp <= rem) {
+               accumulator = tmp;
+               digit |= (1 << i);
+            }
+         }
+
+         rem = rem - accumulator;
+         quot.grow();
+         if (quot.size) {
+            memmove(quot.data + 1, quot.data, sizeof(uint16_t) * quot.size);
+         }
+         quot.size++;
+         quot.data[0] = digit;
+      }
+   }
+
+   // that's it, we're done!
 }
 
 Integer Integer::operator / (Integer const & obj) const {

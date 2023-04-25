@@ -15,6 +15,9 @@ class Integer {
             Integer &quot,
             Integer &rem);
 
+      // helper function
+      void grow(void);
+
    public:
       Integer();
       Integer(const Integer &orig); // copy constructor
