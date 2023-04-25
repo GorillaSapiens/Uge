@@ -37,9 +37,9 @@ class Rational {
       bool operator <= (const Rational &other) const;
       bool operator >= (const Rational &other) const;
 
-      char *print(char *buf, size_t buflen) const;
-      char *shortprint(char *buf, size_t buflen) const;
-      char *retendprint(char *buf, size_t buflen) const;
+      char *debu_print(char *buf, size_t buflen) const;
+      char *frac_print(char *buf, size_t buflen) const;
+      char *deci_print(char *buf, size_t buflen) const;
 
       explicit operator int128_t() const;
       explicit operator double() const;

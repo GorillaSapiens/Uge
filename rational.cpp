@@ -435,7 +435,7 @@ static int print_u128_u(uint128_t u128, char *buf)
    }
 }
 
-char *Rational::print(char *buf, size_t buflen) const {
+char *Rational::debu_print(char *buf, size_t buflen) const {
    char whl_buf[128];
    char num_buf[128];
    char den_buf[128];
@@ -449,7 +449,7 @@ char *Rational::print(char *buf, size_t buflen) const {
    return buf;
 }
 
-char *Rational::shortprint(char *buf, size_t buflen) const {
+char *Rational::frac_print(char *buf, size_t buflen) const {
    if (whl == 0 && num == 0) {
       snprintf(buf, buflen, "0");
       return buf;
@@ -490,7 +490,7 @@ typedef struct remchain_s {
    struct remchain_s *next;
 } remchain_t;
 
-char *Rational::retendprint(char *buf, size_t buflen) const {
+char *Rational::deci_print(char *buf, size_t buflen) const {
    char *ret = buf;
 
    if (sign < 0) {

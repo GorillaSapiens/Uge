@@ -32,97 +32,97 @@ int main(int argc, char **argv) {
          Rational r(bufr);
 
          printf("print: %s %s %s\n",
-            l.print(outputl, sizeof(outputl)), op, r.print(outputr, sizeof(outputr)));
+            l.debu_print(outputl, sizeof(outputl)), op, r.debu_print(outputr, sizeof(outputr)));
 
-         printf("shortprint: %s %s %s\n",
-            l.shortprint(outputl, sizeof(outputl)), op, r.shortprint(outputr, sizeof(outputr)));
+         printf("frac_print: %s %s %s\n",
+            l.frac_print(outputl, sizeof(outputl)), op, r.frac_print(outputr, sizeof(outputr)));
 
-         printf("retendprint: %s %s %s\n",
-            l.retendprint(outputl, sizeof(outputl)), op, r.retendprint(outputr, sizeof(outputr)));
+         printf("deci_print: %s %s %s\n",
+            l.deci_print(outputl, sizeof(outputl)), op, r.deci_print(outputr, sizeof(outputr)));
 
          try {
             if (!strcmp(op, "+")) {
                Rational x = l + r;
                double result = (double) l + (double) r;
-               printf("%s\n", x.print(outputl, sizeof(outputl)));
-               printf("%s\n", x.shortprint(outputl, sizeof(outputl)));
-               printf("%s\n", x.retendprint(outputl, sizeof(outputl)));
-               printf("%0.16f %s %0.16f =\n%0.16f // double\n", (double) l, op, (double) r, result);
-               printf("%0.16f // rational\n", (double) x);
+               printf("debu : %s\n", x.debu_print(outputl, sizeof(outputl)));
+               printf("frac : %s\n", x.frac_print(outputl, sizeof(outputl)));
+               printf("deci : %s\n", x.deci_print(outputl, sizeof(outputl)));
+               printf("cast : %0.16f %s %0.16f = %0.16f\n", (double) l, op, (double) r, (double) x);
+               printf("dble : %0.16f\n", (double) result);
             }
             if (!strcmp(op, "-")) {
                Rational x = l - r;
                double result = (double) l - (double) r;
-               printf("%s\n", x.print(outputl, sizeof(outputl)));
-               printf("%s\n", x.shortprint(outputl, sizeof(outputl)));
-               printf("%s\n", x.retendprint(outputl, sizeof(outputl)));
-               printf("%0.16f %s %0.16f =\n%0.16f // double\n", (double) l, op, (double) r, result);
-               printf("%0.16f // rational\n", (double) x);
+               printf("debu : %s\n", x.debu_print(outputl, sizeof(outputl)));
+               printf("frac : %s\n", x.frac_print(outputl, sizeof(outputl)));
+               printf("deci : %s\n", x.deci_print(outputl, sizeof(outputl)));
+               printf("cast : %0.16f %s %0.16f = %0.16f\n", (double) l, op, (double) r, (double) x);
+               printf("dble : %0.16f\n", (double) result);
             }
             if (!strcmp(op, "*")) {
                Rational x = l * r;
                double result = (double) l * (double) r;
-               printf("%s\n", x.print(outputl, sizeof(outputl)));
-               printf("%s\n", x.shortprint(outputl, sizeof(outputl)));
-               printf("%s\n", x.retendprint(outputl, sizeof(outputl)));
-               printf("%0.16f %s %0.16f =\n%0.16f // double\n", (double) l, op, (double) r, result);
-               printf("%0.16f // rational\n", (double) x);
+               printf("debu : %s\n", x.debu_print(outputl, sizeof(outputl)));
+               printf("frac : %s\n", x.frac_print(outputl, sizeof(outputl)));
+               printf("deci : %s\n", x.deci_print(outputl, sizeof(outputl)));
+               printf("cast : %0.16f %s %0.16f = %0.16f\n", (double) l, op, (double) r, (double) x);
+               printf("dble : %0.16f\n", (double) result);
             }
             if (!strcmp(op, "/")) {
                Rational x = l / r;
                double result = (double) l / (double) r;
-               printf("%s\n", x.print(outputl, sizeof(outputl)));
-               printf("%s\n", x.shortprint(outputl, sizeof(outputl)));
-               printf("%s\n", x.retendprint(outputl, sizeof(outputl)));
-               printf("%0.16f %s %0.16f =\n%0.16f // double\n", (double) l, op, (double) r, result);
-               printf("%0.16f // rational\n", (double) x);
+               printf("debu : %s\n", x.debu_print(outputl, sizeof(outputl)));
+               printf("frac : %s\n", x.frac_print(outputl, sizeof(outputl)));
+               printf("deci : %s\n", x.deci_print(outputl, sizeof(outputl)));
+               printf("cast : %0.16f %s %0.16f = %0.16f\n", (double) l, op, (double) r, (double) x);
+               printf("dble : %0.16f\n", (double) result);
             }
             if (!strcmp(op, "==")) {
                bool result = (l == r);
                printf("%s %s %s == %s\n",
-                  l.shortprint(outputl, sizeof(outputl)),
+                  l.frac_print(outputl, sizeof(outputl)),
                   op,
-                  r.shortprint(outputr, sizeof(outputr)),
+                  r.frac_print(outputr, sizeof(outputr)),
                   result ? "true" : "false");
             }
             if (!strcmp(op, "!=")) {
                bool result = (l != r);
                printf("%s %s %s == %s\n",
-                  l.shortprint(outputl, sizeof(outputl)),
+                  l.frac_print(outputl, sizeof(outputl)),
                   op,
-                  r.shortprint(outputr, sizeof(outputr)),
+                  r.frac_print(outputr, sizeof(outputr)),
                   result ? "true" : "false");
             }
             if (!strcmp(op, "<")) {
                bool result = (l < r);
                printf("%s %s %s == %s\n",
-                  l.shortprint(outputl, sizeof(outputl)),
+                  l.frac_print(outputl, sizeof(outputl)),
                   op,
-                  r.shortprint(outputr, sizeof(outputr)),
+                  r.frac_print(outputr, sizeof(outputr)),
                   result ? "true" : "false");
             }
             if (!strcmp(op, ">")) {
                bool result = (l > r);
                printf("%s %s %s == %s\n",
-                  l.shortprint(outputl, sizeof(outputl)),
+                  l.frac_print(outputl, sizeof(outputl)),
                   op,
-                  r.shortprint(outputr, sizeof(outputr)),
+                  r.frac_print(outputr, sizeof(outputr)),
                   result ? "true" : "false");
             }
             if (!strcmp(op, "<=")) {
                bool result = (l <= r);
                printf("%s %s %s == %s\n",
-                  l.shortprint(outputl, sizeof(outputl)),
+                  l.frac_print(outputl, sizeof(outputl)),
                   op,
-                  r.shortprint(outputr, sizeof(outputr)),
+                  r.frac_print(outputr, sizeof(outputr)),
                   result ? "true" : "false");
             }
             if (!strcmp(op, ">=")) {
                bool result = (l >= r);
                printf("%s %s %s == %s\n",
-                  l.shortprint(outputl, sizeof(outputl)),
+                  l.frac_print(outputl, sizeof(outputl)),
                   op,
-                  r.shortprint(outputr, sizeof(outputr)),
+                  r.frac_print(outputr, sizeof(outputr)),
                   result ? "true" : "false");
             }
          }
