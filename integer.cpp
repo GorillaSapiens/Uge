@@ -34,15 +34,49 @@ Integer& Integer::operator=(const Integer& other) {
 }
 
 Integer::Integer(const char *orig) {
-   Integer copy;
+
+   size = 0;
+   data = NULL;
 
    while (*orig) {
-      copy = copy * (uint64_t) 10;
-      copy = copy + (uint64_t) (*orig - '0');
+      // times 10 plus more
+      if (size) {
+         uint64_t place = 0;
+         uint32_t carry = 0;
+         while (place != size) {
+            carry += data[place] * 10;
+            data[place] = carry; // truncation here
+            carry >>= 16;
+            place++;
+         }
+         if (carry) {
+            data = (uint16_t *) realloc(data, sizeof(uint16_t) * (size + 1));
+            data[place] = carry;
+            size++;
+         }
+      }
+      if (!size) {
+         size = 1;
+         data = (uint16_t *) malloc(sizeof(uint16_t));
+         data[0] = (uint16_t) (*orig - '0');
+      }
+      else {
+         uint64_t place = 0;
+         uint32_t carry = (uint32_t) (*orig - '0');
+         while (place != size && carry) {
+            carry += data[place];
+            data[place] = carry; // truncation here
+            carry >>= 16;
+            place++;
+         }
+         if (carry) {
+            data = (uint16_t *) realloc(data, sizeof(uint16_t) * (size + 1));
+            data[place] = carry;
+            size++;
+         }
+      }
       orig++;
    }
-
-   *this = copy;
 }
 
 Integer::Integer(uint64_t i) {
