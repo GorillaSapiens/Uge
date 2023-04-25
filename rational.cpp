@@ -113,82 +113,115 @@ static uint128_t llpow10(uint128_t n) {
 }
 
 Rational::Rational(const char *orig) {
-   char *freeme = strdup(orig);
-   char *p = freeme;
+   char *tick = strchr((char *)orig, '\'');
+   char *slash = strchr((char *)orig, '/');
+   if (tick || slash) {
+      const char *p = orig;
 
-   long long exp = 0;
-   long long repetend_num = 0;
-   long long repetend_den = 1;
-
-   sign = 1;
-   if (*p == '-') {
-      sign = -1;
-      p++;
-   }
-   else if (*p == '+') {
-      p++;
-   }
-
-   if (strchr(p, 'e') || strchr(p, 'E')) {
-      char *q = strchr(p, 'e');
-      if (!q) {
-         q = strchr(p, 'E');
+      sign = 1;
+      if (*p == '-') {
+         sign = -1;
+         p++;
       }
-      *q++ = 0;
-      exp = atoll(q);
-   }
-
-   if (strchr(p, '(')) {
-      char *q = strchr(p, '(');
-      *q++ = 0;
-      char *r = strchr(q, ')');
-      if (!r) {
-         free((void *)freeme);
-         throw(ERR("no matching ')'"));
+      else if (*p == '+') {
+         p++;
       }
-      repetend_den = llpow10(r - q) - 1;
-      repetend_num = atoll(q);
-   }
 
-   int fraclen = 0;
-
-   if (strchr(p, '.')) {
-      char *q = strchr(p, '.');
-      *q++ = 0;
-      whl = atoll(p);
-      num = atoll(q);
-      fraclen = strlen(q);
-      den = llpow10(fraclen);
+      if (slash) {
+         if (tick) {
+            whl = atoll(p);
+            num = atoll(tick + 1);
+         }
+         else {
+            whl = 0;
+            num = atoll(p);
+         }
+         den = atoll(slash + 1);
+      }
+      else {
+         whl = atoll(p);
+         num = 0;
+         den = 1;
+      }
    }
    else {
-      whl = atoll(p);
-      num = 0;
-      den = 1;
+      char *freeme = strdup(orig);
+      char *p = freeme;
 
-      fraclen = 0;
-   }
+      long long exp = 0;
+      long long repetend_num = 0;
+      long long repetend_den = 1;
 
-   free((void *)freeme);
+      sign = 1;
+      if (*p == '-') {
+         sign = -1;
+         p++;
+      }
+      else if (*p == '+') {
+         p++;
+      }
 
-   repetend_den *= den;
+      if (strchr(p, 'e') || strchr(p, 'E')) {
+         char *q = strchr(p, 'e');
+         if (!q) {
+            q = strchr(p, 'E');
+         }
+         *q++ = 0;
+         exp = atoll(q);
+      }
 
-   simplify();
+      if (strchr(p, '(')) {
+         char *q = strchr(p, '(');
+         *q++ = 0;
+         char *r = strchr(q, ')');
+         if (!r) {
+            free((void *)freeme);
+            throw(ERR("no matching ')'"));
+         }
+         repetend_den = llpow10(r - q) - 1;
+         repetend_num = atoll(q);
+      }
 
-   if (repetend_num) {
-      Rational r(sign, 0, repetend_num, repetend_den);
-      *this = *this + r;
+      int fraclen = 0;
+
+      if (strchr(p, '.')) {
+         char *q = strchr(p, '.');
+         *q++ = 0;
+         whl = atoll(p);
+         num = atoll(q);
+         fraclen = strlen(q);
+         den = llpow10(fraclen);
+      }
+      else {
+         whl = atoll(p);
+         num = 0;
+         den = 1;
+
+         fraclen = 0;
+      }
+
+      free((void *)freeme);
+
+      repetend_den *= den;
+
       simplify();
-   }
 
-   if (exp > 0) {
-      Rational r(1, llpow10(exp), 0, 1);
-      *this = *this * r;
-      simplify();
-   }
-   else if (exp < 0) {
-      Rational r(1, 0, 1, llpow10(-exp));
-      *this = *this * r;
-      simplify();
+      if (repetend_num) {
+         Rational r(sign, 0, repetend_num, repetend_den);
+         *this = *this + r;
+         simplify();
+      }
+
+      if (exp > 0) {
+         Rational r(1, llpow10(exp), 0, 1);
+         *this = *this * r;
+         simplify();
+      }
+      else if (exp < 0) {
+         Rational r(1, 0, 1, llpow10(-exp));
+         *this = *this * r;
+         simplify();
+      }
    }
 }
 
@@ -411,14 +444,14 @@ char *Rational::print(char *buf, size_t buflen) const {
    print_u128_u(num, num_buf);
    print_u128_u(den, den_buf);
 
-   snprintf(buf, buflen, "#%c%s'%s/%s",
+   snprintf(buf, buflen, "%c%s'%s/%s",
          sign > 0 ? '+' : '-', whl_buf, num_buf, den_buf);
    return buf;
 }
 
 char *Rational::shortprint(char *buf, size_t buflen) const {
    if (whl == 0 && num == 0) {
-      snprintf(buf, buflen, "#0");
+      snprintf(buf, buflen, "0");
       return buf;
    }
    char mark[2] = {0, 0};
@@ -428,7 +461,7 @@ char *Rational::shortprint(char *buf, size_t buflen) const {
    if (num == 0) {
       char whl_buf[128];
       print_u128_u(whl, whl_buf);
-      snprintf(buf, buflen, "#%s%s", mark, whl_buf);
+      snprintf(buf, buflen, "%s%s", mark, whl_buf);
       return buf;
    }
    else if (whl == 0) {
@@ -436,7 +469,7 @@ char *Rational::shortprint(char *buf, size_t buflen) const {
       char den_buf[128];
       print_u128_u(num, num_buf);
       print_u128_u(den, den_buf);
-      snprintf(buf, buflen, "#%s%s/%s", mark, num_buf, den_buf);
+      snprintf(buf, buflen, "%s%s/%s", mark, num_buf, den_buf);
       return buf;
    }
    else {
@@ -446,7 +479,7 @@ char *Rational::shortprint(char *buf, size_t buflen) const {
       print_u128_u(whl, whl_buf);
       print_u128_u(num, num_buf);
       print_u128_u(den, den_buf);
-      snprintf(buf, buflen, "#%s%s'%s/%s", mark, whl_buf, num_buf, den_buf);
+      snprintf(buf, buflen, "%s%s'%s/%s", mark, whl_buf, num_buf, den_buf);
       return buf;
    }
 }
@@ -468,6 +501,10 @@ char *Rational::retendprint(char *buf, size_t buflen) const {
    int rc = print_u128_u(whl, buf);
    buf += rc;
    buflen -= rc;
+
+   if (num == 0) {
+      return ret;
+   }
 
    *buf++ = '.';
    buflen--;
