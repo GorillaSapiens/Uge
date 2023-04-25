@@ -63,6 +63,9 @@ Integer::Integer(const char *orig) {
    data = NULL;
 
    while (*orig) {
+      if ((*orig < '0') || (*orig > '9')) {
+         break;
+      }
       // times 10
       if (size) {
          uint64_t place = 0;

@@ -16,6 +16,8 @@
 
 #define BIGPOWEROF2 512
 
+#define MAX_DECI 256
+
 static Integer gcd(Integer x, Integer y) {
    // euclid
    Integer a = x;
@@ -125,17 +127,17 @@ Uge::Uge(const char *orig) {
 
       if (slash) {
          if (tick) {
-            whl = atoll(p);
-            num = atoll(tick + 1);
+            whl = Integer(p);
+            num = Integer(tick + 1);
          }
          else {
             whl.setZero();
-            num = atoll(p);
+            num = Integer(p);
          }
-         den = atoll(slash + 1);
+         den = Integer(slash + 1);
       }
       else {
-         whl = atoll(p);
+         whl = Integer(p);
          num.setZero();
          den = 1;
       }
@@ -172,7 +174,7 @@ Uge::Uge(const char *orig) {
             negexp = true;
             q++;
          }
-         exp = atoll(q);
+         exp = Integer(q);
       }
 
       if (strchr(p, '(')) {
@@ -184,7 +186,7 @@ Uge::Uge(const char *orig) {
             throw(ERR("no matching ')'"));
          }
          repetend_den = llpow10(r - q) - 1;
-         repetend_num = atoll(q);
+         repetend_num = Integer(q);
       }
 
       int fraclen = 0;
@@ -192,13 +194,13 @@ Uge::Uge(const char *orig) {
       if (strchr(p, '.')) {
          char *q = strchr(p, '.');
          *q++ = 0;
-         whl = atoll(p);
-         num = atoll(q);
+         whl = Integer(p);
+         num = Integer(q);
          fraclen = strlen(q);
          den = llpow10(fraclen);
       }
       else {
-         whl = atoll(p);
+         whl = Integer(p);
          num.setZero();
          den = 1;
 
@@ -492,7 +494,7 @@ char *Uge::frac_print(char *buf, size_t buflen) const {
 
 typedef struct remchain_s {
    int digit;
-   Integer remainder;
+   Integer *remainder;
    struct remchain_s *next;
 } remchain_t;
 
@@ -519,12 +521,14 @@ char *Uge::deci_print(char *buf, size_t buflen) const {
 
    remchain_t *head = NULL;
    remchain_t *tail = NULL;
+   int remchain_count = 0;
 
    Integer remainder = num;
 
    head = tail = (remchain_t *) malloc(sizeof(remchain_t));
+   remchain_count++;
    head->digit = -1;
-   head->remainder = remainder;
+   head->remainder = new Integer(remainder);
    head->next = NULL;
 
    while(1) {
@@ -533,12 +537,13 @@ char *Uge::deci_print(char *buf, size_t buflen) const {
       remainder = remainder % den;
 
       tail->next = (remchain_t *) malloc(sizeof(remchain_t));
+      remchain_count++;
       tail->next->digit = (uint64_t) digit;
-      tail->next->remainder = remainder;
+      tail->next->remainder = new Integer(remainder);
       tail->next->next = NULL;
       tail = tail->next;
 
-      if (remainder.isZero()) {
+      if (remainder.isZero() || remchain_count > MAX_DECI) {
          for (remchain_t *tmp = head; tmp; tmp = tmp->next) {
             if (tmp->digit >= 0) {
                *buf++ = '0' + tmp->digit;
@@ -546,11 +551,18 @@ char *Uge::deci_print(char *buf, size_t buflen) const {
                *buf = 0;
             }
          }
-         return ret;
+         if (remchain_count > MAX_DECI) {
+            *buf++ = '.';
+            *buf++ = '.';
+            *buf++ = '.';
+            *buf = 0;
+            buflen -= 3;
+         }
+         goto fini;
       }
       else {
          for (remchain_t *tmp = head; tmp != tail; tmp = tmp->next) {
-            if (tmp->remainder == tail->remainder) {
+            if (*(tmp->remainder) == *(tail->remainder)) {
                for (remchain_t *tmp2 = head; tmp2; tmp2 = tmp2->next) {
                   if (tmp2->digit >= 0) {
                      *buf++ = '0' + tmp2->digit;
@@ -566,10 +578,20 @@ char *Uge::deci_print(char *buf, size_t buflen) const {
                *buf++ = ')';
                buflen--;
                *buf = 0;
-               return ret;
+               goto fini;
             }
          }
       }
+   }
+
+   fini:
+
+   remchain_t *next;
+   remchain_t *tmp;
+   for (tmp = head, next = tmp->next; tmp; tmp = next) {
+      next = tmp->next;
+      delete tmp->remainder;
+      free((void *)tmp);
    }
 
    return ret;
