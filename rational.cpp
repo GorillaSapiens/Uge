@@ -317,6 +317,10 @@ Rational Rational::operator + (Rational const & obj) const {
       else {
          res.sign = -1;
          res.whl = other.whl - res.whl;
+         if (res.num) {
+            res.num = res.den - res.num;
+            res.whl--;
+         }
       }
 
       if (res.sign > 0) {
