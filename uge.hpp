@@ -7,6 +7,8 @@
 
 /// A class to store and manipulate rational numbers.
 ///
+/// In your best scottish accent, "it HUGE!, with a capital U!"
+///
 /// The number is stored as a sign, a whole number part,
 /// and fractional numerator and denomenator parts.
 ///
