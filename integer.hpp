@@ -8,6 +8,13 @@ class Integer {
       uint64_t size;
       uint16_t *data;
 
+      // helper function
+      static void divide(
+         const Integer &num,
+         const Integer &den,
+         Integer &quot,
+         Integer &rem);
+
    public:
       Integer();
       Integer(const Integer &orig); // copy constructor

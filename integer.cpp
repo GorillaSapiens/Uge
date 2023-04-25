@@ -146,11 +146,17 @@ Integer Integer::operator * (Integer const & obj) const {
    return res;
 }
 
-static void divide(
+void Integer::divide(
    const Integer &num,
    const Integer &den,
    Integer &quot,
    Integer &rem) {
+
+   // trivial case
+   if (num < den) {
+      rem = num;
+      return;
+   }
 }
 
 Integer Integer::operator / (Integer const & obj) const {
