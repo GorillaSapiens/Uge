@@ -37,6 +37,8 @@ int main(int argc, char **argv) {
          printf("%s %s %s\n",
             l.shortprint(outputl, sizeof(outputl)), op, r.shortprint(outputr, sizeof(outputr)));
 
+         printf("%s %s %s\n",
+            l.retendprint(outputl, sizeof(outputl)), op, r.retendprint(outputr, sizeof(outputr)));
 
          try {
             if (!strcmp(op, "+")) {
@@ -44,6 +46,7 @@ int main(int argc, char **argv) {
                double result = (double) l + (double) r;
                printf("%s\n", x.print(outputl, sizeof(outputl)));
                printf("%s\n", x.shortprint(outputl, sizeof(outputl)));
+               printf("%s\n", x.retendprint(outputl, sizeof(outputl)));
                printf("%0.16f %s %0.16f =\n%0.16f // double\n", (double) l, op, (double) r, result);
                printf("%0.16f // rational\n", (double) x);
             }

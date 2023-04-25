@@ -39,6 +39,7 @@ class Rational {
 
       char *print(char *buf, size_t buflen) const;
       char *shortprint(char *buf, size_t buflen) const;
+      char *retendprint(char *buf, size_t buflen) const;
 
       explicit operator int128_t() const;
       explicit operator double() const;

@@ -54,7 +54,7 @@ static uint128_t lcm(uint128_t x, uint128_t y) {
 }
 
 void Rational::simplify(void) {
-   if (num > den) {
+   if (num >= den) {
       whl += num / den;
       num %= den;
    }
@@ -170,10 +170,11 @@ Rational::Rational(const char *orig) {
 
    free((void *)freeme);
 
+   repetend_den *= den;
+
    simplify();
 
    if (repetend_num) {
-      repetend_den *= den;
       Rational r(sign, 0, repetend_num, repetend_den);
       *this = *this + r;
       simplify();
@@ -448,6 +449,81 @@ char *Rational::shortprint(char *buf, size_t buflen) const {
       snprintf(buf, buflen, "#%s%s'%s/%s", mark, whl_buf, num_buf, den_buf);
       return buf;
    }
+}
+
+typedef struct remchain_s {
+   int digit;
+   uint128_t remainder;
+   struct remchain_s *next;
+} remchain_t;
+
+char *Rational::retendprint(char *buf, size_t buflen) const {
+   char *ret = buf;
+
+   if (sign < 0) {
+      *buf++ = '-';
+      buflen--;
+   }
+   int rc = print_u128_u(whl, buf);
+   buf += rc;
+   buflen -= rc;
+
+   *buf++ = '.';
+   buflen--;
+
+   remchain_t *head = NULL;
+   remchain_t *tail = NULL;
+
+   uint128_t remainder = num;
+
+   while(1) {
+      remainder *= 10;
+      uint128_t digit = remainder / den;
+      remainder = remainder % den;
+
+      if (!head) {
+         head = tail = (remchain_t *) malloc(sizeof(remchain_t));
+         head->digit = digit;
+         head->remainder = remainder;
+         head->next = NULL;
+      }
+      else {
+         tail->next = (remchain_t *) malloc(sizeof(remchain_t));
+         tail->next->digit = digit;
+         tail->next->remainder = remainder;
+         tail->next->next = NULL;
+         tail = tail->next;
+      }
+
+      if (remainder == 0) {
+         for (remchain_t *tmp = head; tmp; tmp = tmp->next) {
+            *buf++ = '0' + tmp->digit;
+            buflen--;
+            *buf = 0;
+         }
+         return ret;
+      }
+      else {
+         for (remchain_t *tmp = head; tmp != tail; tmp = tmp->next) {
+            if (tmp->remainder == tail->remainder) {
+               for (remchain_t *tmp2 = head; tmp2 != tail; tmp2 = tmp2->next) {
+                  if (tmp2 == tmp) {
+                     *buf++ = '(';
+                     buflen--;
+                  }
+                  *buf++ = '0' + tmp2->digit;
+                  buflen--;
+               }
+               *buf++ = ')';
+               buflen--;
+               *buf = 0;
+               return ret;
+            }
+         }
+      }
+   }
+
+   return ret;
 }
 
 Rational::operator double() const {
