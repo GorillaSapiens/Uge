@@ -1,5 +1,3 @@
-// in development, so we're a little loosey goosey here...
-
 #include <string>
 
 #include <math.h>
@@ -34,7 +32,6 @@ static uint128_t gcd(uint128_t x, uint128_t y) {
       b = x;
    }
    if (b == 0) {
-      printf("%016lx%016lx %016lx%016lx\n", (uint64_t)(x >> 64), (uint64_t)(x & 0xFFFFFFFFFFFFFFFF), (uint64_t)(y >> 64), (uint64_t)(y & 0xFFFFFFFFFFFFFFFF));
       throw (ERR("divide by zero in gcd"));
    }
    uint128_t c = a % b;

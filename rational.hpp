@@ -6,6 +6,13 @@
 typedef __int128  int128_t;
 typedef unsigned __int128 uint128_t;
 
+/// A class to store and manipulate rational numbers.
+///
+/// The number is stored as a sign, a whole number part,
+/// and fractional numerator and denomenator parts.
+///
+/// Methods are given for simple arithmatic and comparison,
+/// as well as printing and casting to/from standard types.
 class Rational {
    private:
       int8_t sign;
