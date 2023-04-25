@@ -35,7 +35,9 @@ class Integer {
       bool operator <= (const Integer &other) const;
       bool operator >= (const Integer &other) const;
 
-      explicit operator int64_t() const;
+      explicit operator uint64_t() const;
+
+      char *print(char *buf, size_t buflen);
 };
 
 #endif // _INCLUDE_INTEGER_HPP_

@@ -1,8 +1,11 @@
-all: rational
+all: rational integer
 
-rational: main.cpp rational.cpp rational.hpp
-	g++ -g main.cpp rational.cpp -o rational
+rational: rational_main.cpp rational.cpp rational.hpp
+	g++ -g rational_main.cpp rational.cpp -o rational
+
+integer: integer_main.cpp integer.cpp integer.hpp
+	g++ -g integer_main.cpp integer.cpp -o integer
 
 .PHONY: clean
 clean:
-	rm rational
+	rm -f rational integer

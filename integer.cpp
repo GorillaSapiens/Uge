@@ -34,10 +34,21 @@ Integer& Integer::operator=(const Integer& other) {
 }
 
 Integer::Integer(const char *orig) {
-   // TODO FIX
+   Integer copy;
+
+   while (*orig) {
+      copy = copy * (uint64_t) 10;
+      copy = copy + (uint64_t) (*orig - '0');
+      orig++;
+   }
+
+   *this = copy;
 }
 
 Integer::Integer(uint64_t i) {
+   size = 0;
+   data = NULL;
+
    while (i) {
       data = (uint16_t *)realloc(data, sizeof(uint16_t) * (size + 1));
       data[size] = i; // truncation happens here
@@ -152,11 +163,33 @@ void Integer::divide(
    Integer &quot,
    Integer &rem) {
 
+   // can't divide by zero
+   if (den.size == 0) {
+      throw(ERR("division by zero"));
+   }
+
    // trivial case
    if (num < den) {
+      quot = (uint64_t) 0;
       rem = num;
       return;
    }
+
+   // another trivial case
+   if (num.size == 0) {
+      quot = (uint64_t) 0;
+      rem = (uint64_t) 0;
+      return;
+   }
+
+   // easy case
+   if (num.size == 1 && den.size == 1) {
+      quot = num.data[0] / den.data[0];
+      rem = num.data[0] % den.data[0];
+      return;
+   }
+
+   // and now the fun stuff...
 }
 
 Integer Integer::operator / (Integer const & obj) const {
@@ -217,7 +250,10 @@ bool Integer::operator <= (const Integer &other) const {
    if (size < other.size) {
       return true;
    }
-   if (size == other.size) {
+   else if (size > other.size) {
+      return false;
+   }
+   else {
       for (uint64_t i = 0; i < size; i++) {
          uint64_t place = size - i - 1;
          if (data[place] < other.data[place]) {
@@ -227,22 +263,43 @@ bool Integer::operator <= (const Integer &other) const {
             return false;
          }
       }
+      return true;
    }
-   return true;
 }
 
 bool Integer::operator >= (const Integer &other) const {
    return !(*this < other);
 }
 
-Integer::operator int64_t() const {
-   int64_t ret = 0;
+Integer::operator uint64_t() const {
+   uint64_t ret = 0;
    for (uint64_t i = 0; i < 4; i++) {
       uint64_t place = 3LL - i;
       if (place < size) {
          ret <<= 16;
-         ret |= (int64_t)data[place];
+         ret |= (uint64_t)data[place];
       }
    }
    return ret;
+}
+
+char *Integer::print(char *buf, size_t buflen) {
+   Integer copy = *this;
+   Integer quot;
+   Integer rem;
+
+   buf[0] = 0;
+   while (copy > (uint64_t)0) {
+      divide(copy, (uint64_t) 10, quot, rem);
+      memmove(buf + 1, buf, strlen(buf) + 1);
+      if (rem.size) {
+         *buf = '0' + rem.data[0];
+      }
+      else {
+         *buf = '0';
+      }
+      copy = quot;
+   }
+
+   return buf;
 }
