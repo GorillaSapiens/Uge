@@ -20,6 +20,7 @@ class Integer {
       Integer operator - (Integer const & obj) const;
       Integer operator * (Integer const & obj) const;
       Integer operator / (Integer const & obj) const;
+      Integer operator % (Integer const & obj) const;
       bool operator == (const Integer &other) const;
       bool operator != (const Integer &other) const;
       bool operator < (const Integer &other) const;

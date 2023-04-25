@@ -146,8 +146,25 @@ Integer Integer::operator * (Integer const & obj) const {
    return res;
 }
 
+static void divide(
+   const Integer &num,
+   const Integer &den,
+   Integer &quot,
+   Integer &rem) {
+}
+
 Integer Integer::operator / (Integer const & obj) const {
-   // TODO FIX
+   Integer quot;
+   Integer rem;
+   divide(*this, obj, quot, rem);
+   return quot;
+}
+
+Integer Integer::operator % (Integer const & obj) const {
+   Integer quot;
+   Integer rem;
+   divide(*this, obj, quot, rem);
+   return rem;
 }
 
 bool Integer::operator == (const Integer &other) const {
