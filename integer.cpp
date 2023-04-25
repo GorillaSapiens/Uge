@@ -31,6 +31,18 @@ void Integer::grow(void) {
    data = (uint16_t *) realloc(data, sizeof(uint16_t) * (size + 1));
 }
 
+bool Integer::isZero(void) const {
+   return (size == 0);
+}
+
+void Integer::setZero(void) {
+   size = 0;
+   if (data) {
+      free((void *)data);
+      data = 0;
+   }
+}
+
 Integer::Integer(const Integer &orig) {
    size = orig.size;
    data = (uint16_t *) malloc(sizeof(uint16_t) * size);
@@ -425,6 +437,31 @@ bool Integer::operator >= (const Integer &other) const {
    return !(*this < other);
 }
 
+Integer& Integer::operator+=(const Integer& other) {
+   *this = *this + other;
+   return *this;
+}
+
+Integer& Integer::operator-=(const Integer& other) {
+   *this = *this - other;
+   return *this;
+}
+
+Integer& Integer::operator*=(const Integer& other) {
+   *this = *this * other;
+   return *this;
+}
+
+Integer& Integer::operator/=(const Integer& other) {
+   *this = *this / other;
+   return *this;
+}
+
+Integer& Integer::operator%=(const Integer& other) {
+   *this = *this % other;
+   return *this;
+}
+
 Integer::operator uint64_t() const {
    uint64_t ret = 0;
    for (uint64_t i = 0; i < 4; i++) {
@@ -437,7 +474,7 @@ Integer::operator uint64_t() const {
    return ret;
 }
 
-char *Integer::print(char *buf, size_t buflen) {
+char *Integer::print(char *buf, size_t buflen) const {
    Integer copy = *this;
    Integer quot;
    Integer rem;

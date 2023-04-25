@@ -39,9 +39,18 @@ class Integer {
       bool operator <= (const Integer &other) const;
       bool operator >= (const Integer &other) const;
 
+      Integer& operator+=(const Integer& other);
+      Integer& operator-=(const Integer& other);
+      Integer& operator*=(const Integer& other);
+      Integer& operator/=(const Integer& other);
+      Integer& operator%=(const Integer& other);
+
+      bool isZero(void) const;
+      void setZero(void);
+
       explicit operator uint64_t() const;
 
-      char *print(char *buf, size_t buflen);
+      char *print(char *buf, size_t buflen) const;
 };
 
 #endif // _INCLUDE_INTEGER_HPP_
