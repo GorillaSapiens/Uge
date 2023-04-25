@@ -31,7 +31,9 @@ int main(int argc, char **argv) {
          Rational l(bufl);
          Rational r(bufr);
 
-         printf("print: %s %s %s\n",
+         printf("== input ==\n");
+
+         printf("debu_print: %s %s %s\n",
             l.debu_print(outputl, sizeof(outputl)), op, r.debu_print(outputr, sizeof(outputr)));
 
          printf("frac_print: %s %s %s\n",
@@ -39,6 +41,8 @@ int main(int argc, char **argv) {
 
          printf("deci_print: %s %s %s\n",
             l.deci_print(outputl, sizeof(outputl)), op, r.deci_print(outputr, sizeof(outputr)));
+
+         printf("== result ==\n");
 
          try {
             if (!strcmp(op, "+")) {
