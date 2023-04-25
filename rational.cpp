@@ -115,7 +115,13 @@ static uint128_t llpow10(uint128_t n) {
 Rational::Rational(const char *orig) {
    char *tick = strchr((char *)orig, '\'');
    char *slash = strchr((char *)orig, '/');
-   if (tick || slash) {
+   char *dee = strchr((char *)orig, 'd');
+
+   if (dee) {
+      double d = atof(orig + 1);
+      *this = Rational(d);
+   }
+   else if (tick || slash) {
       const char *p = orig;
 
       sign = 1;
@@ -143,6 +149,8 @@ Rational::Rational(const char *orig) {
          num = 0;
          den = 1;
       }
+
+      simplify();
    }
    else {
       char *freeme = strdup(orig);
