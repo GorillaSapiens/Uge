@@ -202,21 +202,14 @@ void Integer::divide(
       throw(ERR("division by zero"));
    }
 
-   // trivial case
+   // trivial case, numerator less than denominator
    if (num < den) {
       quot = (uint64_t) 0;
       rem = num;
       return;
    }
 
-   // another trivial case
-   if (num.size == 0) {
-      quot = (uint64_t) 0;
-      rem = (uint64_t) 0;
-      return;
-   }
-
-   // easy case
+   // easy case, let's not mess about
    if (num.size == 1 && den.size == 1) {
       quot = num.data[0] / den.data[0];
       rem = num.data[0] % den.data[0];

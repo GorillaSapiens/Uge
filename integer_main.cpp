@@ -67,6 +67,13 @@ int main(int argc, char **argv) {
                printf("cast : %ld %s %ld = %ld\n", (uint64_t) l, op, (uint64_t) r, (uint64_t) x);
                printf("intr : %ld\n", (uint64_t) result);
             }
+            if (!strcmp(op, "%")) {
+               Integer x = l % r;
+               uint64_t result = (uint64_t) l % (uint64_t) r;
+               printf("prnt : %s\n", x.print(outputl, sizeof(outputl)));
+               printf("cast : %ld %s %ld = %ld\n", (uint64_t) l, op, (uint64_t) r, (uint64_t) x);
+               printf("intr : %ld\n", (uint64_t) result);
+            }
             if (!strcmp(op, "==")) {
                bool result = (l == r);
                printf("%s %s %s == %s\n",
