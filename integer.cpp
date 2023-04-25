@@ -19,6 +19,13 @@ Integer::Integer() {
    data = NULL;
 }
 
+Integer::~Integer() {
+   if (data) {
+      free((void *) data);
+      data = NULL;
+   }
+}
+
 Integer::Integer(const Integer &orig) {
    size = orig.size;
    data = (uint16_t *) malloc(sizeof(uint16_t) * size);
@@ -39,7 +46,7 @@ Integer::Integer(const char *orig) {
    data = NULL;
 
    while (*orig) {
-      // times 10 plus more
+      // times 10
       if (size) {
          uint64_t place = 0;
          uint32_t carry = 0;
@@ -55,6 +62,7 @@ Integer::Integer(const char *orig) {
             size++;
          }
       }
+      // plus string data
       if (!size) {
          size = 1;
          data = (uint16_t *) malloc(sizeof(uint16_t));
@@ -203,6 +211,7 @@ void Integer::divide(
    }
 
    // trivial case, numerator less than denominator
+   // this includes num == 0
    if (num < den) {
       quot = (uint64_t) 0;
       rem = num;
@@ -210,9 +219,19 @@ void Integer::divide(
    }
 
    // easy case, let's not mess about
-   if (num.size == 1 && den.size == 1) {
-      quot = num.data[0] / den.data[0];
-      rem = num.data[0] % den.data[0];
+   if (num.size <= 2 && den.size <= 2) {
+      uint32_t n = num.data[0];
+      if (num.size == 2) {
+         n |= ((uint32_t) num.data[1]) << 16;
+      }
+
+      uint32_t d = den.data[0];
+      if (den.size == 2) {
+         d |= ((uint32_t) den.data[1]) << 16;
+      }
+
+      quot = n / d;
+      rem = n % d;
       return;
    }
 

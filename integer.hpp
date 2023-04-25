@@ -10,16 +10,17 @@ class Integer {
 
       // helper function
       static void divide(
-         const Integer &num,
-         const Integer &den,
-         Integer &quot,
-         Integer &rem);
+            const Integer &num,
+            const Integer &den,
+            Integer &quot,
+            Integer &rem);
 
    public:
       Integer();
       Integer(const Integer &orig); // copy constructor
       Integer(const char *p);
       Integer(uint64_t d);
+      ~Integer();
 
       Integer& operator=(const Integer& other); // assignment operator
 
