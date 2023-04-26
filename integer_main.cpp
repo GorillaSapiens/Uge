@@ -24,8 +24,8 @@ int main(int argc, char **argv) {
       char op[32];
       char bufr[512];
 
-      char outputl[1024];
-      char outputr[1024];
+      char *free_l = NULL;
+      char *free_r = NULL;
 
       if (3 == sscanf(buf, "%s %s %s\n", bufl, op, bufr)) {
          Integer l(bufl);
@@ -34,7 +34,9 @@ int main(int argc, char **argv) {
          printf("== input ==\n");
 
          printf("print: %s %s %s\n",
-            l.print(outputl, sizeof(outputl)), op, r.print(outputr, sizeof(outputr)));
+            free_l = /*assign*/ l.print(), op, free_r = /*assign*/ r.print());
+         free((void *)free_l);
+         free((void *)free_r);
 
          printf("== result ==\n");
 
@@ -42,85 +44,112 @@ int main(int argc, char **argv) {
             if (!strcmp(op, "+")) {
                Integer x = l + r;
                uint64_t result = (uint64_t) l + (uint64_t) r;
-               printf("prnt : %s\n", x.print(outputl, sizeof(outputl)));
+
+               printf("prnt : %s\n", free_l = /*assign*/ x.print());
+               free((void *)free_l);
+
                printf("cast : %ld %s %ld = %ld\n", (uint64_t) l, op, (uint64_t) r, (uint64_t) x);
                printf("intr : %ld\n", (uint64_t) result);
             }
             if (!strcmp(op, "-")) {
                Integer x = l - r;
                uint64_t result = (uint64_t) l - (uint64_t) r;
-               printf("prnt : %s\n", x.print(outputl, sizeof(outputl)));
+
+               printf("prnt : %s\n", free_l = /*assign*/ x.print());
+               free((void *)free_l);
+
                printf("cast : %ld %s %ld = %ld\n", (uint64_t) l, op, (uint64_t) r, (uint64_t) x);
                printf("intr : %ld\n", (uint64_t) result);
             }
             if (!strcmp(op, "*")) {
                Integer x = l * r;
                uint64_t result = (uint64_t) l * (uint64_t) r;
-               printf("prnt : %s\n", x.print(outputl, sizeof(outputl)));
+
+               printf("prnt : %s\n", free_l = /*assign*/ x.print());
+               free((void *)free_l);
+
                printf("cast : %ld %s %ld = %ld\n", (uint64_t) l, op, (uint64_t) r, (uint64_t) x);
                printf("intr : %ld\n", (uint64_t) result);
             }
             if (!strcmp(op, "/")) {
                Integer x = l / r;
                uint64_t result = (uint64_t) l / (uint64_t) r;
-               printf("prnt : %s\n", x.print(outputl, sizeof(outputl)));
+
+               printf("prnt : %s\n", free_l = /*assign*/ x.print());
+               free((void *)free_l);
+
                printf("cast : %ld %s %ld = %ld\n", (uint64_t) l, op, (uint64_t) r, (uint64_t) x);
                printf("intr : %ld\n", (uint64_t) result);
             }
             if (!strcmp(op, "%")) {
                Integer x = l % r;
                uint64_t result = (uint64_t) l % (uint64_t) r;
-               printf("prnt : %s\n", x.print(outputl, sizeof(outputl)));
+
+               printf("prnt : %s\n", free_l = /*assign*/ x.print());
+               free((void *)free_l);
+
                printf("cast : %ld %s %ld = %ld\n", (uint64_t) l, op, (uint64_t) r, (uint64_t) x);
                printf("intr : %ld\n", (uint64_t) result);
             }
             if (!strcmp(op, "==")) {
                bool result = (l == r);
                printf("%s %s %s == %s\n",
-                  l.print(outputl, sizeof(outputl)),
+                  free_l = /*assign*/ l.print(),
                   op,
-                  r.print(outputr, sizeof(outputr)),
+                  free_r = /*assign*/ r.print(),
                   result ? "true" : "false");
+               free((void *)free_l);
+               free((void *)free_r);
             }
             if (!strcmp(op, "!=")) {
                bool result = (l != r);
                printf("%s %s %s == %s\n",
-                  l.print(outputl, sizeof(outputl)),
+                  free_l = /*assign*/ l.print(),
                   op,
-                  r.print(outputr, sizeof(outputr)),
+                  free_r = /*assign*/ r.print(),
                   result ? "true" : "false");
+               free((void *)free_l);
+               free((void *)free_r);
             }
             if (!strcmp(op, "<")) {
                bool result = (l < r);
                printf("%s %s %s == %s\n",
-                  l.print(outputl, sizeof(outputl)),
+                  free_l = /*assign*/ l.print(),
                   op,
-                  r.print(outputr, sizeof(outputr)),
+                  free_r = /*assign*/ r.print(),
                   result ? "true" : "false");
+               free((void *)free_l);
+               free((void *)free_r);
             }
             if (!strcmp(op, ">")) {
                bool result = (l > r);
                printf("%s %s %s == %s\n",
-                  l.print(outputl, sizeof(outputl)),
+                  free_l = /*assign*/ l.print(),
                   op,
-                  r.print(outputr, sizeof(outputr)),
+                  free_r = /*assign*/ r.print(),
                   result ? "true" : "false");
+               free((void *)free_l);
+               free((void *)free_r);
             }
             if (!strcmp(op, "<=")) {
                bool result = (l <= r);
                printf("%s %s %s == %s\n",
-                  l.print(outputl, sizeof(outputl)),
+                  free_l = /*assign*/ l.print(),
                   op,
-                  r.print(outputr, sizeof(outputr)),
+                  free_r = /*assign*/ r.print(),
                   result ? "true" : "false");
+               free((void *)free_l);
+               free((void *)free_r);
             }
             if (!strcmp(op, ">=")) {
                bool result = (l >= r);
                printf("%s %s %s == %s\n",
-                  l.print(outputl, sizeof(outputl)),
+                  free_l = /*assign*/ l.print(),
                   op,
-                  r.print(outputr, sizeof(outputr)),
+                  free_r = /*assign*/ r.print(),
                   result ? "true" : "false");
+               free((void *)free_l);
+               free((void *)free_r);
             }
          }
          catch (std::string e) {

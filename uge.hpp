@@ -50,9 +50,14 @@ class Uge {
       Uge& operator*=(const Uge& other);
       Uge& operator/=(const Uge& other);
 
-      char *debu_print(char *buf, size_t buflen) const;
-      char *frac_print(char *buf, size_t buflen) const;
-      char *deci_print(char *buf, size_t buflen) const;
+      // returns pointer that must be free'd
+      char *debu_print(void) const;
+
+      // returns pointer that must be free'd
+      char *frac_print(void) const;
+
+      // returns pointer that must be free'd
+      char *deci_print(void) const;
 
       explicit operator int64_t () const;
       explicit operator double() const;

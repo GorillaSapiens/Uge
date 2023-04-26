@@ -1,11 +1,10 @@
-#include <string>
-
 #include <math.h>
 #include <string.h>
 #include <assert.h>
 
 #include <string>
 
+#include "ramprintf.hpp"
 #include "integer.hpp"
 
 #define STRINGIFY(x) #x
@@ -29,6 +28,7 @@ Integer::~Integer() {
 void Integer::grow(void) {
    // NB: caller responsible for changing size
    data = (uint16_t *) realloc(data, sizeof(uint16_t) * (size + 1));
+   assert(data);
 }
 
 bool Integer::isZero(void) const {
@@ -61,7 +61,7 @@ Integer::Integer(const Integer &orig) {
 
 Integer& Integer::operator=(const Integer& other) {
    size = other.size;
-   data = (uint16_t *) realloc(data, sizeof(uint16_t) * size);
+   data = (uint16_t *) malloc(sizeof(uint16_t) * size);
    memcpy(data, other.data, sizeof(uint16_t) * size);
 
    return *this;
@@ -191,17 +191,6 @@ Integer Integer::operator - (Integer const & obj) const {
       res.grow();
       res.data[res.size] = result; // truncation happens here
       res.size++;
-   }
-
-   // shrink to fit
-   while (res.size && !res.data[res.size - 1]) {
-      res.size--;
-   }
-   if (!res.size) {
-      if (res.data) {
-         free((void *) res.data);
-      }
-      res.data = NULL;
    }
 
    res.fixZero();
@@ -339,6 +328,7 @@ void Integer::divide(
             rem.size++;
          }
          rem.data[0] = num.data[--place];
+         rem.fixZero();
 
          // put a zero in quot, if needed
          if (quot.size) {
@@ -497,29 +487,39 @@ Integer::operator uint64_t() const {
    return ret;
 }
 
-char *Integer::print(char *buf, size_t buflen) const {
+char *Integer::print(void) const {
    if (isZero()) {
-      *buf++ = '0';
-      *buf = 0;
-      return buf;
+      return strdup("0");
    }
 
    Integer copy = *this;
    Integer quot;
    Integer rem;
 
-   buf[0] = 0;
+   char *ret = NULL;
+
    while (copy > (uint64_t)0) {
       divide(copy, (uint64_t) 10, quot, rem);
-      memmove(buf + 1, buf, strlen(buf) + 1);
-      if (rem.size) {
-         *buf = '0' + rem.data[0];
+      if (!rem.isZero()) {
+         raprintf(ret, "%d", rem.data[0]);
       }
       else {
-         *buf = '0';
+         raprintf(ret, "0");
       }
       copy = quot;
    }
 
-   return buf;
+   strrev(ret);
+
+   return ret;
+}
+
+char *Integer::dprint(void) const {
+   char *ret = NULL;
+   raprintf(ret, "{%ld", size);
+   for (uint64_t i = 0; i < size; i++) {
+      raprintf(ret, ":%04x", data[i]);
+   }
+   raprintf(ret, "}");
+   return ret;
 }

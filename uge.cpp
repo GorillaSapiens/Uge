@@ -1,11 +1,10 @@
-#include <string>
-
 #include <math.h>
 #include <string.h>
 #include <assert.h>
 
 #include <string>
 
+#include "ramprintf.hpp"
 #include "uge.hpp"
 
 #define STRINGIFY(x) #x
@@ -220,7 +219,8 @@ Uge::Uge(const char *orig) {
       }
 
       if (negexp) {
-         Uge r(1, (uint64_t)0, 1, llpow10(exp));
+         Integer x = llpow10(exp);
+         Uge r(1, (uint64_t)0, 1, x);
          *this = *this * r;
          simplify();
       }
@@ -443,52 +443,55 @@ Uge& Uge::operator/=(const Uge& other) {
    return *this;
 }
 
-char *Uge::debu_print(char *buf, size_t buflen) const {
-   char whl_buf[128]; // TODO FIX scale these
-   char num_buf[128];
-   char den_buf[128];
+char *Uge::debu_print(void) const {
+   char *fw, *fn, *fd;
+   char *ret = NULL;
 
-   whl.print(whl_buf, sizeof(whl_buf));
-   num.print(num_buf, sizeof(num_buf));
-   den.print(den_buf, sizeof(den_buf));
+   raprintf(ret, "[%c%s'%s/%s]",
+      sign > 0 ? '+' : '-',
+      fw = /*assign*/ whl.dprint(),
+      fn = /*assign*/ num.dprint(),
+      fd = /*assign*/ den.dprint());
+   free((void *) fw);
+   free((void *) fn);
+   free((void *) fd);
 
-   snprintf(buf, buflen, "%c%s'%s/%s",
-         sign > 0 ? '+' : '-', whl_buf, num_buf, den_buf);
-   return buf;
+   return ret;
 }
 
-char *Uge::frac_print(char *buf, size_t buflen) const {
+char *Uge::frac_print(void) const {
    if (whl.isZero() && num.isZero()) {
-      snprintf(buf, buflen, "0");
-      return buf;
+      return strdup("0");
    }
    char mark[2] = {0, 0};
    if (sign < 0) {
       mark[0] = '-';
    }
    if (num.isZero()) {
-      char whl_buf[128];
-      whl.print(whl_buf, sizeof(whl_buf));
-      snprintf(buf, buflen, "%s%s", mark, whl_buf);
-      return buf;
+      char *p;
+      char *ret = mprintf("%s%s", mark, p = /*assign*/ whl.print());
+      free((void *)p);
+      return ret;
    }
    else if (whl.isZero()) {
-      char num_buf[128];
-      char den_buf[128];
-      num.print(num_buf, sizeof(num_buf));
-      den.print(den_buf, sizeof(den_buf));
-      snprintf(buf, buflen, "%s%s/%s", mark, num_buf, den_buf);
-      return buf;
+      char *p, *q;
+      char *ret = mprintf("%s%s/%s", mark,
+          p = /*assign*/ num.print(),
+          q = /*assign*/ den.print());
+      free((void *)p);
+      free((void *)q);
+      return ret;
    }
    else {
-      char whl_buf[128];
-      char num_buf[128];
-      char den_buf[128];
-      whl.print(whl_buf, sizeof(whl_buf));
-      num.print(num_buf, sizeof(num_buf));
-      den.print(den_buf, sizeof(den_buf));
-      snprintf(buf, buflen, "%s%s'%s/%s", mark, whl_buf, num_buf, den_buf);
-      return buf;
+      char *p, *q, *r;
+      char *ret = mprintf("%s%s'%s/%s", mark,
+          p = /*assign*/ whl.print(),
+          q = /*assign*/ num.print(),
+          r = /*assign*/ den.print());
+      free((void *)p);
+      free((void *)q);
+      free((void *)r);
+      return ret;
    }
 }
 
@@ -498,26 +501,22 @@ typedef struct remchain_s {
    struct remchain_s *next;
 } remchain_t;
 
-char *Uge::deci_print(char *buf, size_t buflen) const {
-   char *ret = buf;
+char *Uge::deci_print(void) const {
+   char *ret = NULL;
+   char *p;
 
    if (sign < 0) {
-      *buf++ = '-';
-      buflen--;
-      *buf = 0;
+      raprintf(ret, "-");
    }
-   whl.print(buf, buflen);
-   int rc = strlen(buf);
-   buf += rc;
-   buflen -= rc;
+
+   raprintf(ret, "%s", p = /*assign*/ whl.print());
+   free((void *)p);
 
    if (num.isZero()) {
       return ret;
    }
 
-   *buf++ = '.';
-   buflen--;
-   *buf = 0;
+   raprintf(ret, ".");
 
    remchain_t *head = NULL;
    remchain_t *tail = NULL;
@@ -546,17 +545,11 @@ char *Uge::deci_print(char *buf, size_t buflen) const {
       if (remainder.isZero() || remchain_count > MAX_DECI) {
          for (remchain_t *tmp = head; tmp; tmp = tmp->next) {
             if (tmp->digit >= 0) {
-               *buf++ = '0' + tmp->digit;
-               buflen--;
-               *buf = 0;
+               raprintf(ret, "%c", '0' + tmp->digit);
             }
          }
          if (remchain_count > MAX_DECI) {
-            *buf++ = '.';
-            *buf++ = '.';
-            *buf++ = '.';
-            *buf = 0;
-            buflen -= 3;
+            raprintf(ret, "...");
          }
          goto fini;
       }
@@ -565,19 +558,13 @@ char *Uge::deci_print(char *buf, size_t buflen) const {
             if (*(tmp->remainder) == *(tail->remainder)) {
                for (remchain_t *tmp2 = head; tmp2; tmp2 = tmp2->next) {
                   if (tmp2->digit >= 0) {
-                     *buf++ = '0' + tmp2->digit;
-                     buflen--;
-                     *buf = 0;
+                     raprintf(ret, "%c", '0' + tmp2->digit);
                   }
                   if (tmp2 == tmp) {
-                     *buf++ = '(';
-                     buflen--;
-                     *buf = 0;
+                     raprintf(ret, "(");
                   }
                }
-               *buf++ = ')';
-               buflen--;
-               *buf = 0;
+               raprintf(ret, ")");
                goto fini;
             }
          }

@@ -53,7 +53,11 @@ class Integer {
 
       explicit operator uint64_t() const;
 
-      char *print(char *buf, size_t buflen) const;
+      // returns pointer that must be free'd
+      char *print(void) const;
+
+      // returns pointer that must be free'd
+      char *dprint(void) const;
 };
 
 #endif // _INCLUDE_INTEGER_HPP_
