@@ -1,11 +1,10 @@
-#include <string>
-
 #include <math.h>
 #include <string.h>
 #include <assert.h>
 
 #include <string>
 
+#include "ramprintf.hpp"
 #include "rational.hpp"
 
 #define STRINGIFY(x) #x
@@ -425,72 +424,70 @@ bool Rational::operator >= (const Rational &other) const {
 #define P10_UINT64 10000000000000000000ULL   /* 19 zeroes */
 #define P10_LEN 19
 
-static int print_u128_u(uint128_t u128, char *buf)
-{
+// returns a pointer which must be free'd
+static char *print_u128_u(uint128_t u128) {
    uint64_t l1 = (u128 / ((uint128_t) P10_UINT64)) / ((uint128_t) P10_UINT64);
    uint64_t l2 = (u128 / ((uint128_t) P10_UINT64)) % ((uint128_t) P10_UINT64);
    uint64_t l3 = u128 % ((uint128_t) P10_UINT64);
 
    if (l1) {
-      return sprintf(buf, "%lu%0*lu%0*lu", l1, P10_LEN, l2, P10_LEN, l3);
+      return mprintf("%lu%0*lu%0*lu", l1, P10_LEN, l2, P10_LEN, l3);
    }
    else {
       if (l2) {
-         return sprintf(buf, "%lu%0*lu", l2, P10_LEN, l3);
+         return mprintf("%lu%0*lu", l2, P10_LEN, l3);
       }
       else {
-         return sprintf(buf, "%lu", l3);
+         return mprintf("%lu", l3);
       }
    }
 }
 
-char *Rational::debu_print(char *buf, size_t buflen) const {
-   char whl_buf[128];
-   char num_buf[128];
-   char den_buf[128];
+char *Rational::debu_print(void) const {
+   char *wp = print_u128_u(whl);
+   char *np = print_u128_u(num);
+   char *dp = print_u128_u(den);
 
-   print_u128_u(whl, whl_buf);
-   print_u128_u(num, num_buf);
-   print_u128_u(den, den_buf);
+   char *ret = mprintf("%c%s'%s/%s", sign > 0 ? '+' : '-', wp, np, dp);
 
-   snprintf(buf, buflen, "%c%s'%s/%s",
-         sign > 0 ? '+' : '-', whl_buf, num_buf, den_buf);
-   return buf;
+   free((void *)wp);
+   free((void *)np);
+   free((void *)dp);
+
+   return ret;
 }
 
-char *Rational::frac_print(char *buf, size_t buflen) const {
+char *Rational::frac_print(void) const {
    if (whl == 0 && num == 0) {
-      snprintf(buf, buflen, "0");
-      return buf;
+      return strdup("0");
    }
+
    char mark[2] = {0, 0};
    if (sign < 0) {
       mark[0] = '-';
    }
+
+   char *wp = print_u128_u(whl);
+   char *np = print_u128_u(num);
+   char *dp = print_u128_u(den);
+
+   char *ret;
+
    if (num == 0) {
-      char whl_buf[128];
-      print_u128_u(whl, whl_buf);
-      snprintf(buf, buflen, "%s%s", mark, whl_buf);
-      return buf;
+      ret = mprintf("%s%s", mark, wp);
    }
    else if (whl == 0) {
-      char num_buf[128];
-      char den_buf[128];
-      print_u128_u(num, num_buf);
-      print_u128_u(den, den_buf);
-      snprintf(buf, buflen, "%s%s/%s", mark, num_buf, den_buf);
-      return buf;
+      ret = mprintf("%s%s/%s", mark, np, dp);
    }
    else {
-      char whl_buf[128];
-      char num_buf[128];
-      char den_buf[128];
-      print_u128_u(whl, whl_buf);
-      print_u128_u(num, num_buf);
-      print_u128_u(den, den_buf);
-      snprintf(buf, buflen, "%s%s'%s/%s", mark, whl_buf, num_buf, den_buf);
-      return buf;
+      ret = mprintf("%s%s'%s/%s", mark, wp, np, dp);
    }
+
+   free((void *)wp);
+   free((void *)np);
+   free((void *)dp);
+
+   return ret;
 }
 
 typedef struct remchain_s {
@@ -499,25 +496,22 @@ typedef struct remchain_s {
    struct remchain_s *next;
 } remchain_t;
 
-char *Rational::deci_print(char *buf, size_t buflen) const {
-   char *ret = buf;
+char *Rational::deci_print(void) const {
+   char *ret = NULL;
 
    if (sign < 0) {
-      *buf++ = '-';
-      buflen--;
-      *buf = 0;
+      raprintf(ret, "-");
    }
-   int rc = print_u128_u(whl, buf);
-   buf += rc;
-   buflen -= rc;
+
+   char *wp = print_u128_u(whl);
+   raprintf(ret, "%s", wp);
+   free((void *)wp);
 
    if (num == 0) {
       return ret;
    }
 
-   *buf++ = '.';
-   buflen--;
-   *buf = 0;
+   raprintf(ret, ".");
 
    remchain_t *head = NULL;
    remchain_t *tail = NULL;
@@ -543,9 +537,7 @@ char *Rational::deci_print(char *buf, size_t buflen) const {
       if (remainder == 0) {
          for (remchain_t *tmp = head; tmp; tmp = tmp->next) {
             if (tmp->digit >= 0) {
-               *buf++ = '0' + tmp->digit;
-               buflen--;
-               *buf = 0;
+               raprintf(ret, "%c", '0' + tmp->digit);
             }
          }
          return ret;
@@ -555,19 +547,13 @@ char *Rational::deci_print(char *buf, size_t buflen) const {
             if (tmp->remainder == tail->remainder) {
                for (remchain_t *tmp2 = head; tmp2; tmp2 = tmp2->next) {
                   if (tmp2->digit >= 0) {
-                     *buf++ = '0' + tmp2->digit;
-                     buflen--;
-                     *buf = 0;
+                     raprintf(ret, "%c", '0' + tmp2->digit);
                   }
                   if (tmp2 == tmp) {
-                     *buf++ = '(';
-                     buflen--;
-                     *buf = 0;
+                     raprintf(ret, "(");
                   }
                }
-               *buf++ = ')';
-               buflen--;
-               *buf = 0;
+               raprintf(ret, ")");
                return ret;
             }
          }
