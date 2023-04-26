@@ -43,6 +43,16 @@ void Integer::setZero(void) {
    }
 }
 
+void Integer::fixZero(void) {
+   while (size && data[size - 1] == 0) {
+      size--;
+      if (size == 0 && data) {
+         free((void *)data);
+         data = NULL;
+      }
+   }
+}
+
 Integer::Integer(const Integer &orig) {
    size = orig.size;
    data = (uint16_t *) malloc(sizeof(uint16_t) * size);
@@ -105,6 +115,8 @@ Integer::Integer(const char *orig) {
       }
       orig++;
    }
+
+   fixZero();
 }
 
 Integer::Integer(uint64_t i) {
@@ -117,6 +129,8 @@ Integer::Integer(uint64_t i) {
       size++;
       i >>= 16;
    }
+
+   fixZero();
 }
 
 Integer Integer::operator + (Integer const & obj) const {
@@ -141,6 +155,7 @@ Integer Integer::operator + (Integer const & obj) const {
       res.size++;
    }
 
+   res.fixZero();
    return res;
 }
 
@@ -189,6 +204,7 @@ Integer Integer::operator - (Integer const & obj) const {
       res.data = NULL;
    }
 
+   res.fixZero();
    return res;
 }
 
@@ -227,6 +243,7 @@ Integer Integer::operator * (Integer const & obj) const {
       }
    }
 
+   res.fixZero();
    return res;
 }
 
@@ -358,6 +375,9 @@ void Integer::divide(
       }
    }
 
+   quot.fixZero();
+   rem.fixZero();
+
    // that's it, we're done!
 }
 
@@ -478,6 +498,12 @@ Integer::operator uint64_t() const {
 }
 
 char *Integer::print(char *buf, size_t buflen) const {
+   if (isZero()) {
+      *buf++ = '0';
+      *buf = 0;
+      return buf;
+   }
+
    Integer copy = *this;
    Integer quot;
    Integer rem;

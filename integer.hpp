@@ -18,6 +18,9 @@ class Integer {
       // helper function
       void grow(void);
 
+      // helper function
+      void fixZero(void);
+
    public:
       Integer();
       Integer(const Integer &orig); // copy constructor
