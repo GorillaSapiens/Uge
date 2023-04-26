@@ -16,7 +16,7 @@
 
 #define BIGPOWEROF2 512
 
-#define MAX_DECI 256
+#define MAX_DECI 512
 
 static Integer gcd(Integer x, Integer y) {
    // euclid
@@ -495,6 +495,7 @@ char *Uge::frac_print(char *buf, size_t buflen) const {
 typedef struct remchain_s {
    int digit;
    Integer *remainder;
+   struct remchain_s *prev;
    struct remchain_s *next;
 } remchain_t;
 
@@ -521,11 +522,12 @@ char *Uge::deci_print(char *buf, size_t buflen) const {
 
    remchain_t *head = NULL;
    remchain_t *tail = NULL;
+   remchain_t *tortoise = NULL;
    int remchain_count = 0;
 
    Integer remainder = num;
 
-   head = tail = (remchain_t *) malloc(sizeof(remchain_t));
+   head = tail = tortoise = (remchain_t *) malloc(sizeof(remchain_t));
    remchain_count++;
    head->digit = -1;
    head->remainder = new Integer(remainder);
@@ -537,6 +539,8 @@ char *Uge::deci_print(char *buf, size_t buflen) const {
       remainder = remainder % den;
 
       tail->next = (remchain_t *) malloc(sizeof(remchain_t));
+      tail->next->next = NULL;
+      tail->next->prev = tail;
       remchain_count++;
       tail->next->digit = (uint64_t) digit;
       tail->next->remainder = new Integer(remainder);
@@ -561,19 +565,31 @@ char *Uge::deci_print(char *buf, size_t buflen) const {
          goto fini;
       }
       else {
-         for (remchain_t *tmp = head; tmp != tail; tmp = tmp->next) {
-            if (*(tmp->remainder) == *(tail->remainder)) {
-               for (remchain_t *tmp2 = head; tmp2; tmp2 = tmp2->next) {
-                  if (tmp2->digit >= 0) {
-                     *buf++ = '0' + tmp2->digit;
-                     buflen--;
+         if ((remchain_count % 2) == 1) {
+            tortoise = tortoise->next;
+            if (*(tortoise->remainder) == *(tail->remainder)) {
+               // loop detected
+               while (tortoise->digit != -1 && tortoise->prev &&
+                  *(tortoise->prev->remainder) == *(tail->prev->remainder)) {
+                  tortoise = tortoise->prev;
+                  tail = tail->prev;
+               }
+               for (remchain_t *tmp = head; tmp != tail; tmp = tmp->next) {
+                  if (tmp->digit >= 0) {
+                     *buf++ = '0' + tmp->digit;
                      *buf = 0;
+                     buflen--;
                   }
-                  if (tmp2 == tmp) {
+                  if (tmp == tortoise) {
                      *buf++ = '(';
-                     buflen--;
                      *buf = 0;
+                     buflen--;
                   }
+               }
+               if (tail->digit >= 0) {
+                  *buf++ = '0' + tail->digit;
+                  *buf = 0;
+                  buflen--;
                }
                *buf++ = ')';
                buflen--;
