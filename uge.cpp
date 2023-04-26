@@ -5,6 +5,7 @@
 #include <string>
 
 #include "ramprintf.hpp"
+#include "gcstr.hpp"
 #include "uge.hpp"
 
 #define STRINGIFY(x) #x
@@ -444,17 +445,13 @@ Uge& Uge::operator/=(const Uge& other) {
 }
 
 char *Uge::debu_print(void) const {
-   char *fw, *fn, *fd;
    char *ret = NULL;
 
    raprintf(ret, "[%c%s'%s/%s]",
       sign > 0 ? '+' : '-',
-      fw = /*assign*/ whl.dprint(),
-      fn = /*assign*/ num.dprint(),
-      fd = /*assign*/ den.dprint());
-   free((void *) fw);
-   free((void *) fn);
-   free((void *) fd);
+      GCSTR whl.dprint(),
+      GCSTR num.dprint(),
+      GCSTR den.dprint());
 
    return ret;
 }
@@ -474,23 +471,16 @@ char *Uge::frac_print(void) const {
       return ret;
    }
    else if (whl.isZero()) {
-      char *p, *q;
       char *ret = mprintf("%s%s/%s", mark,
-          p = /*assign*/ num.print(),
-          q = /*assign*/ den.print());
-      free((void *)p);
-      free((void *)q);
+          GCSTR num.print(),
+          GCSTR den.print());
       return ret;
    }
    else {
-      char *p, *q, *r;
       char *ret = mprintf("%s%s'%s/%s", mark,
-          p = /*assign*/ whl.print(),
-          q = /*assign*/ num.print(),
-          r = /*assign*/ den.print());
-      free((void *)p);
-      free((void *)q);
-      free((void *)r);
+          GCSTR whl.print(),
+          GCSTR num.print(),
+          GCSTR den.print());
       return ret;
    }
 }
@@ -503,14 +493,12 @@ typedef struct remchain_s {
 
 char *Uge::deci_print(void) const {
    char *ret = NULL;
-   char *p;
 
    if (sign < 0) {
       raprintf(ret, "-");
    }
 
-   raprintf(ret, "%s", p = /*assign*/ whl.print());
-   free((void *)p);
+   raprintf(ret, "%s", GCSTR whl.print());
 
    if (num.isZero()) {
       return ret;

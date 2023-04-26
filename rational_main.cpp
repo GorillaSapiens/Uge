@@ -9,6 +9,7 @@
 #include <string.h>
 #include <assert.h>
 
+#include "gcstr.hpp"
 #include "rational.hpp"
 
 // not sure why this is needed, maybe deprecateed
@@ -24,9 +25,6 @@ int main(int argc, char **argv) {
       char op[32];
       char bufr[512];
 
-      char *fl;
-      char *fr;
-
       if (3 == sscanf(buf, "%s %s %s\n", bufl, op, bufr)) {
          Rational l(bufl);
          Rational r(bufr);
@@ -34,19 +32,19 @@ int main(int argc, char **argv) {
          printf("== input ==\n");
 
          printf("debu_print: %s %s %s\n",
-            fl = /*assign*/ l.debu_print(), op, fr = /*assign*/ r.debu_print());
-         free((void *)fl);
-         free((void *)fr);
+               GCSTR l.debu_print(),
+               op,
+               GCSTR r.debu_print());
 
          printf("frac_print: %s %s %s\n",
-            fl = /*assign*/ l.frac_print(), op, fr = /*assign*/ r.frac_print());
-         free((void *)fl);
-         free((void *)fr);
+               GCSTR l.frac_print(),
+               op,
+               GCSTR r.frac_print());
 
          printf("deci_print: %s %s %s\n",
-            fl = /*assign*/ l.deci_print(), op, fr = /*assign*/ r.deci_print());
-         free((void *)fl);
-         free((void *)fr);
+               GCSTR l.deci_print(),
+               op,
+               GCSTR r.deci_print());
 
          printf("== result ==\n");
 
@@ -54,110 +52,86 @@ int main(int argc, char **argv) {
             if (!strcmp(op, "+")) {
                Rational x = l + r;
                double result = (double) l + (double) r;
-               printf("debu : %s\n", fl = /*assign*/ x.debu_print());
-               free((void *)fl);
-               printf("frac : %s\n", fl = /*assign*/ x.frac_print());
-               free((void *)fl);
-               printf("deci : %s\n", fl = /*assign*/ x.deci_print());
-               free((void *)fl);
+               printf("debu : %s\n", GCSTR x.debu_print());
+               printf("frac : %s\n", GCSTR x.frac_print());
+               printf("deci : %s\n", GCSTR x.deci_print());
                printf("(bad) cast : %0.16f %s %0.16f = %0.16f\n", (double) l, op, (double) r, (double) x);
                printf("(bad) dble : %0.16f\n", (double) result);
             }
             if (!strcmp(op, "-")) {
                Rational x = l - r;
                double result = (double) l - (double) r;
-               printf("debu : %s\n", fl = /*assign*/ x.debu_print());
-               free((void *)fl);
-               printf("frac : %s\n", fl = /*assign*/ x.frac_print());
-               free((void *)fl);
-               printf("deci : %s\n", fl = /*assign*/ x.deci_print());
-               free((void *)fl);
+               printf("debu : %s\n", GCSTR x.debu_print());
+               printf("frac : %s\n", GCSTR x.frac_print());
+               printf("deci : %s\n", GCSTR x.deci_print());
                printf("(bad) cast : %0.16f %s %0.16f = %0.16f\n", (double) l, op, (double) r, (double) x);
                printf("(bad) dble : %0.16f\n", (double) result);
             }
             if (!strcmp(op, "*")) {
                Rational x = l * r;
                double result = (double) l * (double) r;
-               printf("debu : %s\n", fl = /*assign*/ x.debu_print());
-               free((void *)fl);
-               printf("frac : %s\n", fl = /*assign*/ x.frac_print());
-               free((void *)fl);
-               printf("deci : %s\n", fl = /*assign*/ x.deci_print());
-               free((void *)fl);
+               printf("debu : %s\n", GCSTR x.debu_print());
+               printf("frac : %s\n", GCSTR x.frac_print());
+               printf("deci : %s\n", GCSTR x.deci_print());
                printf("(bad) cast : %0.16f %s %0.16f = %0.16f\n", (double) l, op, (double) r, (double) x);
                printf("(bad) dble : %0.16f\n", (double) result);
             }
             if (!strcmp(op, "/")) {
                Rational x = l / r;
                double result = (double) l / (double) r;
-               printf("debu : %s\n", fl = /*assign*/ x.debu_print());
-               free((void *)fl);
-               printf("frac : %s\n", fl = /*assign*/ x.frac_print());
-               free((void *)fl);
-               printf("deci : %s\n", fl = /*assign*/ x.deci_print());
-               free((void *)fl);
+               printf("debu : %s\n", GCSTR x.debu_print());
+               printf("frac : %s\n", GCSTR x.frac_print());
+               printf("deci : %s\n", GCSTR x.deci_print());
                printf("(bad) cast : %0.16f %s %0.16f = %0.16f\n", (double) l, op, (double) r, (double) x);
                printf("(bad) dble : %0.16f\n", (double) result);
             }
             if (!strcmp(op, "==")) {
                bool result = (l == r);
                printf("%s %s %s == %s\n",
-                  fl = /*assign*/ l.frac_print(),
-                  op,
-                  fr = /*assign*/ r.frac_print(),
-                  result ? "true" : "false");
-               free((void *)fl);
-               free((void *)fr);
+                     GCSTR l.frac_print(),
+                     op,
+                     GCSTR r.frac_print(),
+                     result ? "true" : "false");
             }
             if (!strcmp(op, "!=")) {
                bool result = (l != r);
                printf("%s %s %s == %s\n",
-                  fl = /*assign*/ l.frac_print(),
-                  op,
-                  fr = /*assign*/ r.frac_print(),
-                  result ? "true" : "false");
-               free((void *)fl);
-               free((void *)fr);
+                     GCSTR l.frac_print(),
+                     op,
+                     GCSTR r.frac_print(),
+                     result ? "true" : "false");
             }
             if (!strcmp(op, "<")) {
                bool result = (l < r);
                printf("%s %s %s == %s\n",
-                  fl = /*assign*/ l.frac_print(),
-                  op,
-                  fr = /*assign*/ r.frac_print(),
-                  result ? "true" : "false");
-               free((void *)fl);
-               free((void *)fr);
+                     GCSTR l.frac_print(),
+                     op,
+                     GCSTR r.frac_print(),
+                     result ? "true" : "false");
             }
             if (!strcmp(op, ">")) {
                bool result = (l > r);
                printf("%s %s %s == %s\n",
-                  fl = /*assign*/ l.frac_print(),
-                  op,
-                  fr = /*assign*/ r.frac_print(),
-                  result ? "true" : "false");
-               free((void *)fl);
-               free((void *)fr);
+                     GCSTR l.frac_print(),
+                     op,
+                     GCSTR r.frac_print(),
+                     result ? "true" : "false");
             }
             if (!strcmp(op, "<=")) {
                bool result = (l <= r);
                printf("%s %s %s == %s\n",
-                  fl = /*assign*/ l.frac_print(),
-                  op,
-                  fr = /*assign*/ r.frac_print(),
-                  result ? "true" : "false");
-               free((void *)fl);
-               free((void *)fr);
+                     GCSTR l.frac_print(),
+                     op,
+                     GCSTR r.frac_print(),
+                     result ? "true" : "false");
             }
             if (!strcmp(op, ">=")) {
                bool result = (l >= r);
                printf("%s %s %s == %s\n",
-                  fl = /*assign*/ l.frac_print(),
-                  op,
-                  fr = /*assign*/ r.frac_print(),
-                  result ? "true" : "false");
-               free((void *)fl);
-               free((void *)fr);
+                     GCSTR l.frac_print(),
+                     op,
+                     GCSTR r.frac_print(),
+                     result ? "true" : "false");
             }
          }
          catch (std::string e) {
