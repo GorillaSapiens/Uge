@@ -51,8 +51,8 @@ int main(int argc, char **argv) {
                printf("debu : %s\n", x.debu_print(outputl, sizeof(outputl)));
                printf("frac : %s\n", x.frac_print(outputl, sizeof(outputl)));
                printf("deci : %s\n", x.deci_print(outputl, sizeof(outputl)));
-               printf("cast : %0.16f %s %0.16f = %0.16f\n", (double) l, op, (double) r, (double) x);
-               printf("dble : %0.16f\n", (double) result);
+               printf("(bad) cast : %0.16f %s %0.16f = %0.16f\n", (double) l, op, (double) r, (double) x);
+               printf("(bad) dble : %0.16f\n", (double) result);
             }
             if (!strcmp(op, "-")) {
                Rational x = l - r;
@@ -60,8 +60,8 @@ int main(int argc, char **argv) {
                printf("debu : %s\n", x.debu_print(outputl, sizeof(outputl)));
                printf("frac : %s\n", x.frac_print(outputl, sizeof(outputl)));
                printf("deci : %s\n", x.deci_print(outputl, sizeof(outputl)));
-               printf("cast : %0.16f %s %0.16f = %0.16f\n", (double) l, op, (double) r, (double) x);
-               printf("dble : %0.16f\n", (double) result);
+               printf("(bad) cast : %0.16f %s %0.16f = %0.16f\n", (double) l, op, (double) r, (double) x);
+               printf("(bad) dble : %0.16f\n", (double) result);
             }
             if (!strcmp(op, "*")) {
                Rational x = l * r;
@@ -69,8 +69,8 @@ int main(int argc, char **argv) {
                printf("debu : %s\n", x.debu_print(outputl, sizeof(outputl)));
                printf("frac : %s\n", x.frac_print(outputl, sizeof(outputl)));
                printf("deci : %s\n", x.deci_print(outputl, sizeof(outputl)));
-               printf("cast : %0.16f %s %0.16f = %0.16f\n", (double) l, op, (double) r, (double) x);
-               printf("dble : %0.16f\n", (double) result);
+               printf("(bad) cast : %0.16f %s %0.16f = %0.16f\n", (double) l, op, (double) r, (double) x);
+               printf("(bad) dble : %0.16f\n", (double) result);
             }
             if (!strcmp(op, "/")) {
                Rational x = l / r;
@@ -78,8 +78,8 @@ int main(int argc, char **argv) {
                printf("debu : %s\n", x.debu_print(outputl, sizeof(outputl)));
                printf("frac : %s\n", x.frac_print(outputl, sizeof(outputl)));
                printf("deci : %s\n", x.deci_print(outputl, sizeof(outputl)));
-               printf("cast : %0.16f %s %0.16f = %0.16f\n", (double) l, op, (double) r, (double) x);
-               printf("dble : %0.16f\n", (double) result);
+               printf("(bad) cast : %0.16f %s %0.16f = %0.16f\n", (double) l, op, (double) r, (double) x);
+               printf("(bad) dble : %0.16f\n", (double) result);
             }
             if (!strcmp(op, "==")) {
                bool result = (l == r);

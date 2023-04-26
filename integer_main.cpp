@@ -48,8 +48,8 @@ int main(int argc, char **argv) {
                printf("prnt : %s\n", free_l = /*assign*/ x.print());
                free((void *)free_l);
 
-               printf("cast : %ld %s %ld = %ld\n", (uint64_t) l, op, (uint64_t) r, (uint64_t) x);
-               printf("intr : %ld\n", (uint64_t) result);
+               printf("(bad) cast : %ld %s %ld = %ld\n", (uint64_t) l, op, (uint64_t) r, (uint64_t) x);
+               printf("(bad) intr : %ld\n", (uint64_t) result);
             }
             if (!strcmp(op, "-")) {
                Integer x = l - r;
@@ -58,8 +58,8 @@ int main(int argc, char **argv) {
                printf("prnt : %s\n", free_l = /*assign*/ x.print());
                free((void *)free_l);
 
-               printf("cast : %ld %s %ld = %ld\n", (uint64_t) l, op, (uint64_t) r, (uint64_t) x);
-               printf("intr : %ld\n", (uint64_t) result);
+               printf("(bad) cast : %ld %s %ld = %ld\n", (uint64_t) l, op, (uint64_t) r, (uint64_t) x);
+               printf("(bad) intr : %ld\n", (uint64_t) result);
             }
             if (!strcmp(op, "*")) {
                Integer x = l * r;
@@ -68,8 +68,8 @@ int main(int argc, char **argv) {
                printf("prnt : %s\n", free_l = /*assign*/ x.print());
                free((void *)free_l);
 
-               printf("cast : %ld %s %ld = %ld\n", (uint64_t) l, op, (uint64_t) r, (uint64_t) x);
-               printf("intr : %ld\n", (uint64_t) result);
+               printf("(bad) cast : %ld %s %ld = %ld\n", (uint64_t) l, op, (uint64_t) r, (uint64_t) x);
+               printf("(bad) intr : %ld\n", (uint64_t) result);
             }
             if (!strcmp(op, "/")) {
                Integer x = l / r;
@@ -78,8 +78,8 @@ int main(int argc, char **argv) {
                printf("prnt : %s\n", free_l = /*assign*/ x.print());
                free((void *)free_l);
 
-               printf("cast : %ld %s %ld = %ld\n", (uint64_t) l, op, (uint64_t) r, (uint64_t) x);
-               printf("intr : %ld\n", (uint64_t) result);
+               printf("(bad) cast : %ld %s %ld = %ld\n", (uint64_t) l, op, (uint64_t) r, (uint64_t) x);
+               printf("(bad) intr : %ld\n", (uint64_t) result);
             }
             if (!strcmp(op, "%")) {
                Integer x = l % r;
@@ -88,8 +88,8 @@ int main(int argc, char **argv) {
                printf("prnt : %s\n", free_l = /*assign*/ x.print());
                free((void *)free_l);
 
-               printf("cast : %ld %s %ld = %ld\n", (uint64_t) l, op, (uint64_t) r, (uint64_t) x);
-               printf("intr : %ld\n", (uint64_t) result);
+               printf("(bad) cast : %ld %s %ld = %ld\n", (uint64_t) l, op, (uint64_t) r, (uint64_t) x);
+               printf("(bad) intr : %ld\n", (uint64_t) result);
             }
             if (!strcmp(op, "==")) {
                bool result = (l == r);

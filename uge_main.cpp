@@ -85,8 +85,8 @@ int main(int argc, char **argv) {
                free((void *)fl);
                printf("deci : %s\n", fl = /*assign*/ x.deci_print());
                free((void *)fl);
-               printf("cast : %0.16f %s %0.16f = %0.16f\n", (double) l, op, (double) r, (double) x);
-               printf("dble : %0.16f\n", (double) result);
+               printf("(bad) cast : %0.16f %s %0.16f = %0.16f\n", (double) l, op, (double) r, (double) x);
+               printf("(bad) dble : %0.16f\n", (double) result);
             }
             if (!strcmp(op, "-")) {
                Uge x = l - r;
@@ -97,8 +97,8 @@ int main(int argc, char **argv) {
                free((void *)fl);
                printf("deci : %s\n", fl = /*assign*/ x.deci_print());
                free((void *)fl);
-               printf("cast : %0.16f %s %0.16f = %0.16f\n", (double) l, op, (double) r, (double) x);
-               printf("dble : %0.16f\n", (double) result);
+               printf("(bad) cast : %0.16f %s %0.16f = %0.16f\n", (double) l, op, (double) r, (double) x);
+               printf("(bad) dble : %0.16f\n", (double) result);
             }
             if (!strcmp(op, "*")) {
                Uge x = l * r;
@@ -109,8 +109,8 @@ int main(int argc, char **argv) {
                free((void *)fl);
                printf("deci : %s\n", fl = /*assign*/ x.deci_print());
                free((void *)fl);
-               printf("cast : %0.16f %s %0.16f = %0.16f\n", (double) l, op, (double) r, (double) x);
-               printf("dble : %0.16f\n", (double) result);
+               printf("(bad) cast : %0.16f %s %0.16f = %0.16f\n", (double) l, op, (double) r, (double) x);
+               printf("(bad) dble : %0.16f\n", (double) result);
             }
             if (!strcmp(op, "/")) {
                Uge x = l / r;
@@ -121,8 +121,8 @@ int main(int argc, char **argv) {
                free((void *)fl);
                printf("deci : %s\n", fl = /*assign*/ x.deci_print());
                free((void *)fl);
-               printf("cast : %0.16f %s %0.16f = %0.16f\n", (double) l, op, (double) r, (double) x);
-               printf("dble : %0.16f\n", (double) result);
+               printf("(bad) cast : %0.16f %s %0.16f = %0.16f\n", (double) l, op, (double) r, (double) x);
+               printf("(bad) dble : %0.16f\n", (double) result);
             }
             if (!strcmp(op, "==")) {
                bool result = (l == r);
