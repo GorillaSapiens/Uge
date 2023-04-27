@@ -4,15 +4,10 @@
 
 #include <string>
 
+#include "err.hpp"
 #include "ramprintf.hpp"
 #include "gcstr.hpp"
 #include "uge.hpp"
-
-#define STRINGIFY(x) #x
-#define TOSTRING(x) STRINGIFY(x)
-#define AT __FILE__ ":" TOSTRING(__LINE__)
-
-#define ERR(x) std::string(x " at " AT)
 
 #define BIGPOWEROF2 512
 

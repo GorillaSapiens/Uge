@@ -4,14 +4,9 @@
 
 #include <string>
 
+#include "err.hpp"
 #include "ramprintf.hpp"
 #include "integer.hpp"
-
-#define STRINGIFY(x) #x
-#define TOSTRING(x) STRINGIFY(x)
-#define AT __FILE__ ":" TOSTRING(__LINE__)
-
-#define ERR(x) std::string(x " at " AT)
 
 Integer::Integer() {
    size = 0;
