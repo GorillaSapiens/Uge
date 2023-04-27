@@ -31,107 +31,60 @@ int main(int argc, char **argv) {
 
          printf("== input ==\n");
 
-         printf("debu_print: %s %s %s\n",
-               GCSTR l.debu_print(),
-               op,
-               GCSTR r.debu_print());
-
-         printf("frac_print: %s %s %s\n",
-               GCSTR l.frac_print(),
-               op,
-               GCSTR r.frac_print());
-
-         printf("deci_print: %s %s %s\n",
-               GCSTR l.deci_print(),
-               op,
-               GCSTR r.deci_print());
+         printf("debu_print: %s %s %s\n", GCSTR l.debu_print(), op, GCSTR r.debu_print());
+         printf("frac_print: %s %s %s\n", GCSTR l.frac_print(), op, GCSTR r.frac_print());
+         printf("deci_print: %s %s %s\n", GCSTR l.deci_print(), op, GCSTR r.deci_print());
 
          printf("== result ==\n");
 
          try {
             if (!strcmp(op, "+")) {
                Rational x = l + r;
-               double result = (double) l + (double) r;
                printf("debu : %s\n", GCSTR x.debu_print());
                printf("frac : %s\n", GCSTR x.frac_print());
                printf("deci : %s\n", GCSTR x.deci_print());
-               printf("(bad) cast : %0.16f %s %0.16f = %0.16f\n", (double) l, op, (double) r, (double) x);
-               printf("(bad) dble : %0.16f\n", (double) result);
             }
             if (!strcmp(op, "-")) {
                Rational x = l - r;
-               double result = (double) l - (double) r;
                printf("debu : %s\n", GCSTR x.debu_print());
                printf("frac : %s\n", GCSTR x.frac_print());
                printf("deci : %s\n", GCSTR x.deci_print());
-               printf("(bad) cast : %0.16f %s %0.16f = %0.16f\n", (double) l, op, (double) r, (double) x);
-               printf("(bad) dble : %0.16f\n", (double) result);
             }
             if (!strcmp(op, "*")) {
                Rational x = l * r;
-               double result = (double) l * (double) r;
                printf("debu : %s\n", GCSTR x.debu_print());
                printf("frac : %s\n", GCSTR x.frac_print());
                printf("deci : %s\n", GCSTR x.deci_print());
-               printf("(bad) cast : %0.16f %s %0.16f = %0.16f\n", (double) l, op, (double) r, (double) x);
-               printf("(bad) dble : %0.16f\n", (double) result);
             }
             if (!strcmp(op, "/")) {
                Rational x = l / r;
-               double result = (double) l / (double) r;
                printf("debu : %s\n", GCSTR x.debu_print());
                printf("frac : %s\n", GCSTR x.frac_print());
                printf("deci : %s\n", GCSTR x.deci_print());
-               printf("(bad) cast : %0.16f %s %0.16f = %0.16f\n", (double) l, op, (double) r, (double) x);
-               printf("(bad) dble : %0.16f\n", (double) result);
             }
             if (!strcmp(op, "==")) {
                bool result = (l == r);
-               printf("%s %s %s == %s\n",
-                     GCSTR l.frac_print(),
-                     op,
-                     GCSTR r.frac_print(),
-                     result ? "true" : "false");
+               printf("%s\n", result ? "true" : "false");
             }
             if (!strcmp(op, "!=")) {
                bool result = (l != r);
-               printf("%s %s %s == %s\n",
-                     GCSTR l.frac_print(),
-                     op,
-                     GCSTR r.frac_print(),
-                     result ? "true" : "false");
+               printf("%s\n", result ? "true" : "false");
             }
             if (!strcmp(op, "<")) {
                bool result = (l < r);
-               printf("%s %s %s == %s\n",
-                     GCSTR l.frac_print(),
-                     op,
-                     GCSTR r.frac_print(),
-                     result ? "true" : "false");
+               printf("%s\n", result ? "true" : "false");
             }
             if (!strcmp(op, ">")) {
                bool result = (l > r);
-               printf("%s %s %s == %s\n",
-                     GCSTR l.frac_print(),
-                     op,
-                     GCSTR r.frac_print(),
-                     result ? "true" : "false");
+               printf("%s\n", result ? "true" : "false");
             }
             if (!strcmp(op, "<=")) {
                bool result = (l <= r);
-               printf("%s %s %s == %s\n",
-                     GCSTR l.frac_print(),
-                     op,
-                     GCSTR r.frac_print(),
-                     result ? "true" : "false");
+               printf("%s\n", result ? "true" : "false");
             }
             if (!strcmp(op, ">=")) {
                bool result = (l >= r);
-               printf("%s %s %s == %s\n",
-                     GCSTR l.frac_print(),
-                     op,
-                     GCSTR r.frac_print(),
-                     result ? "true" : "false");
+               printf("%s\n", result ? "true" : "false");
             }
          }
          catch (std::string e) {
