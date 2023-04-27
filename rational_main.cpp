@@ -25,7 +25,24 @@ int main(int argc, char **argv) {
       char op[32];
       char bufr[512];
 
-      if (3 == sscanf(buf, "%s %s %s\n", bufl, op, bufr)) {
+      int res = sscanf(buf, "%s %s %s\n", bufl, op, bufr);
+
+      if (-1 == res) {
+         printf("exiting\n");
+         return 0;
+      }
+      else if (1 == res) {
+         Rational l(bufl);
+
+         printf("== input ==\n");
+
+         printf("debu_print: %s\n", GCSTR l.debu_print());
+         printf("frac_print: %s\n", GCSTR l.frac_print());
+         printf("deci_print: %s\n", GCSTR l.deci_print());
+
+         printf("== done==\n\n");
+      }
+      else if (3 == res) {
          Rational l(bufl);
          Rational r(bufr);
 

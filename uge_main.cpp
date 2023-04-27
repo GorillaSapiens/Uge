@@ -27,17 +27,18 @@ int main(int argc, char **argv) {
 
       int res = sscanf(buf, "%s %s %s\n", bufl, op, bufr);
 
-      if (1 == res) {
+      if (-1 == res) {
+         printf("exiting\n");
+         return 0;
+      }
+      else if (1 == res) {
          Uge l(bufl);
 
-         printf("debu_print: %s\n",
-               GCSTR l.debu_print());
+         printf("== input ==\n");
 
-         printf("frac_print: %s\n",
-               GCSTR l.frac_print());
-
-         printf("deci_print: %s\n",
-               GCSTR l.deci_print());
+         printf("debu_print: %s\n", GCSTR l.debu_print());
+         printf("frac_print: %s\n", GCSTR l.frac_print());
+         printf("deci_print: %s\n", GCSTR l.deci_print());
 
          printf("== done==\n\n");
       }
@@ -47,20 +48,9 @@ int main(int argc, char **argv) {
 
          printf("== input ==\n");
 
-         printf("debu_print: %s %s %s\n",
-               GCSTR l.debu_print(),
-               op,
-               GCSTR r.debu_print());
-
-         printf("frac_print: %s %s %s\n",
-               GCSTR l.frac_print(),
-               op,
-               GCSTR r.frac_print());
-
-         printf("deci_print: %s %s %s\n",
-               GCSTR l.deci_print(),
-               op,
-               GCSTR r.deci_print());
+         printf("debu_print: %s %s %s\n", GCSTR l.debu_print(), op, GCSTR r.debu_print());
+         printf("frac_print: %s %s %s\n", GCSTR l.frac_print(), op, GCSTR r.frac_print());
+         printf("deci_print: %s %s %s\n", GCSTR l.deci_print(), op, GCSTR r.deci_print());
 
          printf("== result ==\n");
 

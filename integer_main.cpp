@@ -25,7 +25,21 @@ int main(int argc, char **argv) {
       char op[32];
       char bufr[512];
 
-      if (3 == sscanf(buf, "%s %s %s\n", bufl, op, bufr)) {
+      int res = sscanf(buf, "%s %s %s\n", bufl, op, bufr);
+
+      if (-1 == res) {
+         printf("exiting\n");
+         return 0;
+      }
+      else if (1 == res) {
+         Integer l(bufl);
+
+         printf("== input ==\n");
+         printf("print: %s\n", GCSTR l.print());
+
+         printf("== done==\n\n");
+      }
+      else if (3 == res) {
          Integer l(bufl);
          Integer r(bufr);
 
