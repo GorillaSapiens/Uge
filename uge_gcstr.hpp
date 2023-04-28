@@ -4,6 +4,8 @@
 #include <stdlib.h>
 
 namespace uge {
+
+   /// A helper class to assist with garbage collection of pointers.
    class _gcstr {
       private:
          const char *p;
@@ -23,6 +25,13 @@ namespace uge {
          }
    };
 };
+
+/// example usage:
+///
+/// printf("%s\n", GCSTR strdup("hello world"));
+///
+/// would make sure the malloc'd string "hello world" will
+/// get free'd after the printf() call.
 
 #define GCSTR (const char *)(_gcstr)
 
