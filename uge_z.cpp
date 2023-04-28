@@ -619,10 +619,18 @@ char *Z::print(void) const {
 
 char *Z::dprint(void) const {
    char *ret = NULL;
-   raprintf(ret, "{%ld", size);
-   for (uint64_t i = 0; i < size; i++) {
-      raprintf(ret, ":%04x", data[i]);
+
+   if (isZero()) {
+      return strdup("{zero}");
    }
-   raprintf(ret, "}");
+
+   for (uint64_t j = 0; j < size; j++) {
+      uint64_t i = size - 1 - j;
+      raprintf(ret, "%s%04x%s",
+         j == 0 ? "{" : ":",
+         data[i],
+         i == 0 ? "}" : "");
+
+   }
    return ret;
 }
