@@ -37,6 +37,7 @@ int main(int argc, char **argv) {
          printf("== input ==\n");
          printf("print: %s\n", GCSTR l.print());
 
+         printf("sqrt : %s\n", GCSTR l.sqrt().print());
          printf("== done==\n\n");
       }
       else if (3 == res) {
@@ -67,6 +68,14 @@ int main(int argc, char **argv) {
             }
             if (!strcmp(op, "%")) {
                Integer x = l % r;
+               printf("prnt : %s\n", GCSTR x.print());
+            }
+            if (!strcmp(op, "<<")) {
+               Integer x = l << (uint64_t) r;
+               printf("prnt : %s\n", GCSTR x.print());
+            }
+            if (!strcmp(op, ">>")) {
+               Integer x = l >> (uint64_t) r;
                printf("prnt : %s\n", GCSTR x.print());
             }
             if (!strcmp(op, "==")) {

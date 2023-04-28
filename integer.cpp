@@ -366,6 +366,55 @@ void Integer::divide(
    // that's it, we're done!
 }
 
+Integer Integer::sqrt(void) const {
+   // we'll do this recursively...
+
+   // trivial cases
+   if (size == 0) {
+      return *this;
+   }
+   if (size == 1) {
+      uint64_t res = ::sqrt((double)data[0]);
+      return Integer(res);
+   }
+   if (size == 2) {
+      uint64_t res = ::sqrt((double)(((uint64_t)data[1] << 16) | data[0]));
+      return Integer(res);
+   }
+
+   // and now the fun stuff...
+   uint64_t place = size - 1;
+   uint64_t digit;
+   digit = data[place--];
+   if ((place % 2) == 0) {
+      digit <<= 16;
+      digit |= data[place--];
+   }
+   digit = ::sqrt((double) digit);
+
+   Integer a(digit);
+   for (uint16_t i = place + 1; i > 2; i -= 2) {
+      a.grow();
+      a.data[0] = 0;
+      a.size++;
+   }
+
+   // (a*base+x) * (a*base+x) =~ this
+   // this - a*a*base*base = 2 * base * a * x + x * x
+   // remainder = (2*base*a)*x + x*x
+   // x^2 + (2 * base * a) x - remainder = 0
+   // x = (-b +/- sqrt(b^2-4c)) / 2
+
+   Integer c =  *this - a * 65536 * a * 65536;
+   Integer b = Integer(2 * 65536) * a;
+   Integer inner = b*b-Integer(4)*c;
+   Integer x = (inner.sqrt() - b) / Integer(2);
+
+   Integer result = a * 65536 + x;
+
+   return result;
+}
+
 Integer Integer::operator / (Integer const & obj) const {
    Integer quot;
    Integer rem;
@@ -378,6 +427,16 @@ Integer Integer::operator % (Integer const & obj) const {
    Integer rem;
    divide(*this, obj, quot, rem);
    return rem;
+}
+
+Integer Integer::operator >> (int smallbits) const {
+   Integer result = *this;
+   return result >>= smallbits;
+}
+
+Integer Integer::operator << (int smallbits) const {
+   Integer result = *this;
+   return result <<= smallbits;
 }
 
 bool Integer::operator == (const Integer &other) const {
@@ -467,6 +526,51 @@ Integer& Integer::operator/=(const Integer& other) {
 
 Integer& Integer::operator%=(const Integer& other) {
    *this = *this % other;
+   return *this;
+}
+
+Integer& Integer::operator >>= (int smallbits) {
+   if (smallbits > 16) {
+      throw(ERR("shift bigger than 16 bits"));
+   }
+   if (smallbits < 0) {
+      return *this <<= (-smallbits);
+   }
+
+   uint32_t carry = 0;
+   for (uint64_t j = 0 ; j < size; j++) {
+      uint64_t i = size - 1 - j;
+      carry |= data[i];
+      data[i] = carry >> smallbits;
+      carry &= (1 << smallbits) - 1;
+      carry <<= 16;
+   }
+
+   fixZero();
+   return *this;
+}
+
+Integer& Integer::operator <<= (int smallbits) {
+   if (smallbits > 16) {
+      throw(ERR("shift bigger than 16 bits"));
+   }
+   if (smallbits < 0) {
+      return *this >>= (-smallbits);
+   }
+
+   uint32_t carry = 0;
+   for (uint64_t i = 0; i < size; i++) {
+      carry |= ((uint32_t)data[i]) << smallbits;
+      data[i] = carry;
+      carry >>= 16;
+   }
+
+   if (carry) {
+      grow();
+      data[size] = carry;
+      size++;
+   }
+
    return *this;
 }
 

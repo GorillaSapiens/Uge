@@ -35,6 +35,13 @@ class Integer {
       Integer operator * (Integer const & obj) const;
       Integer operator / (Integer const & obj) const;
       Integer operator % (Integer const & obj) const;
+
+      // only for smallbits <= 16 !
+      Integer operator >> (int smallbits) const;
+      Integer operator << (int smallbits) const;
+
+      Integer sqrt(void) const;
+
       bool operator == (const Integer &other) const;
       bool operator != (const Integer &other) const;
       bool operator < (const Integer &other) const;
@@ -47,6 +54,11 @@ class Integer {
       Integer& operator*=(const Integer& other);
       Integer& operator/=(const Integer& other);
       Integer& operator%=(const Integer& other);
+
+      // only for smallbits <= 16 !
+      Integer& operator >>= (int smallbits);
+      Integer& operator <<= (int smallbits);
+
 
       bool isZero(void) const;
       void setZero(void);
