@@ -383,34 +383,14 @@ Integer Integer::sqrt(void) const {
    }
 
    // and now the fun stuff...
-   uint64_t place = size - 1;
-   uint64_t digit;
-   digit = data[place--];
-   if ((place % 2) == 0) {
-      digit <<= 16;
-      digit |= data[place--];
+
+   // sqrt(z) = 2 * sqrt(z/4)
+   Integer result = (*this >> 2).sqrt() << 1;
+   Integer result_plus_1 = result + 1;
+
+   if (result_plus_1 * result_plus_1 < *this) {
+      result = result + 1;
    }
-   digit = ::sqrt((double) digit);
-
-   Integer a(digit);
-   for (uint16_t i = place + 1; i > 2; i -= 2) {
-      a.grow();
-      a.data[0] = 0;
-      a.size++;
-   }
-
-   // (a*base+x) * (a*base+x) =~ this
-   // this - a*a*base*base = 2 * base * a * x + x * x
-   // remainder = (2*base*a)*x + x*x
-   // x^2 + (2 * base * a) x - remainder = 0
-   // x = (-b +/- sqrt(b^2-4c)) / 2
-
-   Integer c =  *this - a * 65536 * a * 65536;
-   Integer b = Integer(2 * 65536) * a;
-   Integer inner = b*b-Integer(4)*c;
-   Integer x = (inner.sqrt() - b) / Integer(2);
-
-   Integer result = a * 65536 + x;
 
    return result;
 }

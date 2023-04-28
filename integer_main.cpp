@@ -22,7 +22,7 @@ int main(int argc, char **argv) {
    char x;
    while (gets(buf)) {
       char bufl[512];
-      char op[32];
+      char op[512];
       char bufr[512];
 
       int res = sscanf(buf, "%s %s %s\n", bufl, op, bufr);
@@ -36,9 +36,18 @@ int main(int argc, char **argv) {
 
          printf("== input ==\n");
          printf("print: %s\n", GCSTR l.print());
-
-         printf("sqrt : %s\n", GCSTR l.sqrt().print());
          printf("== done==\n\n");
+      }
+      else if (2 == res) {
+         if (!strcmp(bufl, "sqrt")) {
+            Integer l(op);
+
+         printf("== input ==\n");
+         printf("print: sqrt %s\n", GCSTR l.print());
+         printf("== result==\n");
+         printf("sqrt : %s\n", GCSTR l.sqrt().print());
+         printf("\n");
+         }
       }
       else if (3 == res) {
          Integer l(bufl);

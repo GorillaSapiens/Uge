@@ -9,9 +9,14 @@
 #include "gcstr.hpp"
 #include "uge.hpp"
 
+// constant used for repeated fraction guess when parsing (double)
 #define BIGPOWEROF2 512
 
+// max characters after decimal point when trying to find repeated fraction
 #define MAX_DECI 256
+
+// precision bits added for square root calculation
+#define SQRT_PRECISION 64
 
 static Integer gcd(Integer x, Integer y) {
    // euclid
