@@ -529,12 +529,27 @@ Integer& Integer::operator%=(const Integer& other) {
    return *this;
 }
 
-Integer& Integer::operator >>= (int smallbits) {
-   if (smallbits > 16) {
-      throw(ERR("shift bigger than 16 bits"));
+Integer& Integer::operator >>= (int bits) {
+   if (bits < 0) {
+      return *this <<= (-bits);
    }
-   if (smallbits < 0) {
-      return *this <<= (-smallbits);
+
+   int wordshift = bits / 16;
+   int smallbits = bits % 16;
+
+   if (wordshift < size) {
+      for (uint64_t i = 0; i < size; i++) {
+         if (i + wordshift < size) {
+            data[i] = data[i + wordshift];
+         }
+         else {
+            data[i] = 0;
+         }
+      }
+      fixZero();
+   }
+   else {
+      setZero();
    }
 
    uint32_t carry = 0;
@@ -550,12 +565,19 @@ Integer& Integer::operator >>= (int smallbits) {
    return *this;
 }
 
-Integer& Integer::operator <<= (int smallbits) {
-   if (smallbits > 16) {
-      throw(ERR("shift bigger than 16 bits"));
+Integer& Integer::operator <<= (int bits) {
+   if (bits < 0) {
+      return *this >>= (-bits);
    }
-   if (smallbits < 0) {
-      return *this >>= (-smallbits);
+
+   int wordshift = bits / 16;
+   int smallbits = bits % 16;
+
+   for (int i = 0; i < wordshift; i++) {
+      grow();
+      memmove(data + 1, data, sizeof(uint16_t) * size);
+      data[0] = 0;
+      size++;
    }
 
    uint32_t carry = 0;
