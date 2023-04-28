@@ -9,8 +9,10 @@
 #include <string.h>
 #include <assert.h>
 
-#include "gcstr.hpp"
-#include "uge.hpp"
+#include "uge_gcstr.hpp"
+#include "uge_q.hpp"
+
+using namespace uge;
 
 // not sure why this is needed, maybe deprecateed
 extern "C" {
@@ -32,7 +34,7 @@ int main(int argc, char **argv) {
          return 0;
       }
       else if (1 == res) {
-         Uge l(bufl);
+         Q l(bufl);
 
          printf("== input ==\n");
 
@@ -40,7 +42,7 @@ int main(int argc, char **argv) {
          printf("frac_print: %s\n", GCSTR l.frac_print());
          printf("deci_print: %s\n", GCSTR l.deci_print());
 
-         Uge r = l.sqrt();
+         Q r = l.sqrt();
 
          printf("sqrt debu_print: %s\n", GCSTR r.debu_print());
          printf("sqrt frac_print: %s\n", GCSTR r.frac_print());
@@ -49,8 +51,8 @@ int main(int argc, char **argv) {
          printf("== done==\n\n");
       }
       else if (3 == res) {
-         Uge l(bufl);
-         Uge r(bufr);
+         Q l(bufl);
+         Q r(bufr);
 
          printf("== input ==\n");
 
@@ -62,25 +64,25 @@ int main(int argc, char **argv) {
 
          try {
             if (!strcmp(op, "+")) {
-               Uge x = l + r;
+               Q x = l + r;
                printf("debu : %s\n", GCSTR x.debu_print());
                printf("frac : %s\n", GCSTR x.frac_print());
                printf("deci : %s\n", GCSTR x.deci_print());
             }
             if (!strcmp(op, "-")) {
-               Uge x = l - r;
+               Q x = l - r;
                printf("debu : %s\n", GCSTR x.debu_print());
                printf("frac : %s\n", GCSTR x.frac_print());
                printf("deci : %s\n", GCSTR x.deci_print());
             }
             if (!strcmp(op, "*")) {
-               Uge x = l * r;
+               Q x = l * r;
                printf("debu : %s\n", GCSTR x.debu_print());
                printf("frac : %s\n", GCSTR x.frac_print());
                printf("deci : %s\n", GCSTR x.deci_print());
             }
             if (!strcmp(op, "/")) {
-               Uge x = l / r;
+               Q x = l / r;
                printf("debu : %s\n", GCSTR x.debu_print());
                printf("frac : %s\n", GCSTR x.frac_print());
                printf("deci : %s\n", GCSTR x.deci_print());

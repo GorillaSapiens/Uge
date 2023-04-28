@@ -1,4 +1,3 @@
 *.o
-rational
-integer
-uge
+qtest
+ztest

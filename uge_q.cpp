@@ -4,10 +4,12 @@
 
 #include <string>
 
-#include "err.hpp"
-#include "ramprintf.hpp"
-#include "gcstr.hpp"
-#include "uge.hpp"
+#include "uge_err.hpp"
+#include "uge_ramprintf.hpp"
+#include "uge_gcstr.hpp"
+#include "uge_q.hpp"
+
+using namespace uge;
 
 // constant used for repeated fraction guess when parsing (double)
 #define BIGPOWEROF2 512
@@ -18,59 +20,59 @@
 // precision bits added for square root calculation
 #define SQRT_PRECISION 1024
 
-static Integer gcd(Integer x, Integer y) {
+static Z gcd(Z x, Z y) {
    // euclid
-   Integer a = x;
-   Integer b = y;
+   Z a = x;
+   Z b = y;
    if (b.isZero()) {
       a = y;
       b = x;
    }
    if (b.isZero()) {
-      throw (ERR("divide by zero in gcd"));
+      throw (UGE_ERR("divide by zero in gcd"));
    }
-   Integer c = a % b;
+   Z c = a % b;
    while (!c.isZero()) {
       a = b;
       b = c;
       if (b.isZero()) {
-         throw (ERR("divide by zero in gcd"));
+         throw (UGE_ERR("divide by zero in gcd"));
       }
       c = a % b;
    }
    return b;
 }
 
-static Integer lcm(Integer x, Integer y) {
+static Z lcm(Z x, Z y) {
    return (x / gcd(x,y)) * y;
 }
 
-void Uge::simplify(void) {
+void Q::simplify(void) {
    if (num >= den) {
       whl += num / den;
       num %= den;
    }
 
-   Integer g = gcd(num,den);
+   Z g = gcd(num,den);
    num /= g;
    den /= g;
 }
 
-Uge::Uge() {
+Q::Q() {
    sign = 1;
    whl.setZero();
    num.setZero();
    den = 1;
 }
 
-Uge::Uge(const Uge &orig) {
+Q::Q(const Q &orig) {
    sign = orig.sign;
    whl = orig.whl;
    num = orig.num;
    den = orig.den;
 }
 
-Uge& Uge::operator=(const Uge& other) {
+Q& Q::operator=(const Q& other) {
    sign = other.sign;
    whl = other.whl;
    num = other.num;
@@ -79,7 +81,7 @@ Uge& Uge::operator=(const Uge& other) {
    return *this;
 }
 
-Uge::Uge(int8_t s, Integer w, Integer n, Integer d) {
+Q::Q(int8_t s, Z w, Z n, Z d) {
    assert(!d.isZero());
    assert(s == -1 || s == 1);
    sign = s;
@@ -90,7 +92,7 @@ Uge::Uge(int8_t s, Integer w, Integer n, Integer d) {
    simplify();
 }
 
-static Integer llpow10(Integer n) {
+static Z llpow10(Z n) {
    if (n.isZero()) {
       return 1;
    }
@@ -98,20 +100,20 @@ static Integer llpow10(Integer n) {
       return 10;
    }
    else {
-      Integer a = n / 2;
-      Integer b = n - a;
+      Z a = n / 2;
+      Z b = n - a;
       return llpow10(a) * llpow10(b);
    }
 }
 
-Uge::Uge(const char *orig) {
+Q::Q(const char *orig) {
    char *tick = strchr((char *)orig, '\'');
    char *slash = strchr((char *)orig, '/');
    char *dee = strchr((char *)orig, 'd');
 
    if (dee) {
       double d = atof(orig + 1);
-      *this = Uge(d);
+      *this = Q(d);
    }
    else if (tick || slash) {
       const char *p = orig;
@@ -127,17 +129,17 @@ Uge::Uge(const char *orig) {
 
       if (slash) {
          if (tick) {
-            whl = Integer(p);
-            num = Integer(tick + 1);
+            whl = Z(p);
+            num = Z(tick + 1);
          }
          else {
             whl.setZero();
-            num = Integer(p);
+            num = Z(p);
          }
-         den = Integer(slash + 1);
+         den = Z(slash + 1);
       }
       else {
-         whl = Integer(p);
+         whl = Z(p);
          num.setZero();
          den = 1;
       }
@@ -149,11 +151,11 @@ Uge::Uge(const char *orig) {
       char *p = freeme;
 
       bool negexp = false;
-      Integer exp;
+      Z exp;
       exp.setZero();
-      Integer repetend_num;
+      Z repetend_num;
       repetend_num.setZero();
-      Integer repetend_den = 1;
+      Z repetend_den = 1;
 
       sign = 1;
       if (*p == '-') {
@@ -174,7 +176,7 @@ Uge::Uge(const char *orig) {
             negexp = true;
             q++;
          }
-         exp = Integer(q);
+         exp = Z(q);
       }
 
       if (strchr(p, '(')) {
@@ -183,10 +185,10 @@ Uge::Uge(const char *orig) {
          char *r = strchr(q, ')');
          if (!r) {
             free((void *)freeme);
-            throw(ERR("no matching ')'"));
+            throw(UGE_ERR("no matching ')'"));
          }
          repetend_den = llpow10(r - q) - 1;
-         repetend_num = Integer(q);
+         repetend_num = Z(q);
       }
 
       int fraclen = 0;
@@ -194,13 +196,13 @@ Uge::Uge(const char *orig) {
       if (strchr(p, '.')) {
          char *q = strchr(p, '.');
          *q++ = 0;
-         whl = Integer(p);
-         num = Integer(q);
+         whl = Z(p);
+         num = Z(q);
          fraclen = strlen(q);
          den = llpow10(fraclen);
       }
       else {
-         whl = Integer(p);
+         whl = Z(p);
          num.setZero();
          den = 1;
 
@@ -214,26 +216,26 @@ Uge::Uge(const char *orig) {
       simplify();
 
       if (!repetend_num.isZero()) {
-         Uge r(sign, (uint64_t) 0, repetend_num, repetend_den);
+         Q r(sign, (uint64_t) 0, repetend_num, repetend_den);
          *this = *this + r;
          simplify();
       }
 
       if (negexp) {
-         Integer x = llpow10(exp);
-         Uge r(1, (uint64_t)0, 1, x);
+         Z x = llpow10(exp);
+         Q r(1, (uint64_t)0, 1, x);
          *this = *this * r;
          simplify();
       }
       else if (!exp.isZero()) {
-         Uge r(1, llpow10(exp), (uint64_t)0, 1);
+         Q r(1, llpow10(exp), (uint64_t)0, 1);
          *this = *this * r;
          simplify();
       }
    }
 }
 
-Uge::Uge(double d) {
+Q::Q(double d) {
    whl.setZero();
    sign = 1;
    if (d < 0.0) {
@@ -248,11 +250,11 @@ Uge::Uge(double d) {
    // and now the repeated fraction magic
    // https://en.wikipedia.org/wiki/Euler%27s_continued_fraction_formula
    double i = 1.0/d;
-   Integer n = 1;
-   Integer dens[1024];
+   Z n = 1;
+   Z dens[1024];
    int spot = 0;
    while(isfinite(i) && i != 0 && n > (uint64_t)0 && n < (BIGPOWEROF2 >> spot)) {
-      n = (Integer) i;
+      n = (Z) i;
       i = i - (double)((uint64_t)i);
       i = 1.0 / i;
       if (n > (uint64_t)0 && n < (BIGPOWEROF2 >> spot)) {
@@ -261,7 +263,7 @@ Uge::Uge(double d) {
    }
 
    // a + b / c
-   Integer a, b, c, nb, nc;
+   Z a, b, c, nb, nc;
    b.setZero();
    c = 1;
 
@@ -277,7 +279,7 @@ Uge::Uge(double d) {
    den = c;
 }
 
-Uge::Uge(int64_t i) {
+Q::Q(int64_t i) {
    sign = 1;
    if (i < 0) {
       sign = -1;
@@ -288,14 +290,14 @@ Uge::Uge(int64_t i) {
    den = 1;
 }
 
-Uge Uge::operator + (Uge const & obj) const {
-   Uge res;
+Q Q::operator + (Q const & obj) const {
+   Q res;
 
    if (sign == obj.sign) {
       // add them
       res = *this;
       res.whl += obj.whl;
-      Integer l = lcm(res.den, obj.den);
+      Z l = lcm(res.den, obj.den);
       res.num *= l / res.den;
       res.den *= l / res.den;
       res.num += obj.num * (l / obj.den);
@@ -303,7 +305,7 @@ Uge Uge::operator + (Uge const & obj) const {
    }
    else {
       // subtract them
-      Uge other;
+      Q other;
       if (sign > 0) {
          res = *this;
          other = obj;
@@ -328,11 +330,11 @@ Uge Uge::operator + (Uge const & obj) const {
 
       if (res.sign > 0) {
          // we're still positive, keep subtracting
-         Integer l = lcm(res.den, other.den);
+         Z l = lcm(res.den, other.den);
          res.num *= l / res.den;
          res.den *= l / res.den;
 
-         Integer othnum = other.num * (l / other.den);
+         Z othnum = other.num * (l / other.den);
 
          if (res.num >= othnum) {
             res.num -= othnum;
@@ -344,7 +346,7 @@ Uge Uge::operator + (Uge const & obj) const {
       }
       else {
          // we've gone negative, we add now
-         Integer l = lcm(res.den, other.den);
+         Z l = lcm(res.den, other.den);
          res.num *= l / res.den;
          res.den *= l / res.den;
          res.num += other.num * (l / res.den);
@@ -355,96 +357,96 @@ Uge Uge::operator + (Uge const & obj) const {
    return res;
 }
 
-Uge Uge::operator - (Uge const & obj) const {
+Q Q::operator - (Q const & obj) const {
    return *this + (-obj);
 }
 
-Uge Uge::operator - () const {
+Q Q::operator - () const {
    if (whl.isZero() && num.isZero()) {
-      return Uge(1, (uint64_t)0, (uint64_t)0, 1);
+      return Q(1, (uint64_t)0, (uint64_t)0, 1);
    }
    else {
-      return Uge(-sign, whl, num, den);
+      return Q(-sign, whl, num, den);
    }
 }
 
-Uge Uge::operator * (Uge const & obj) const {
-   Uge a(1, whl * obj.whl, (uint64_t)0, 1);
-   Uge b(1, (uint64_t)0, whl * obj.num, obj.den);
-   Uge c(1, (uint64_t)0, obj.whl * num, den);
-   Uge d(1, (uint64_t)0, obj.num * num, obj.den * den);
-   Uge ret = a + b + c + d;
+Q Q::operator * (Q const & obj) const {
+   Q a(1, whl * obj.whl, (uint64_t)0, 1);
+   Q b(1, (uint64_t)0, whl * obj.num, obj.den);
+   Q c(1, (uint64_t)0, obj.whl * num, den);
+   Q d(1, (uint64_t)0, obj.num * num, obj.den * den);
+   Q ret = a + b + c + d;
    if (sign != obj.sign) {
       ret.sign = -1;
    }
    return ret;
 }
 
-Uge Uge::operator / (Uge const & obj) const {
+Q Q::operator / (Q const & obj) const {
    // 1/ (w+n/d)
    // ==
    // 1 / ((w*d+n)/d)
    // ==
    // d / (w*d+n)
-   Uge reciprocol(obj.sign, (uint64_t)0, obj.den, obj.whl * obj.den + obj.num);
+   Q reciprocol(obj.sign, (uint64_t)0, obj.den, obj.whl * obj.den + obj.num);
 
    return *this * reciprocol;
 }
 
-bool Uge::operator == (const Uge &other) const {
-   Uge l(*this);
+bool Q::operator == (const Q &other) const {
+   Q l(*this);
    l.simplify();
-   Uge r(other);
+   Q r(other);
    r.simplify();
 
    return (l.sign == r.sign && l.whl == r.whl && l.num == r.num && l.den == r.den);
 }
 
-bool Uge::operator != (const Uge &other) const {
+bool Q::operator != (const Q &other) const {
    return (!(*this == other));
 }
 
 
-bool Uge::operator < (const Uge &other) const {
-   Uge res = *this - other;
+bool Q::operator < (const Q &other) const {
+   Q res = *this - other;
    return (res.sign < 0);
 }
 
-bool Uge::operator > (const Uge &other) const {
-   Uge res = other - *this;
+bool Q::operator > (const Q &other) const {
+   Q res = other - *this;
    return (res.sign < 0);
 }
 
 
-bool Uge::operator <= (const Uge &other) const {
+bool Q::operator <= (const Q &other) const {
    return (!(*this > other));
 }
 
-bool Uge::operator >= (const Uge &other) const {
+bool Q::operator >= (const Q &other) const {
    return (!(*this < other));
 }
 
-Uge& Uge::operator+=(const Uge& other) {
+Q& Q::operator+=(const Q& other) {
    *this = *this + other;
    return *this;
 }
 
-Uge& Uge::operator-=(const Uge& other) {
+Q& Q::operator-=(const Q& other) {
    *this = *this - other;
    return *this;
 }
 
-Uge& Uge::operator*=(const Uge& other) {
+Q& Q::operator*=(const Q& other) {
    *this = *this * other;
    return *this;
 }
 
-Uge& Uge::operator/=(const Uge& other) {
+Q& Q::operator/=(const Q& other) {
    *this = *this / other;
    return *this;
 }
 
-char *Uge::debu_print(void) const {
+char *Q::debu_print(void) const {
    char *ret = NULL;
 
    raprintf(ret, "[%c%s'%s/%s]",
@@ -456,7 +458,7 @@ char *Uge::debu_print(void) const {
    return ret;
 }
 
-char *Uge::frac_print(void) const {
+char *Q::frac_print(void) const {
    if (whl.isZero() && num.isZero()) {
       return strdup("0");
    }
@@ -487,11 +489,11 @@ char *Uge::frac_print(void) const {
 
 typedef struct remchain_s {
    int digit;
-   Integer *remainder;
+   Z *remainder;
    struct remchain_s *next;
 } remchain_t;
 
-char *Uge::deci_print(void) const {
+char *Q::deci_print(void) const {
    char *ret = NULL;
 
    if (sign < 0) {
@@ -510,23 +512,23 @@ char *Uge::deci_print(void) const {
    remchain_t *tail = NULL;
    int remchain_count = 0;
 
-   Integer remainder = num;
+   Z remainder = num;
 
    head = tail = (remchain_t *) malloc(sizeof(remchain_t));
    remchain_count++;
    head->digit = -1;
-   head->remainder = new Integer(remainder);
+   head->remainder = new Z(remainder);
    head->next = NULL;
 
    while(1) {
       remainder *= 10;
-      Integer digit = remainder / den;
+      Z digit = remainder / den;
       remainder = remainder % den;
 
       tail->next = (remchain_t *) malloc(sizeof(remchain_t));
       remchain_count++;
       tail->next->digit = (uint64_t) digit;
-      tail->next->remainder = new Integer(remainder);
+      tail->next->remainder = new Z(remainder);
       tail->next->next = NULL;
       tail = tail->next;
 
@@ -572,25 +574,25 @@ char *Uge::deci_print(void) const {
    return ret;
 }
 
-Uge::operator double() const {
+Q::operator double() const {
    return ((double)sign *
       ((double)((uint64_t)whl) +
       ((double)((uint64_t)num) /
        (double)((uint64_t)den))));
 }
 
-Uge::operator int64_t() const {
+Q::operator int64_t() const {
    return ((int64_t)sign * (uint64_t)whl);
 }
 
-Uge Uge::abs(void) const {
-   Uge ret(*this);
+Q Q::abs(void) const {
+   Q ret(*this);
    ret.sign = 1;
    return ret;
 }
 
-Uge Uge::floor(void) const {
-   Uge ret(*this);
+Q Q::floor(void) const {
+   Q ret(*this);
    if (ret.sign > 0) {
       ret.num.setZero();
       ret.den = 1;
@@ -603,19 +605,19 @@ Uge Uge::floor(void) const {
    return ret;
 }
 
-int Uge::sgn(void) const {
+int Q::sgn(void) const {
    if(num.isZero() && whl.isZero()) { return 0; }
    return sign;
 }
 
-Uge Uge::sqrt(void) const {
+Q Q::sqrt(void) const {
    if (sign < 0) {
-      throw(ERR("square root of negative number."));
+      throw(UGE_ERR("square root of negative number."));
    }
 
-   Integer n = num + den * whl;
-   Integer d = den;
-   Integer m = 1;
+   Z n = num + den * whl;
+   Z d = den;
+   Z m = 1;
    m <<= SQRT_PRECISION;
 
    n *= m;
@@ -624,5 +626,5 @@ Uge Uge::sqrt(void) const {
    n = n.sqrt();
    d = d.sqrt();
 
-   return Uge(1, (int)0, n, d); // constructor will simplify()
+   return Q(1, (int)0, n, d); // constructor will simplify()
 }

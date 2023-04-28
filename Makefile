@@ -1,14 +1,24 @@
-all: rational integer uge
+CPP=g++
+CFLAGS=-g
 
-rational: rational_main.cpp rational.cpp rational.hpp ramprintf.cpp ramprintf.hpp
-	g++ -g rational_main.cpp rational.cpp ramprintf.cpp -o rational
+OBJS=\
+   uge_z.o \
+   uge_q.o \
+   uge_ramprintf.o
 
-integer: integer_main.cpp integer.cpp integer.hpp ramprintf.cpp ramprintf.hpp
-	g++ -g integer_main.cpp integer.cpp ramprintf.cpp -o integer
+all: ztest qtest
 
-uge: uge_main.cpp uge.hpp uge.cpp integer.cpp integer.hpp ramprintf.cpp ramprintf.hpp
-	g++ -g uge_main.cpp uge.cpp integer.cpp ramprintf.cpp -o uge
+ztest: ztest.o $(OBJS)
+	$(CPP) $(CFLAGS) ztest.o $(OBJS) -o ztest
+
+qtest: qtest.o $(OBJS)
+	$(CPP) $(CFLAGS) qtest.o $(OBJS) -o qtest
+
+%.o: %.cpp
+	$(CPP) -c $(CFLAGS) $^ -o $@
 
 .PHONY: clean
 clean:
-	rm -f rational integer uge
+	rm -f *.o ztest qtest
+
+# DO NOT DELETE

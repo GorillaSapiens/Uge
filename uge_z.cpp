@@ -4,33 +4,35 @@
 
 #include <string>
 
-#include "err.hpp"
-#include "ramprintf.hpp"
-#include "integer.hpp"
+#include "uge_err.hpp"
+#include "uge_ramprintf.hpp"
+#include "uge_z.hpp"
 
-Integer::Integer() {
+using namespace uge;
+
+Z::Z() {
    size = 0;
    data = NULL;
 }
 
-Integer::~Integer() {
+Z::~Z() {
    if (data) {
       free((void *) data);
       data = NULL;
    }
 }
 
-void Integer::grow(void) {
+void Z::grow(void) {
    // NB: caller responsible for changing size
    data = (uint16_t *) realloc(data, sizeof(uint16_t) * (size + 1));
    assert(data);
 }
 
-bool Integer::isZero(void) const {
+bool Z::isZero(void) const {
    return (size == 0);
 }
 
-void Integer::setZero(void) {
+void Z::setZero(void) {
    size = 0;
    if (data) {
       free((void *)data);
@@ -38,7 +40,7 @@ void Integer::setZero(void) {
    }
 }
 
-void Integer::fixZero(void) {
+void Z::fixZero(void) {
    while (size && data[size - 1] == 0) {
       size--;
       if (size == 0 && data) {
@@ -48,13 +50,13 @@ void Integer::fixZero(void) {
    }
 }
 
-Integer::Integer(const Integer &orig) {
+Z::Z(const Z &orig) {
    size = orig.size;
    data = (uint16_t *) malloc(sizeof(uint16_t) * size);
    memcpy(data, orig.data, sizeof(uint16_t) * size);
 }
 
-Integer& Integer::operator=(const Integer& other) {
+Z& Z::operator=(const Z& other) {
    size = other.size;
    data = (uint16_t *) malloc(sizeof(uint16_t) * size);
    memcpy(data, other.data, sizeof(uint16_t) * size);
@@ -62,7 +64,7 @@ Integer& Integer::operator=(const Integer& other) {
    return *this;
 }
 
-Integer::Integer(const char *orig) {
+Z::Z(const char *orig) {
 
    size = 0;
    data = NULL;
@@ -114,7 +116,7 @@ Integer::Integer(const char *orig) {
    fixZero();
 }
 
-Integer::Integer(uint64_t i) {
+Z::Z(uint64_t i) {
    size = 0;
    data = NULL;
 
@@ -128,8 +130,8 @@ Integer::Integer(uint64_t i) {
    fixZero();
 }
 
-Integer Integer::operator + (Integer const & obj) const {
-   Integer res;
+Z Z::operator + (Z const & obj) const {
+   Z res;
 
    uint32_t carry = 0;
 
@@ -154,12 +156,12 @@ Integer Integer::operator + (Integer const & obj) const {
    return res;
 }
 
-Integer Integer::operator - (Integer const & obj) const {
+Z Z::operator - (Z const & obj) const {
    if (*this < obj) {
-      throw (ERR("subtraction underflow"));
+      throw (UGE_ERR("subtraction underflow"));
    }
 
-   Integer res;
+   Z res;
 
    uint16_t borrow = 0;
 
@@ -192,8 +194,8 @@ Integer Integer::operator - (Integer const & obj) const {
    return res;
 }
 
-Integer Integer::operator * (Integer const & obj) const {
-   Integer res;
+Z Z::operator * (Z const & obj) const {
+   Z res;
 
    for (uint64_t ai = 0; ai < size; ai++) {
       uint32_t a = data[ai];
@@ -231,15 +233,15 @@ Integer Integer::operator * (Integer const & obj) const {
    return res;
 }
 
-void Integer::divide(
-   const Integer &num,
-   const Integer &den,
-   Integer &quot,
-   Integer &rem) {
+void Z::divide(
+   const Z &num,
+   const Z &den,
+   Z &quot,
+   Z &rem) {
 
    // can't divide by zero
    if (den.size == 0) {
-      throw(ERR("division by zero"));
+      throw(UGE_ERR("division by zero"));
    }
 
    // trivial case, numerator less than denominator
@@ -284,7 +286,7 @@ void Integer::divide(
    }
 
    // calculate 16 shifted versions of the denominator
-   Integer pieces[16];
+   Z pieces[16];
    pieces[0] = den;
    for (int i = 1; i < 16; i++) {
       // zero it out
@@ -338,12 +340,12 @@ void Integer::divide(
 
       if (rem >= den) {
          uint16_t digit = 0;
-         Integer accumulator;
+         Z accumulator;
          accumulator.size = 0;
          accumulator.data = 0;
 
          for (int i = 15; i >= 0; i--) {
-            Integer tmp = accumulator + pieces[i];
+            Z tmp = accumulator + pieces[i];
             if (tmp <= rem) {
                accumulator = tmp;
                digit |= (1 << i);
@@ -366,7 +368,7 @@ void Integer::divide(
    // that's it, we're done!
 }
 
-Integer Integer::sqrt(void) const {
+Z Z::sqrt(void) const {
    // we'll do this recursively...
 
    // trivial cases
@@ -375,18 +377,18 @@ Integer Integer::sqrt(void) const {
    }
    if (size == 1) {
       uint64_t res = ::sqrt((double)data[0]);
-      return Integer(res);
+      return Z(res);
    }
    if (size == 2) {
       uint64_t res = ::sqrt((double)(((uint64_t)data[1] << 16) | data[0]));
-      return Integer(res);
+      return Z(res);
    }
 
    // and now the fun stuff...
 
    // sqrt(z) = 2 * sqrt(z/4)
-   Integer result = (*this >> 2).sqrt() << 1;
-   Integer result_plus_1 = result + 1;
+   Z result = (*this >> 2).sqrt() << 1;
+   Z result_plus_1 = result + 1;
 
    if (result_plus_1 * result_plus_1 < *this) {
       result = result + 1;
@@ -395,31 +397,31 @@ Integer Integer::sqrt(void) const {
    return result;
 }
 
-Integer Integer::operator / (Integer const & obj) const {
-   Integer quot;
-   Integer rem;
+Z Z::operator / (Z const & obj) const {
+   Z quot;
+   Z rem;
    divide(*this, obj, quot, rem);
    return quot;
 }
 
-Integer Integer::operator % (Integer const & obj) const {
-   Integer quot;
-   Integer rem;
+Z Z::operator % (Z const & obj) const {
+   Z quot;
+   Z rem;
    divide(*this, obj, quot, rem);
    return rem;
 }
 
-Integer Integer::operator >> (int smallbits) const {
-   Integer result = *this;
+Z Z::operator >> (int smallbits) const {
+   Z result = *this;
    return result >>= smallbits;
 }
 
-Integer Integer::operator << (int smallbits) const {
-   Integer result = *this;
+Z Z::operator << (int smallbits) const {
+   Z result = *this;
    return result <<= smallbits;
 }
 
-bool Integer::operator == (const Integer &other) const {
+bool Z::operator == (const Z &other) const {
    if (size != other.size) {
       return false;
    }
@@ -431,12 +433,12 @@ bool Integer::operator == (const Integer &other) const {
    return true;
 }
 
-bool Integer::operator != (const Integer &other) const {
+bool Z::operator != (const Z &other) const {
    return (!(*this == other));
 }
 
 
-bool Integer::operator < (const Integer &other) const {
+bool Z::operator < (const Z &other) const {
    if (size < other.size) {
       return true;
    }
@@ -454,12 +456,12 @@ bool Integer::operator < (const Integer &other) const {
    return false;
 }
 
-bool Integer::operator > (const Integer &other) const {
+bool Z::operator > (const Z &other) const {
    return !(*this <= other);
 }
 
 
-bool Integer::operator <= (const Integer &other) const {
+bool Z::operator <= (const Z &other) const {
    if (size < other.size) {
       return true;
    }
@@ -480,36 +482,36 @@ bool Integer::operator <= (const Integer &other) const {
    }
 }
 
-bool Integer::operator >= (const Integer &other) const {
+bool Z::operator >= (const Z &other) const {
    return !(*this < other);
 }
 
-Integer& Integer::operator+=(const Integer& other) {
+Z& Z::operator+=(const Z& other) {
    *this = *this + other;
    return *this;
 }
 
-Integer& Integer::operator-=(const Integer& other) {
+Z& Z::operator-=(const Z& other) {
    *this = *this - other;
    return *this;
 }
 
-Integer& Integer::operator*=(const Integer& other) {
+Z& Z::operator*=(const Z& other) {
    *this = *this * other;
    return *this;
 }
 
-Integer& Integer::operator/=(const Integer& other) {
+Z& Z::operator/=(const Z& other) {
    *this = *this / other;
    return *this;
 }
 
-Integer& Integer::operator%=(const Integer& other) {
+Z& Z::operator%=(const Z& other) {
    *this = *this % other;
    return *this;
 }
 
-Integer& Integer::operator >>= (int bits) {
+Z& Z::operator >>= (int bits) {
    if (bits < 0) {
       return *this <<= (-bits);
    }
@@ -545,7 +547,7 @@ Integer& Integer::operator >>= (int bits) {
    return *this;
 }
 
-Integer& Integer::operator <<= (int bits) {
+Z& Z::operator <<= (int bits) {
    if (bits < 0) {
       return *this >>= (-bits);
    }
@@ -576,7 +578,7 @@ Integer& Integer::operator <<= (int bits) {
    return *this;
 }
 
-Integer::operator uint64_t() const {
+Z::operator uint64_t() const {
    uint64_t ret = 0;
    for (uint64_t i = 0; i < 4; i++) {
       uint64_t place = 3LL - i;
@@ -588,14 +590,14 @@ Integer::operator uint64_t() const {
    return ret;
 }
 
-char *Integer::print(void) const {
+char *Z::print(void) const {
    if (isZero()) {
       return strdup("0");
    }
 
-   Integer copy = *this;
-   Integer quot;
-   Integer rem;
+   Z copy = *this;
+   Z quot;
+   Z rem;
 
    char *ret = NULL;
 
@@ -615,7 +617,7 @@ char *Integer::print(void) const {
    return ret;
 }
 
-char *Integer::dprint(void) const {
+char *Z::dprint(void) const {
    char *ret = NULL;
    raprintf(ret, "{%ld", size);
    for (uint64_t i = 0; i < size; i++) {
