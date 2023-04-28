@@ -16,7 +16,7 @@
 #define MAX_DECI 256
 
 // precision bits added for square root calculation
-#define SQRT_PRECISION 64
+#define SQRT_PRECISION 1024
 
 static Integer gcd(Integer x, Integer y) {
    // euclid
@@ -606,4 +606,23 @@ Uge Uge::floor(void) const {
 int Uge::sgn(void) const {
    if(num.isZero() && whl.isZero()) { return 0; }
    return sign;
+}
+
+Uge Uge::sqrt(void) const {
+   if (sign < 0) {
+      throw(ERR("square root of negative number."));
+   }
+
+   Integer n = num + den * whl;
+   Integer d = den;
+   Integer m = 1;
+   m <<= SQRT_PRECISION;
+
+   n *= m;
+   d *= m;
+
+   n = n.sqrt();
+   d = d.sqrt();
+
+   return Uge(1, (int)0, n, d); // constructor will simplify()
 }

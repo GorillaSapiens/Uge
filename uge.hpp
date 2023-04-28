@@ -64,6 +64,7 @@ class Uge {
       Uge abs(void) const;
       Uge floor(void) const;
       int sgn(void) const;
+      Uge sqrt(void) const;
 };
 
 #endif // _INCLUDE_UGE_HPP_

@@ -40,6 +40,12 @@ int main(int argc, char **argv) {
          printf("frac_print: %s\n", GCSTR l.frac_print());
          printf("deci_print: %s\n", GCSTR l.deci_print());
 
+         Uge r = l.sqrt();
+
+         printf("sqrt debu_print: %s\n", GCSTR r.debu_print());
+         printf("sqrt frac_print: %s\n", GCSTR r.frac_print());
+         printf("sqrt deci_print: %s\n", GCSTR r.deci_print());
+
          printf("== done==\n\n");
       }
       else if (3 == res) {
