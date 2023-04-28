@@ -2,26 +2,16 @@ This package was created to fight some of the perceived flaws with
 floating point arithmetic.  Floating point numbers as implemented on most
 modern computers suffer from rounding errors, and are therefore flawed.
 It is difficult for humans to understand why 1/3 + 2/3 = 0.9999999999...
-and it doesn't have to be this way.
+but it doesn't have to be this way.
 
-This package introduces three classes, Rational, Uge, and Integer.
+This package introduces two classes, Q and Z.
 
-Both Rational and Uge work the same way to represent floating point
-numbers.
+Z is an unsigned integer that expands as needed, to contain any number.
 
-Rational is based on uint128_t, which is supported by GCC, but of course,
-can still overflow.
-
-Uge is based on Integer, which is an unsigned integer that expands its
-number of bits as needed.
-
-We'll discuss Rational and Uge first, and then briefly discuss the
-limitations of Integer.
-
-Both Rational and Uge represent numbers as four quantities: a sign
-(positive or negative), a whole number (an unsigned integer), and a
-fractional part expressed as a whole number numerator and whole number
-denominator (both are unsigned integers).
+Q represents numbers as four quantities: a sign (positive or negative),
+a whole number (an unsigned integer), and a fractional part expressed
+as a whole number numerator and whole number denominator (both are
+unsigned integers).
 
 This may seem odd compared to IEEE 754 and other standards, but it solves
 a critical problem.  When representing common fractions, it does not
@@ -43,19 +33,13 @@ invariably and quickly leads to rounding errors.  By representing these
 numbers as whole number numerators and denominators, we free ourselves
 from rounding errors related to any repeating decimal representation.
 
-In Rational, we use uint128_t to hold our numbers.  These of course will
-overflow eventually under some circumstances.  In cases where this is
-undesirable, use Uge, which is based on Integer, which expands itself
-instead of overflowing.  Here we are limited only by the total memory
-of the machine.
+Z works by maintaining an array of uint16_t, and expanding or shrinking
+that array as needed.  Think of it like a school child's paper page.
+When a larger number is needed, she simply writes another digit. But
+instead of working in base 10, Z works in base 65536.  Child's play for
+a computer.
 
-Integer works by maintaining an array of uint16_t, and expanding or
-shrinking that array as needed.  Think of it like a school child's
-paper page.  When a larger number is needed, she simply writes another
-digit. But instead of working in base 10, Integer works in base 65536.
-Child's play for a computer.
-
-Fuctions are provided for printing these out, both as fractions and in
+Functions are provided for printing these out, both as fractions and in
 decimal formats.  For repeating decimals, parenthesis are used to denote
 the repeating portion.  For example, the fraction 1/28 will print as
 0.03(571428), indicating that the pattern 571428 repeats.  In some cases,
@@ -65,5 +49,11 @@ printed, to indicate that computation was halted early.  Rest assured,
 no precision has been lost, it just would have taken too long to find
 the repeating pattern.
 
-This sums up Rational, Uge, and Integer.  As with all things open source,
-the details can be found in the code...
+Some readers have commented that Q is flawed because it cannot truly
+represent irrational numbers.  While this is true, neither can IEEE 754
+truly represent irrational numbers.  Where it exceeds, is that it CAN
+accurately represent numbers with repeating decimals, which IEEE 754
+cannot.  That, plus the extended range of Z, makes Q superior to IEEE 754.
+
+This sums up Q and Z.  As with all things open source, the details can
+be found in the code...

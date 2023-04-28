@@ -1,6 +1,6 @@
-# RationalMath
+# Uge
 
-A rational math package.
+A big and little numbers package.
 
 Because the ins and outs of floating point numbers can be confusing to
 some folks new to computer science.
@@ -21,8 +21,3 @@ are provided, as well as conversion to (double) and (int).
 
 abs(), floor(), and sgn() methods are also provided.
 
-noticiably absent are functions which may return irrational results:
-trig functions, logs, powers, etc...
-
-on modern GNU/Linux machines which support 128 bit integers, the
-represented range is from +2^128 to -2^128, with 256 bits of precision.
