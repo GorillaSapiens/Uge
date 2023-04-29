@@ -314,8 +314,11 @@ Q::Q(int64_t i) {
    den = 1;
 }
 
-Q Q::operator + (Q const & obj) const {
+Q Q::operator + (Q const & obj) const { // addition operator
    Q res;
+
+   // this could probably be done faster, at the cost 
+   // of greater complexity
 
    Z dd = den * obj.den;
    Z l = whl * dd + num * obj.den;
@@ -337,11 +340,19 @@ Q Q::operator + (Q const & obj) const {
    return res;
 }
 
-Q Q::operator - (Q const & obj) const {
+Q Q::operator - (Q const & obj) const { // subtraction operator
    return *this + (-obj);
 }
 
-Q Q::operator - () const {
+Q Q::operator + () const { // unary plus
+
+   // one wonders what the point is...
+   // https://stackoverflow.com/questions/727516/what-does-the-unary-plus-operator-do
+
+   return *this;
+}
+
+Q Q::operator - () const { // unary minus
    if (whl.isZero() && num.isZero()) {
       return Q(pos, (uint64_t)0, (uint64_t)0, 1);
    }

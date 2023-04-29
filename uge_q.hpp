@@ -40,6 +40,7 @@ namespace uge {
 
          Q operator + (Q const & obj) const;
          Q operator - (Q const & obj) const;
+         Q operator + () const;
          Q operator - () const;
          Q operator * (Q const & obj) const;
          Q operator / (Q const & obj) const;
