@@ -25,6 +25,7 @@ Z::~Z() {
 void Z::grow(void) {
    // NB: caller responsible for changing size
    data = (uint16_t *) realloc(data, sizeof(uint16_t) * (size + 1));
+   data[size] = 0;
    assert(data);
 }
 
@@ -406,12 +407,72 @@ Z Z::operator % (Z const & obj) const {
    return rem;
 }
 
-Z Z::operator >> (int smallbits) const {
+Z Z::operator & (Z const & obj) const {
+   Z res = *this;
+
+   while (res.size < obj.size) {
+      res.grow();
+      res.size++;
+   }
+
+   for (uint64_t i = 0; i < res.size; i++) {
+      if (i >= obj.size) {
+         res.data[i] = 0;
+      }
+      else {
+         res.data[i] &= obj.data[i];
+      }
+   }
+
+   res.fixZero();
+
+   return res;
+}
+
+Z Z::operator | (Z const & obj) const {
+   Z res = *this;
+
+   while (res.size < obj.size) {
+      res.grow();
+      res.size++;
+   }
+
+   for (uint64_t i = 0; i < res.size; i++) {
+      if (i < obj.size) {
+         res.data[i] |= obj.data[i];
+      }
+   }
+
+   res.fixZero();
+
+   return res;
+}
+
+Z Z::operator ^ (Z const & obj) const {
+   Z res = *this;
+
+   while (res.size < obj.size) {
+      res.grow();
+      res.size++;
+   }
+
+   for (uint64_t i = 0; i < res.size; i++) {
+      if (i < obj.size) {
+         res.data[i] ^= obj.data[i];
+      }
+   }
+
+   res.fixZero();
+
+   return res;
+}
+
+Z Z::operator >> (int64_t smallbits) const {
    Z result = *this;
    return result >>= smallbits;
 }
 
-Z Z::operator << (int smallbits) const {
+Z Z::operator << (int64_t smallbits) const {
    Z result = *this;
    return result <<= smallbits;
 }
@@ -506,12 +567,44 @@ Z& Z::operator%=(const Z& other) {
    return *this;
 }
 
-Z& Z::operator >>= (int bits) {
+Z Z::operator ~ () const {
+
+   // TODO FIX
+   // this may need a rethink.
+   // ~15 = 65520, is this an expected result?
+   // we cannot carry off to infinity!
+   // or should we mask, so ~15 = 0
+   // what then information is lost about bit length???
+
+   Z ret = *this;
+   for (uint64_t i = 0; i < size; i++) {
+      ret.data[i] = ~ret.data[i];
+   }
+   ret.fixZero();
+   return ret;
+}
+
+Z& Z::operator&=(const Z& other) {
+   *this = *this & other;
+   return *this;
+}
+
+Z& Z::operator|=(const Z& other) {
+   *this = *this | other;
+   return *this;
+}
+
+Z& Z::operator^=(const Z& other) {
+   *this = *this ^ other;
+   return *this;
+}
+
+Z& Z::operator >>= (int64_t bits) {
    if (bits < 0) {
       return *this <<= (-bits);
    }
 
-   int wordshift = bits / 16;
+   uint64_t wordshift = bits / 16;
    int smallbits = bits % 16;
 
    if (wordshift < size) {
@@ -542,12 +635,12 @@ Z& Z::operator >>= (int bits) {
    return *this;
 }
 
-Z& Z::operator <<= (int bits) {
+Z& Z::operator <<= (int64_t bits) {
    if (bits < 0) {
       return *this >>= (-bits);
    }
 
-   int wordshift = bits / 16;
+   uint64_t wordshift = bits / 16;
    int smallbits = bits % 16;
 
    for (int i = 0; i < wordshift; i++) {

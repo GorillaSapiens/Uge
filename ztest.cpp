@@ -50,11 +50,21 @@ int main(int argc, char **argv) {
          if (!strcmp(bufl, "sqrt")) {
             Z l(op);
 
-         printf("== input ==\n");
-         printf("print: sqrt %s\n", GCSTR l.print());
-         printf("== result==\n");
-         printf("sqrt : %s\n", GCSTR l.sqrt().print());
-         printf("\n");
+            printf("== input ==\n");
+            printf("print: sqrt %s\n", GCSTR l.print());
+            printf("== result==\n");
+            printf("sqrt : %s\n", GCSTR l.sqrt().print());
+            printf("\n");
+         }
+         if (!strcmp(bufl, "~")) {
+            Z l(op);
+
+            printf("== input ==\n");
+            printf("print: ~ %s\n", GCSTR l.print());
+            printf("== result==\n");
+            l = ~l;
+            printf("~ : %s\n", GCSTR l.print());
+            printf("\n");
          }
       }
       else if (3 == res) {
@@ -85,6 +95,18 @@ int main(int argc, char **argv) {
             }
             if (!strcmp(op, "%")) {
                Z x = l % r;
+               printf("prnt : %s\n", GCSTR x.print());
+            }
+            if (!strcmp(op, "&")) {
+               Z x = l & r;
+               printf("prnt : %s\n", GCSTR x.print());
+            }
+            if (!strcmp(op, "|")) {
+               Z x = l | r;
+               printf("prnt : %s\n", GCSTR x.print());
+            }
+            if (!strcmp(op, "^")) {
+               Z x = l ^ r;
                printf("prnt : %s\n", GCSTR x.print());
             }
             if (!strcmp(op, "<<")) {

@@ -24,32 +24,40 @@ namespace uge {
 
          Z& operator=(const Z& other); // assignment operator
 
-         Z operator + (Z const & obj) const;
-         Z operator - (Z const & obj) const;
-         Z operator * (Z const & obj) const;
-         Z operator / (Z const & obj) const;
-         Z operator % (Z const & obj) const;
+         Z operator~ () const;
 
-         Z operator >> (int bits) const;
-         Z operator << (int bits) const;
+         Z operator+ (Z const & obj) const;
+         Z operator- (Z const & obj) const;
+         Z operator* (Z const & obj) const;
+         Z operator/ (Z const & obj) const;
+         Z operator% (Z const & obj) const;
+         Z operator& (Z const & obj) const;
+         Z operator| (Z const & obj) const;
+         Z operator^ (Z const & obj) const;
+
+         Z operator>> (int64_t bits) const;
+         Z operator<< (int64_t bits) const;
 
          Z sqrt(void) const;
 
-         bool operator == (const Z &other) const;
-         bool operator != (const Z &other) const;
-         bool operator < (const Z &other) const;
-         bool operator > (const Z &other) const;
-         bool operator <= (const Z &other) const;
-         bool operator >= (const Z &other) const;
+         bool operator== (const Z &other) const;
+         bool operator!= (const Z &other) const;
+         bool operator< (const Z &other) const;
+         bool operator> (const Z &other) const;
+         bool operator<= (const Z &other) const;
+         bool operator>= (const Z &other) const;
 
          Z& operator+=(const Z& other);
          Z& operator-=(const Z& other);
          Z& operator*=(const Z& other);
          Z& operator/=(const Z& other);
          Z& operator%=(const Z& other);
+         Z& operator&=(const Z& other);
+         Z& operator|=(const Z& other);
+         Z& operator^=(const Z& other);
 
-         Z& operator >>= (int bits);
-         Z& operator <<= (int bits);
+         Z& operator>>= (int64_t bits);
+         Z& operator<<= (int64_t bits);
 
          Z pow(const Z& other);
 
