@@ -2,6 +2,8 @@
 
 A big and little numbers package.
 
+"It's 'Uge, with a capital U!"
+
 Because the ins and outs of floating point numbers can be confusing to
 some folks new to computer science.
 
