@@ -32,14 +32,6 @@ bool Z::isZero(void) const {
    return (size == 0);
 }
 
-void Z::setZero(void) {
-   size = 0;
-   if (data) {
-      free((void *)data);
-      data = 0;
-   }
-}
-
 void Z::fixZero(void) {
    while (size && data[size - 1] == 0) {
       size--;
@@ -57,6 +49,9 @@ Z::Z(const Z &orig) {
 }
 
 Z& Z::operator=(const Z& other) {
+   if (data) {
+      free((void *) data);
+   }
    size = other.size;
    data = (uint16_t *) malloc(sizeof(uint16_t) * size);
    memcpy(data, other.data, sizeof(uint16_t) * size);
@@ -531,7 +526,7 @@ Z& Z::operator >>= (int bits) {
       fixZero();
    }
    else {
-      setZero();
+      *this = (int) 0;
    }
 
    uint32_t carry = 0;

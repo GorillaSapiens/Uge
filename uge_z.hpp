@@ -52,7 +52,6 @@ namespace uge {
          Z& operator <<= (int bits);
 
          bool isZero(void) const;
-         void setZero(void);
 
          explicit operator uint64_t() const;
 

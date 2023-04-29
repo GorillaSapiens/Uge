@@ -60,8 +60,8 @@ void Q::simplify(void) {
 
 Q::Q() {
    sign = 1;
-   whl.setZero();
-   num.setZero();
+   whl = (int) 0;
+   num = (int) 0;
    den = 1;
 }
 
@@ -133,14 +133,14 @@ Q::Q(const char *orig) {
             num = Z(tick + 1);
          }
          else {
-            whl.setZero();
+            whl = (int) 0;
             num = Z(p);
          }
          den = Z(slash + 1);
       }
       else {
          whl = Z(p);
-         num.setZero();
+         num = (int) 0;
          den = 1;
       }
 
@@ -177,9 +177,9 @@ Q::Q(const char *orig) {
 
       bool negexp = false;
       Z exp;
-      exp.setZero();
+      exp = (int) 0;
       Z repetend_num;
-      repetend_num.setZero();
+      repetend_num = (int) 0;
       Z repetend_den = 1;
 
       sign = 1;
@@ -228,7 +228,7 @@ Q::Q(const char *orig) {
       }
       else {
          whl = Z(p);
-         num.setZero();
+         num = (int) 0;
          den = 1;
 
          fraclen = 0;
@@ -261,7 +261,7 @@ Q::Q(const char *orig) {
 }
 
 Q::Q(double d) {
-   whl.setZero();
+   whl = (int) 0;
    sign = 1;
    if (d < 0.0) {
       sign = -1;
@@ -289,7 +289,7 @@ Q::Q(double d) {
 
    // a + b / c
    Z a, b, c, nb, nc;
-   b.setZero();
+   b = (int) 0;
    c = 1;
 
    while (spot > 0) {
@@ -311,7 +311,7 @@ Q::Q(int64_t i) {
       i = -i;
    }
    whl = i;
-   num.setZero();
+   num = (int) 0;
    den = 1;
 }
 
@@ -587,12 +587,12 @@ Q Q::abs(void) const {
 Q Q::floor(void) const {
    Q ret(*this);
    if (ret.sign > 0) {
-      ret.num.setZero();
+      ret.num = (int) 0;
       ret.den = 1;
    }
    if (ret.sign < 0 && ret.num > (uint64_t)0) {
       ret.whl += 1;
-      ret.num.setZero();
+      ret.num = (int) 0;
       ret.den = 1;
    }
    return ret;
