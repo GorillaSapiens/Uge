@@ -72,7 +72,7 @@ namespace uge {
          Q abs(void) const;
          Q floor(void) const;
          int sgn(void) const;
-         Q sqrt(void) const;
+         Q sqrt(uint64_t precision) const;
    };
 };
 

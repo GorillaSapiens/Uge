@@ -17,9 +17,6 @@ using namespace uge;
 // max characters after decimal point when trying to find repeated fraction
 #define MAX_DECI 256
 
-// precision bits added for square root calculation
-#define SQRT_PRECISION 1024
-
 static Z gcd(Z x, Z y) {
    // euclid
    Z a = x;
@@ -613,7 +610,7 @@ int Q::sgn(void) const {
    return pos ? 1 : -1;
 }
 
-Q Q::sqrt(void) const {
+Q Q::sqrt(uint64_t precision) const {
    if (!pos) {
       throw(UGE_ERR("square root of negative number."));
    }
@@ -621,7 +618,7 @@ Q Q::sqrt(void) const {
    Z n = num + den * whl;
    Z d = den;
    Z m = 1;
-   m <<= SQRT_PRECISION;
+   m <<= precision;
 
    n *= m;
    d *= m;

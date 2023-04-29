@@ -50,7 +50,7 @@ int main(int argc, char **argv) {
          printf("frac_print: %s\n", GCSTR l.frac_print());
          printf("deci_print: %s\n", GCSTR l.deci_print());
 
-         Q r = l.sqrt();
+         Q r = l.sqrt(4096);
 
          printf("sqrt debu_print: %s\n", GCSTR r.debu_print());
          printf("sqrt frac_print: %s\n", GCSTR r.frac_print());
