@@ -1,4 +1,4 @@
-This package was created to fight some of the perceived flaws with
+This package was created to fight some of the perceived problems with
 floating point arithmetic.  Floating point numbers as implemented on most
 modern computers suffer from rounding errors, and are therefore flawed.
 It is difficult for humans to understand why 1/3 + 2/3 = 0.9999999999...
@@ -7,6 +7,12 @@ but it doesn't have to be this way.
 This package introduces two classes, Q and Z.
 
 Z is an unsigned integer that expands as needed, to contain any number.
+
+Z works by maintaining an array of uint16_t, and expanding or shrinking
+that array as needed.  Think of it like a school child's paper page.
+When a larger number is needed, she simply writes another digit. But
+instead of working in base 10, Z works in base 65536.  Child's play for
+a computer.
 
 Q represents numbers as four quantities: a sign (positive or negative),
 a whole number (an unsigned integer), and a fractional part expressed
@@ -33,12 +39,6 @@ invariably and quickly leads to rounding errors.  By representing these
 numbers as whole number numerators and denominators, we free ourselves
 from rounding errors related to any repeating decimal representation.
 
-Z works by maintaining an array of uint16_t, and expanding or shrinking
-that array as needed.  Think of it like a school child's paper page.
-When a larger number is needed, she simply writes another digit. But
-instead of working in base 10, Z works in base 65536.  Child's play for
-a computer.
-
 Functions are provided for printing these out, both as fractions and in
 decimal formats.  For repeating decimals, parenthesis are used to denote
 the repeating portion.  For example, the fraction 1/28 will print as
@@ -51,9 +51,9 @@ the repeating pattern.
 
 Some readers have commented that Q is flawed because it cannot truly
 represent irrational numbers.  While this is true, neither can IEEE 754
-truly represent irrational numbers.  Where it exceeds, is that it CAN
-accurately represent numbers with repeating decimals, which IEEE 754
-cannot.  That, plus the extended range of Z, makes Q superior to IEEE 754.
+truly represent irrational numbers.  However, it CAN accurately represent
+numbers with repeating decimals, which IEEE 754 cannot.  That, plus the
+extended range of Z, makes Q superior to IEEE 754.
 
 This sums up Q and Z.  As with all things open source, the details can
 be found in the code...
