@@ -95,6 +95,10 @@ int main(int argc, char **argv) {
                Z x = l >> (uint64_t) r;
                printf("prnt : %s\n", GCSTR x.print());
             }
+            if (!strcmp(op, "**")) {
+               Z x = l.pow(r);
+               printf("prnt : %s\n", GCSTR x.print());
+            }
             if (!strcmp(op, "==")) {
                bool result = (l == r);
                printf("%s\n", result ? "true" : "false");

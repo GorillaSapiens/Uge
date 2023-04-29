@@ -585,6 +585,21 @@ Z::operator uint64_t() const {
    return ret;
 }
 
+Z Z::pow(const Z& other) {
+   if (other.isZero()) {
+      return 1;
+   }
+   if (other == 1) {
+      return *this;
+   }
+   Z halfpow = this->pow(other / 2);
+   Z ret = halfpow * halfpow;
+   if (other.data[0] & 1) {
+      ret = ret * (*this);
+   }
+   return ret;
+}
+
 char *Z::print(void) const {
    if (isZero()) {
       return strdup("0");
