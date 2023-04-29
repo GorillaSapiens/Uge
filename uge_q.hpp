@@ -10,14 +10,18 @@ namespace uge {
    ///
    /// In your best scottish accent, "it HUGE!, with a capital U!"
    ///
-   /// The number is stored as a sign, a whole number part,
-   /// and fractional numerator and denomenator parts.
+   /// The number is stored as a sign (the boolean pos),
+   /// a whole number part, and fractional numerator and denomenator parts.
    ///
    /// Methods are given for simple arithmatic and comparison,
    /// as well as printing and casting to/from standard types.
+   ///
+   /// (NB: while it is possible to store "negative zero", there is
+   /// no special meaning to such a construct, and the sgn() method
+   /// ignores the value of pos when whl and num are zero.)
    class Q {
       private:
-         int8_t sign;
+         bool pos;
          Z whl;
          Z num;
          Z den;
@@ -27,7 +31,7 @@ namespace uge {
       public:
          Q();
          Q(const Q &orig); // copy constructor
-         Q(int8_t s, Z w, Z n, Z d);
+         Q(bool p, Z w, Z n, Z d);
          Q(const char *p);
          Q(double d);
          Q(int64_t i);

@@ -43,10 +43,6 @@ static Z gcd(Z x, Z y) {
    return b;
 }
 
-// static Z lcm(Z x, Z y) {
-//    return (x / gcd(x,y)) * y;
-// }
-
 void Q::simplify(void) {
    if (num >= den) {
       whl += num / den;
@@ -59,21 +55,21 @@ void Q::simplify(void) {
 }
 
 Q::Q() {
-   sign = 1;
+   pos = true;
    whl = (int) 0;
    num = (int) 0;
    den = 1;
 }
 
 Q::Q(const Q &orig) {
-   sign = orig.sign;
+   pos = orig.pos;
    whl = orig.whl;
    num = orig.num;
    den = orig.den;
 }
 
 Q& Q::operator=(const Q& other) {
-   sign = other.sign;
+   pos = other.pos;
    whl = other.whl;
    num = other.num;
    den = other.den;
@@ -81,10 +77,9 @@ Q& Q::operator=(const Q& other) {
    return *this;
 }
 
-Q::Q(int8_t s, Z w, Z n, Z d) {
+Q::Q(bool p, Z w, Z n, Z d) {
    assert(!d.isZero());
-   assert(s == -1 || s == 1);
-   sign = s;
+   pos = p;
    whl = w;
    num = n;
    den = d;
@@ -118,9 +113,9 @@ Q::Q(const char *orig) {
    else if (tick || slash) {
       const char *p = orig;
 
-      sign = 1;
+      pos = true;
       if (*p == '-') {
-         sign = -1;
+         pos = false;
          p++;
       }
       else if (*p == '+') {
@@ -182,9 +177,9 @@ Q::Q(const char *orig) {
       repetend_num = (int) 0;
       Z repetend_den = 1;
 
-      sign = 1;
+      pos = true;
       if (*p == '-') {
-         sign = -1;
+         pos = false;
          p++;
       }
       else if (*p == '+') {
@@ -241,7 +236,7 @@ Q::Q(const char *orig) {
       simplify();
 
       if (!repetend_num.isZero()) {
-         Q r(sign, (uint64_t) 0, repetend_num, repetend_den);
+         Q r(pos, (uint64_t) 0, repetend_num, repetend_den);
          *this = *this + r;
          simplify();
       }
@@ -262,9 +257,9 @@ Q::Q(const char *orig) {
 
 Q::Q(double d) {
    whl = (int) 0;
-   sign = 1;
+   pos = true;
    if (d < 0.0) {
-      sign = -1;
+      pos = false;
       d = -d;
    }
    if (d > 1.0) {
@@ -305,9 +300,9 @@ Q::Q(double d) {
 }
 
 Q::Q(int64_t i) {
-   sign = 1;
+   pos = true;
    if (i < 0) {
-      sign = -1;
+      pos = false;
       i = -i;
    }
    whl = i;
@@ -322,15 +317,15 @@ Q Q::operator + (Q const & obj) const {
    Z l = whl * dd + num * obj.den;
    Z r = obj.whl * dd + obj.num * den;
 
-   if (sign == obj.sign) {
-      res = Q(sign, (int)0, l + r, dd);
+   if (pos == obj.pos) {
+      res = Q(pos, (int)0, l + r, dd);
    }
    else {
       if (l > r) {
-         res = Q(sign, (int)0, l - r, dd);
+         res = Q(pos, (int)0, l - r, dd);
       }
       else {
-         res = Q(obj.sign, (int) 0, r - l, dd);
+         res = Q(obj.pos, (int) 0, r - l, dd);
       }
    }
    res.simplify();
@@ -344,10 +339,10 @@ Q Q::operator - (Q const & obj) const {
 
 Q Q::operator - () const {
    if (whl.isZero() && num.isZero()) {
-      return Q(1, (uint64_t)0, (uint64_t)0, 1);
+      return Q(pos, (uint64_t)0, (uint64_t)0, 1);
    }
    else {
-      return Q(-sign, whl, num, den);
+      return Q(!pos, whl, num, den);
    }
 }
 
@@ -357,8 +352,8 @@ Q Q::operator * (Q const & obj) const {
    Q c(1, (uint64_t)0, obj.whl * num, den);
    Q d(1, (uint64_t)0, obj.num * num, obj.den * den);
    Q ret = a + b + c + d;
-   if (sign != obj.sign) {
-      ret.sign = -1;
+   if (pos != obj.pos) {
+      ret.pos = false;
    }
    return ret;
 }
@@ -369,7 +364,7 @@ Q Q::operator / (Q const & obj) const {
    // 1 / ((w*d+n)/d)
    // ==
    // d / (w*d+n)
-   Q reciprocol(obj.sign, (uint64_t)0, obj.den, obj.whl * obj.den + obj.num);
+   Q reciprocol(obj.pos, (uint64_t)0, obj.den, obj.whl * obj.den + obj.num);
 
    return *this * reciprocol;
 }
@@ -387,7 +382,7 @@ bool Q::operator == (const Q &other) const {
    Q r(other);
    r.simplify();
 
-   return (l.sign == r.sign && l.whl == r.whl && l.num == r.num && l.den == r.den);
+   return (l.pos == r.pos && l.whl == r.whl && l.num == r.num && l.den == r.den);
 }
 
 bool Q::operator != (const Q &other) const {
@@ -397,12 +392,12 @@ bool Q::operator != (const Q &other) const {
 
 bool Q::operator < (const Q &other) const {
    Q res = *this - other;
-   return (res.sign < 0);
+   return (!res.pos);
 }
 
 bool Q::operator > (const Q &other) const {
    Q res = other - *this;
-   return (res.sign < 0);
+   return (!res.pos);
 }
 
 
@@ -443,7 +438,7 @@ char *Q::debu_print(void) const {
    char *ret = NULL;
 
    raprintf(ret, "[%c%s'%s/%s]",
-      sign > 0 ? '+' : '-',
+      pos ? '+' : '-',
       GCSTR whl.dprint(),
       GCSTR num.dprint(),
       GCSTR den.dprint());
@@ -456,7 +451,7 @@ char *Q::frac_print(void) const {
       return strdup("0");
    }
    char mark[2] = {0, 0};
-   if (sign < 0) {
+   if (!pos) {
       mark[0] = '-';
    }
    if (num.isZero()) {
@@ -489,7 +484,7 @@ typedef struct remchain_s {
 char *Q::deci_print(void) const {
    char *ret = NULL;
 
-   if (sign < 0) {
+   if (!pos) {
       raprintf(ret, "-");
    }
 
@@ -568,29 +563,29 @@ char *Q::deci_print(void) const {
 }
 
 Q::operator double() const {
-   return ((double)sign *
+   return ((double)(pos ? 1 : -1) *
       ((double)((uint64_t)whl) +
       ((double)((uint64_t)num) /
        (double)((uint64_t)den))));
 }
 
 Q::operator int64_t() const {
-   return ((int64_t)sign * (uint64_t)whl);
+   return ((int64_t)(pos ? 1 : -1) * (uint64_t)whl);
 }
 
 Q Q::abs(void) const {
    Q ret(*this);
-   ret.sign = 1;
+   ret.pos = true;
    return ret;
 }
 
 Q Q::floor(void) const {
    Q ret(*this);
-   if (ret.sign > 0) {
+   if (ret.pos) {
       ret.num = (int) 0;
       ret.den = 1;
    }
-   if (ret.sign < 0 && ret.num > (uint64_t)0) {
+   if (!ret.pos && ret.num > (uint64_t)0) {
       ret.whl += 1;
       ret.num = (int) 0;
       ret.den = 1;
@@ -600,11 +595,11 @@ Q Q::floor(void) const {
 
 int Q::sgn(void) const {
    if(num.isZero() && whl.isZero()) { return 0; }
-   return sign;
+   return pos ? 1 : -1;
 }
 
 Q Q::sqrt(void) const {
-   if (sign < 0) {
+   if (!pos) {
       throw(UGE_ERR("square root of negative number."));
    }
 
