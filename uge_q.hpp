@@ -16,9 +16,9 @@ namespace uge {
    /// Methods are given for simple arithmatic and comparison,
    /// as well as printing and casting to/from standard types.
    ///
-   /// (NB: while it is possible to store "negative zero", there is
-   /// no special meaning to such a construct, and the sgn() method
-   /// ignores the value of pos when whl and num are zero.)
+   /// (NB: While this construct could store "negative zero",
+   /// this is disallowed.  There would be no special meaning to
+   /// such a construct.)
    class Q {
       private:
          bool pos;

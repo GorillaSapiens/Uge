@@ -52,6 +52,10 @@ void Q::simplify(void) {
    Z g = gcd(num,den);
    num /= g;
    den /= g;
+
+   if (whl.isZero() && num.isZero()) {
+      pos = true;
+   }
 }
 
 Q::Q() {
