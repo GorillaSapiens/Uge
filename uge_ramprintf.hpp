@@ -14,6 +14,9 @@ namespace uge {
    // reverse a string in place
    void strrev(char *str);
 
+   // returns malloc'd pointer that must be free'd
+   char *mgets(void);
+
 };
 
 #endif // _INCLUDE_UGE_RAMPRINTF_H_

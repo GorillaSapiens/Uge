@@ -52,4 +52,18 @@ namespace uge {
       }
    }
 
+   char *mgets(void) {
+      char *ret = NULL;
+      int c;
+
+      do {
+         c = getc(stdin);
+         if (c != EOF) {
+            raprintf(ret, "%c", c);
+         }
+      } while (c != EOF && c != '\n');
+
+      return ret;
+   }
+
 };

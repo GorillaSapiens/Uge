@@ -43,9 +43,9 @@ static Z gcd(Z x, Z y) {
    return b;
 }
 
-static Z lcm(Z x, Z y) {
-   return (x / gcd(x,y)) * y;
-}
+// static Z lcm(Z x, Z y) {
+//    return (x / gcd(x,y)) * y;
+// }
 
 void Q::simplify(void) {
    if (num >= den) {
@@ -149,6 +149,31 @@ Q::Q(const char *orig) {
    else {
       char *freeme = strdup(orig);
       char *p = freeme;
+
+      for (char *q = p; *q; q++) {
+         switch(*q) {
+            case '0':
+            case '1':
+            case '2':
+            case '3':
+            case '4':
+            case '5':
+            case '6':
+            case '7':
+            case '8':
+            case '9':
+            case '(':
+            case ')':
+            case 'e':
+            case 'E':
+            case '+':
+            case '-':
+            case '.':
+               break;
+            default:
+               *q = 0;
+         }
+      }
 
       bool negexp = false;
       Z exp;
@@ -293,66 +318,22 @@ Q::Q(int64_t i) {
 Q Q::operator + (Q const & obj) const {
    Q res;
 
+   Z dd = den * obj.den;
+   Z l = whl * dd + num * obj.den;
+   Z r = obj.whl * dd + obj.num * den;
+
    if (sign == obj.sign) {
-      // add them
-      res = *this;
-      res.whl += obj.whl;
-      Z l = lcm(res.den, obj.den);
-      res.num *= l / res.den;
-      res.den *= l / res.den;
-      res.num += obj.num * (l / obj.den);
-      res.simplify();
+      res = Q(sign, (int)0, l + r, dd);
    }
    else {
-      // subtract them
-      Q other;
-      if (sign > 0) {
-         res = *this;
-         other = obj;
+      if (l > r) {
+         res = Q(sign, (int)0, l - r, dd);
       }
       else {
-         res = obj;
-         other = *this;
+         res = Q(obj.sign, (int) 0, r - l, dd);
       }
-
-      // res now positive, other is negative
-      if (res.whl >= other.whl) {
-         res.whl -= other.whl;
-      }
-      else {
-         res.sign = -1;
-         res.whl = other.whl - res.whl;
-         if (!res.num.isZero()) {
-            res.num = res.den - res.num;
-            res.whl -= 1;
-         }
-      }
-
-      if (res.sign > 0) {
-         // we're still positive, keep subtracting
-         Z l = lcm(res.den, other.den);
-         res.num *= l / res.den;
-         res.den *= l / res.den;
-
-         Z othnum = other.num * (l / other.den);
-
-         if (res.num >= othnum) {
-            res.num -= othnum;
-         }
-         else {
-            res.sign = -1;
-            res.num = othnum - res.num;
-         }
-      }
-      else {
-         // we've gone negative, we add now
-         Z l = lcm(res.den, other.den);
-         res.num *= l / res.den;
-         res.den *= l / res.den;
-         res.num += other.num * (l / res.den);
-      }
-      res.simplify();
    }
+   res.simplify();
 
    return res;
 }

@@ -10,24 +10,30 @@
 #include <assert.h>
 
 #include "uge_gcstr.hpp"
+#include "uge_ramprintf.hpp"
 #include "uge_z.hpp"
 
 using namespace uge;
 
-// not sure why this is needed, maybe deprecateed
-extern "C" {
-   char *gets(char *);
-}
-
 int main(int argc, char **argv) {
-   char buf[1024];
-   char x;
-   while (gets(buf)) {
-      char bufl[512];
-      char op[512];
-      char bufr[512];
+   char *p;
 
-      int res = sscanf(buf, "%s %s %s\n", bufl, op, bufr);
+   while (p = /*assign*/ mgets()) {
+      char *bufl, *op, *bufr;
+      int res = 0;
+
+      bufl = p;
+      res = 1;
+      op = strchr(p, ' ');
+      if (op) {
+         *op++ = 0;
+         res = 2;
+         bufr = strchr(op, ' ');
+         if (bufr) {
+            *bufr++ = 0;
+            res = 3;
+         }
+      }
 
       if (-1 == res) {
          printf("exiting\n");

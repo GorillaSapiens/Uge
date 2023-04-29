@@ -9,25 +9,33 @@
 #include <string.h>
 #include <assert.h>
 
+#include "uge_ramprintf.hpp"
 #include "uge_gcstr.hpp"
 #include "uge_q.hpp"
 
 using namespace uge;
 
-// not sure why this is needed, maybe deprecateed
-extern "C" {
-   char *gets(char *);
-}
-
 int main(int argc, char **argv) {
-   char buf[4096];
-   char x;
-   while (gets(buf)) {
-      char bufl[4096];
-      char op[4096];
-      char bufr[4096];
+   char *p;
 
-      int res = sscanf(buf, "%s %s %s\n", bufl, op, bufr);
+   while (p = /*assign*/ mgets()) {
+      char *bufl, *op, *bufr;
+      int res = 0;
+
+      bufl = p;
+      res = 1;
+
+      op = strchr(p, ' ');
+      if (op) {
+         *op++ = 0;
+         res = 2;
+
+         bufr = strchr(op, ' ');
+         if (bufr) {
+            *bufr++ = 0;
+            res = 3;
+         }
+      }
 
       if (-1 == res) {
          printf("exiting\n");
@@ -55,6 +63,7 @@ int main(int argc, char **argv) {
          Q r(bufr);
 
          printf("== input ==\n");
+         printf("(%s) (%s) (%s)\n", bufl, op, bufr);
 
          printf("debu_print: %s %s %s\n", GCSTR l.debu_print(), op, GCSTR r.debu_print());
          printf("frac_print: %s %s %s\n", GCSTR l.frac_print(), op, GCSTR r.frac_print());
@@ -117,5 +126,7 @@ int main(int argc, char **argv) {
          }
          printf("\n");
       }
+
+      free(p);
    }
 }
