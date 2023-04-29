@@ -374,6 +374,13 @@ Q Q::operator / (Q const & obj) const {
    return *this * reciprocol;
 }
 
+Q Q::operator % (Q const & obj) const {
+   Q res = *this / obj;
+   res.whl = (int)0;
+   res = res * obj;
+   return res;
+}
+
 bool Q::operator == (const Q &other) const {
    Q l(*this);
    l.simplify();
@@ -424,6 +431,11 @@ Q& Q::operator*=(const Q& other) {
 
 Q& Q::operator/=(const Q& other) {
    *this = *this / other;
+   return *this;
+}
+
+Q& Q::operator%=(const Q& other) {
+   *this = *this % other;
    return *this;
 }
 

@@ -39,6 +39,7 @@ namespace uge {
          Q operator - () const;
          Q operator * (Q const & obj) const;
          Q operator / (Q const & obj) const;
+         Q operator % (Q const & obj) const;
          bool operator == (const Q &other) const;
          bool operator != (const Q &other) const;
          bool operator < (const Q &other) const;
@@ -50,6 +51,7 @@ namespace uge {
          Q& operator-=(const Q& other);
          Q& operator*=(const Q& other);
          Q& operator/=(const Q& other);
+         Q& operator%=(const Q& other);
 
          // returns pointer that must be free'd
          char *debu_print(void) const;
