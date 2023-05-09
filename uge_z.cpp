@@ -734,7 +734,6 @@ Z Z::apply(const Z &b, bool inva, bool invb, enum boolop op, bool invo) const {
    if (inva) {
       left -= 1;
    }
-
    if (invb) {
       right -= 1;
    }
