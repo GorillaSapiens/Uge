@@ -721,10 +721,18 @@ char *Z::dprint(void) const {
    return ret;
 }
 
-Z Z::apply(const Z &b, enum boolop op) const {
+Z Z::apply(const Z &b, bool inva, bool invb, enum boolop op, bool invo) const {
    Z left = *this;
    Z right = b;
    Z ret;
+
+   if (inva) {
+      left -= 1;
+   }
+
+   if (invb) {
+      right -= 1;
+   }
 
    while (left.size < right.size) {
       left.grow();
@@ -740,57 +748,32 @@ Z Z::apply(const Z &b, enum boolop op) const {
    }
 
    for (uint64_t i = 0; i < left.size; i++) {
+      if (inva) {
+         left.data[i] = ~left.data[i];
+      }
+      if (invb) {
+         right.data[i] = ~right.data[i];
+      }
       switch (op) {
-         case BOOL_NULL:       // 0b0000
-            ret.data[i] = -1;
-            break;
-         case BOOL_NOR:        // 0b0001
-            ret.data[i] = ~ (left.data[i] | right.data[i]);
-            break;
-         case BOOL_BANDNOTA:   // 0b0010
-            ret.data[i] = (~left.data[i]) & right.data[i];
-            break;
-         case BOOL_NOTA:       // 0b0011
-            ret.data[i] = ~ (left.data[i]);
-            break;
-         case BOOL_AANDNOTB:   // 0b0100
-            ret.data[i] = left.data[i] & (~right.data[i]);
-            break;
-         case BOOL_NOTB:       // 0b0101
-            ret.data[i] = ~ (right.data[i]);
-            break;
-         case BOOL_XOR:        // 0b0110
-            ret.data[i] = left.data[i] ^ right.data[i];
-            break;
-         case BOOL_NAND:       // 0b0111
-            ret.data[i] = ~(left.data[i] & right.data[i]);
-            break;
-         case BOOL_AND:        // 0b1000
+         case BOOL_AND:
             ret.data[i] = left.data[i] & right.data[i];
             break;
-         case BOOL_XNOR:       // 0b1001
-            ret.data[i] = ~(left.data[i] ^ right.data[i]);
-            break;
-         case BOOL_TRANB:      // 0b1010
-            ret.data[i] = right.data[i];
-            break;
-         case BOOL_BORNOTA:    // 0b1011
-            ret.data[i] = (~left.data[i]) | right.data[i];
-            break;
-         case BOOL_TRANA:      // 0b1100
-            ret.data[i] = left.data[i];
-            break;
-         case BOOL_AORNOTB:    // 0b1101
-            ret.data[i] = left.data[i] | (~right.data[i]);
-            break;
-         case BOOL_OR:         // 0b1110
+         case BOOL_OR:
             ret.data[i] = left.data[i] | right.data[i];
             break;
-         case BOOL_ONE:        // 0b1111
-            ret.data[i] = -1;
+         case BOOL_XOR:
+            ret.data[i] = left.data[i] ^ right.data[i];
             break;
       }
+      if (invo) {
+         ret.data[i] = ~ret.data[i];
+      }
    }
+
+   if (invo) {
+      ret += 1;
+   }
+
 
    ret.fixZero();
    return ret;

@@ -400,18 +400,18 @@ Q Q::operator % (Q const & obj) const {
 Q Q::operator & (Q const & obj) const { // truncates to integer
    if (pos) {
       if (obj.pos) {
-         return Q(true, whl.apply(obj.whl, Z::BOOL_AND), (int)0, 1);
+         return Q(true, whl.apply(obj.whl, false, false, Z::BOOL_AND, false), (int)0, 1);
       }
       else {
-         return Q(true, whl.apply(obj.whl - 1, Z::BOOL_AANDNOTB), (int)0, 1);
+         return Q(true, whl.apply(obj.whl, false, true, Z::BOOL_AND, false), (int)0, 1);
       }
    }
    else {
       if (obj.pos) {
-         return Q(true, (whl - 1).apply(obj.whl, Z::BOOL_BANDNOTA), (int)0, 1);
+         return Q(true, whl.apply(obj.whl, true, false, Z::BOOL_AND, false), (int)0, 1);
       }
       else {
-         return Q(true, (whl - 1).apply(obj.whl - 1, Z::BOOL_NOR), (int)0, 1);
+         return Q(false, whl.apply(obj.whl, true, true, Z::BOOL_AND, true), (int)0, 1);
       }
    }
 }
@@ -419,18 +419,18 @@ Q Q::operator & (Q const & obj) const { // truncates to integer
 Q Q::operator | (Q const & obj) const { // truncates to integer
    if (pos) {
       if (obj.pos) {
-         return Q(true, whl.apply(obj.whl, Z::BOOL_OR), (int)0, 1);
+         return Q(true, whl.apply(obj.whl, false, false, Z::BOOL_OR, false), (int)0, 1);
       }
       else {
-         return Q(true, whl.apply(obj.whl - 1, Z::BOOL_AORNOTB), (int)0, 1);
+         return Q(false, whl.apply(obj.whl, false, true, Z::BOOL_OR, true), (int)0, 1);
       }
    }
    else {
       if (obj.pos) {
-         return Q(true, (whl - 1).apply(obj.whl, Z::BOOL_BORNOTA), (int)0, 1);
+         return Q(false, whl.apply(obj.whl, true, false, Z::BOOL_OR, true), (int)0, 1);
       }
       else {
-         return Q(true, (whl - 1).apply(obj.whl - 1, Z::BOOL_NAND), (int)0, 1);
+         return Q(false, whl.apply(obj.whl, true, true, Z::BOOL_OR, true), (int)0, 1);
       }
    }
 }
@@ -438,18 +438,18 @@ Q Q::operator | (Q const & obj) const { // truncates to integer
 Q Q::operator ^ (Q const & obj) const { // truncates to integer
    if (pos) {
       if (obj.pos) {
-         return Q(true, whl.apply(obj.whl, Z::BOOL_XOR), (int)0, 1);
+         return Q(true, whl.apply(obj.whl, false, false, Z::BOOL_XOR, false), (int)0, 1);
       }
       else {
-         return Q(true, whl.apply(obj.whl - 1, Z::BOOL_XNOR), (int)0, 1);
+         return Q(false, whl.apply(obj.whl, false, true, Z::BOOL_XOR, true), (int)0, 1);
       }
    }
    else {
       if (obj.pos) {
-         return Q(true, (whl - 1).apply(obj.whl, Z::BOOL_XNOR), (int)0, 1);
+         return Q(false, whl.apply(obj.whl, true, false, Z::BOOL_XOR, true), (int)0, 1);
       }
       else {
-         return Q(true, (whl - 1).apply(obj.whl - 1, Z::BOOL_XOR), (int)0, 1);
+         return Q(true, whl.apply(obj.whl, true, true, Z::BOOL_XOR, false), (int)0, 1);
       }
    }
 }
