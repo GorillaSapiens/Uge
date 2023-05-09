@@ -126,6 +126,12 @@ int main(int argc, char **argv) {
                printf("frac : %s\n", GCSTR x.frac_print());
                printf("deci : %s\n", GCSTR x.deci_print());
             }
+            if (!strcmp(op, "**")) {
+               Q x = l.pow(r, 4096);
+               printf("debu : %s\n", GCSTR x.debu_print());
+               printf("frac : %s\n", GCSTR x.frac_print());
+               printf("deci : %s\n", GCSTR x.deci_print());
+            }
             if (!strcmp(op, "==")) {
                bool result = (l == r);
                printf("%s\n", result ? "true" : "false");

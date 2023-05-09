@@ -364,35 +364,6 @@ void Z::divide(
    // that's it, we're done!
 }
 
-Z Z::sqrt(void) const {
-   // we'll do this recursively...
-
-   // trivial cases
-   if (size == 0) {
-      return *this;
-   }
-   if (size == 1) {
-      uint64_t res = ::sqrt((double)data[0]);
-      return Z(res);
-   }
-   if (size == 2) {
-      uint64_t res = ::sqrt((double)(((uint64_t)data[1] << 16) | data[0]));
-      return Z(res);
-   }
-
-   // and now the fun stuff...
-
-   // sqrt(z) = 2 * sqrt(z/4)
-   Z result = (*this >> 2).sqrt() << 1;
-   Z result_plus_1 = result + 1;
-
-   if (result_plus_1 * result_plus_1 < *this) {
-      result = result + 1;
-   }
-
-   return result;
-}
-
 Z Z::operator / (Z const & obj) const {
    Z quot;
    Z rem;
@@ -475,6 +446,10 @@ Z Z::operator >> (int64_t smallbits) const {
 Z Z::operator << (int64_t smallbits) const {
    Z result = *this;
    return result <<= smallbits;
+}
+
+Z Z::sqrt(void) const {
+   return root(2);
 }
 
 bool Z::operator == (const Z &other) const {
@@ -661,7 +636,7 @@ Z::operator uint64_t() const {
    return ret;
 }
 
-Z Z::pow(const Z& other) {
+Z Z::pow(const Z& other) const {
    if (other.isZero()) {
       return 1;
    }
@@ -674,6 +649,36 @@ Z Z::pow(const Z& other) {
       ret = ret * (*this);
    }
    return ret;
+}
+
+Z Z::root(const Z& other) const {
+
+   // error case
+   if (other.isZero()) {
+      throw (UGE_ERR("0th root error"));
+   }
+
+   // we'll do this recursively...
+
+   // base cases
+   if (other == 1) { // trivial
+      return *this;
+   }
+   if (size == 0) { // trivial
+      return *this;
+   }
+
+   // and now the fun stuff...
+
+   // root(n) = 2 * sqrt(z/(2^n))
+   Z result = (*this >> (uint64_t)other).root(other) << 1;
+   Z result_plus_1 = result + 1;
+
+   if (result_plus_1.pow(other) < *this) {
+      return result_plus_1;
+   }
+
+   return result;
 }
 
 char *Z::print(void) const {

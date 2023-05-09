@@ -709,3 +709,19 @@ Q Q::sqrt(uint64_t precision) const {
 
    return Q(1, (int)0, n, d); // constructor will simplify()
 }
+
+Q Q::pow(const Q &power, uint64_t precision) const {
+   Z m = 1;
+   m <<= precision;
+
+   Z pn = power.num + power.den * power.whl;
+   Z pd = power.den;
+
+   Z n = (num + den * whl).pow(pn) * m;
+   Z d = den.pow(pn) * m;
+
+   n = n.root(pd);
+   d = d.root(pd);
+
+   return Q(1, (int)0, n, d); // constructor will simplify()
+}

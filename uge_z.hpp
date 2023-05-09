@@ -57,7 +57,8 @@ namespace uge {
          Z& operator>>= (int64_t bits);
          Z& operator<<= (int64_t bits);
 
-         Z pow(const Z& other);
+         Z pow(const Z& other) const;
+         Z root(const Z& other) const;
 
          bool isZero(void) const;
 
