@@ -674,8 +674,9 @@ Z Z::root(const Z& other) const {
    Z result = (*this >> (uint64_t)other).root(other) << 1;
    Z result_plus_1 = result + 1;
 
-   if (result_plus_1.pow(other) < *this) {
-      return result_plus_1;
+   while (result_plus_1.pow(other) < *this) {
+      result = result_plus_1;
+      result_plus_1 = result + 1;
    }
 
    return result;
