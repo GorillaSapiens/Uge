@@ -359,7 +359,12 @@ Q Q::operator - () const { // unary minus
 }
 
 Q Q::operator ~ () const { // unary bitwise not, truncates to integer
-   return Q(true, ~whl, (int) 0, 1);
+   if (pos) {
+      return Q(false, whl + 1, (int)0, 1);
+   }
+   else {
+      return Q(true, whl - 1, (int)0, 1);
+   }
 }
 
 Q Q::operator * (Q const & obj) const {
@@ -393,15 +398,60 @@ Q Q::operator % (Q const & obj) const {
 }
 
 Q Q::operator & (Q const & obj) const { // truncates to integer
-   return Q(true, whl & obj.whl, (int)0, 1);
+   if (pos) {
+      if (obj.pos) {
+         return Q(true, whl.apply(obj.whl, Z::BOOL_AND), (int)0, 1);
+      }
+      else {
+         return Q(true, whl.apply(obj.whl - 1, Z::BOOL_AANDNOTB), (int)0, 1);
+      }
+   }
+   else {
+      if (obj.pos) {
+         return Q(true, (whl - 1).apply(obj.whl, Z::BOOL_BANDNOTA), (int)0, 1);
+      }
+      else {
+         return Q(true, (whl - 1).apply(obj.whl - 1, Z::BOOL_NOR), (int)0, 1);
+      }
+   }
 }
 
 Q Q::operator | (Q const & obj) const { // truncates to integer
-   return Q(true, whl | obj.whl, (int)0, 1);
+   if (pos) {
+      if (obj.pos) {
+         return Q(true, whl.apply(obj.whl, Z::BOOL_OR), (int)0, 1);
+      }
+      else {
+         return Q(true, whl.apply(obj.whl - 1, Z::BOOL_AORNOTB), (int)0, 1);
+      }
+   }
+   else {
+      if (obj.pos) {
+         return Q(true, (whl - 1).apply(obj.whl, Z::BOOL_BORNOTA), (int)0, 1);
+      }
+      else {
+         return Q(true, (whl - 1).apply(obj.whl - 1, Z::BOOL_NAND), (int)0, 1);
+      }
+   }
 }
 
 Q Q::operator ^ (Q const & obj) const { // truncates to integer
-   return Q(true, whl ^ obj.whl, (int)0, 1);
+   if (pos) {
+      if (obj.pos) {
+         return Q(true, whl.apply(obj.whl, Z::BOOL_XOR), (int)0, 1);
+      }
+      else {
+         return Q(true, whl.apply(obj.whl - 1, Z::BOOL_XNOR), (int)0, 1);
+      }
+   }
+   else {
+      if (obj.pos) {
+         return Q(true, (whl - 1).apply(obj.whl, Z::BOOL_XNOR), (int)0, 1);
+      }
+      else {
+         return Q(true, (whl - 1).apply(obj.whl - 1, Z::BOOL_XOR), (int)0, 1);
+      }
+   }
 }
 
 bool Q::operator == (const Q &other) const {

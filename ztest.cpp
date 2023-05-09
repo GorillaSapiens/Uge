@@ -56,16 +56,6 @@ int main(int argc, char **argv) {
             printf("sqrt : %s\n", GCSTR l.sqrt().print());
             printf("\n");
          }
-         if (!strcmp(bufl, "~")) {
-            Z l(op);
-
-            printf("== input ==\n");
-            printf("print: ~ %s\n", GCSTR l.print());
-            printf("== result==\n");
-            l = ~l;
-            printf("~ : %s\n", GCSTR l.print());
-            printf("\n");
-         }
       }
       else if (3 == res) {
          Z l(bufl);

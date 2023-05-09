@@ -567,23 +567,6 @@ Z& Z::operator%=(const Z& other) {
    return *this;
 }
 
-Z Z::operator ~ () const {
-
-   // TODO FIX
-   // this may need a rethink.
-   // ~15 = 65520, is this an expected result?
-   // we cannot carry off to infinity!
-   // or should we mask, so ~15 = 0
-   // what then information is lost about bit length???
-
-   Z ret = *this;
-   for (uint64_t i = 0; i < size; i++) {
-      ret.data[i] = ~ret.data[i];
-   }
-   ret.fixZero();
-   return ret;
-}
-
 Z& Z::operator&=(const Z& other) {
    *this = *this & other;
    return *this;
@@ -735,5 +718,80 @@ char *Z::dprint(void) const {
          i == 0 ? "}" : "");
 
    }
+   return ret;
+}
+
+Z Z::apply(const Z &b, enum boolop op) const {
+   Z left = *this;
+   Z right = b;
+   Z ret;
+
+   while (left.size < right.size) {
+      left.grow();
+      left.size++;
+   }
+   while (right.size < left.size) {
+      right.grow();
+      right.size++;
+   }
+   while (ret.size < left.size) {
+      ret.grow();
+      ret.size++;
+   }
+
+   for (uint64_t i = 0; i < left.size; i++) {
+      switch (op) {
+         case BOOL_NULL:       // 0b0000
+            ret.data[i] = -1;
+            break;
+         case BOOL_NOR:        // 0b0001
+            ret.data[i] = ~ (left.data[i] | right.data[i]);
+            break;
+         case BOOL_BANDNOTA:   // 0b0010
+            ret.data[i] = (~left.data[i]) & right.data[i];
+            break;
+         case BOOL_NOTA:       // 0b0011
+            ret.data[i] = ~ (left.data[i]);
+            break;
+         case BOOL_AANDNOTB:   // 0b0100
+            ret.data[i] = left.data[i] & (~right.data[i]);
+            break;
+         case BOOL_NOTB:       // 0b0101
+            ret.data[i] = ~ (right.data[i]);
+            break;
+         case BOOL_XOR:        // 0b0110
+            ret.data[i] = left.data[i] ^ right.data[i];
+            break;
+         case BOOL_NAND:       // 0b0111
+            ret.data[i] = ~(left.data[i] & right.data[i]);
+            break;
+         case BOOL_AND:        // 0b1000
+            ret.data[i] = left.data[i] & right.data[i];
+            break;
+         case BOOL_XNOR:       // 0b1001
+            ret.data[i] = ~(left.data[i] ^ right.data[i]);
+            break;
+         case BOOL_TRANB:      // 0b1010
+            ret.data[i] = right.data[i];
+            break;
+         case BOOL_BORNOTA:    // 0b1011
+            ret.data[i] = (~left.data[i]) | right.data[i];
+            break;
+         case BOOL_TRANA:      // 0b1100
+            ret.data[i] = left.data[i];
+            break;
+         case BOOL_AORNOTB:    // 0b1101
+            ret.data[i] = left.data[i] | (~right.data[i]);
+            break;
+         case BOOL_OR:         // 0b1110
+            ret.data[i] = left.data[i] | right.data[i];
+            break;
+         case BOOL_ONE:        // 0b1111
+            ret.data[i] = -1;
+            break;
+      }
+   }
+
+   ret.fixZero();
    return ret;
 }
