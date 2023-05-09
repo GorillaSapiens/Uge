@@ -69,6 +69,10 @@ namespace uge {
          // returns pointer that must be free'd
          char *dprint(void) const;
 
+
+         // the following enum and method are for use with the Q class
+         // for full details, see the implementation.
+
          enum boolop {
             BOOL_AND,
             BOOL_OR,
