@@ -351,11 +351,15 @@ Q Q::operator + () const { // unary plus
 
 Q Q::operator - () const { // unary minus
    if (whl.isZero() && num.isZero()) {
-      return Q(pos, (uint64_t)0, (uint64_t)0, 1);
+      return Q(true, (uint64_t)0, (uint64_t)0, 1);
    }
    else {
       return Q(!pos, whl, num, den);
    }
+}
+
+Q Q::operator ~ () const { // unary bitwise not, truncates to integer
+   return Q(true, ~whl, (int) 0, 1);
 }
 
 Q Q::operator * (Q const & obj) const {
@@ -386,6 +390,18 @@ Q Q::operator % (Q const & obj) const {
    res.whl = (int)0;
    res = res * obj;
    return res;
+}
+
+Q Q::operator & (Q const & obj) const { // truncates to integer
+   return Q(true, whl & obj.whl, (int)0, 1);
+}
+
+Q Q::operator | (Q const & obj) const { // truncates to integer
+   return Q(true, whl | obj.whl, (int)0, 1);
+}
+
+Q Q::operator ^ (Q const & obj) const { // truncates to integer
+   return Q(true, whl ^ obj.whl, (int)0, 1);
 }
 
 bool Q::operator == (const Q &other) const {
@@ -443,6 +459,21 @@ Q& Q::operator/=(const Q& other) {
 
 Q& Q::operator%=(const Q& other) {
    *this = *this % other;
+   return *this;
+}
+
+Q& Q::operator&=(const Q& other) {
+   *this = *this & other;
+   return *this;
+}
+
+Q& Q::operator|=(const Q& other) {
+   *this = *this | other;
+   return *this;
+}
+
+Q& Q::operator^=(const Q& other) {
+   *this = *this ^ other;
    return *this;
 }
 

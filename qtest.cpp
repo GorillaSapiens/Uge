@@ -56,6 +56,12 @@ int main(int argc, char **argv) {
          printf("sqrt frac_print: %s\n", GCSTR r.frac_print());
          printf("sqrt deci_print: %s\n", GCSTR r.deci_print());
 
+         r = ~l;
+
+         printf("~ debu_print: %s\n", GCSTR r.debu_print());
+         printf("~ frac_print: %s\n", GCSTR r.frac_print());
+         printf("~ deci_print: %s\n", GCSTR r.deci_print());
+
          printf("== done==\n\n");
       }
       else if (3 == res) {
@@ -98,6 +104,24 @@ int main(int argc, char **argv) {
             }
             if (!strcmp(op, "%")) {
                Q x = l % r;
+               printf("debu : %s\n", GCSTR x.debu_print());
+               printf("frac : %s\n", GCSTR x.frac_print());
+               printf("deci : %s\n", GCSTR x.deci_print());
+            }
+            if (!strcmp(op, "&")) {
+               Q x = l & r;
+               printf("debu : %s\n", GCSTR x.debu_print());
+               printf("frac : %s\n", GCSTR x.frac_print());
+               printf("deci : %s\n", GCSTR x.deci_print());
+            }
+            if (!strcmp(op, "|")) {
+               Q x = l | r;
+               printf("debu : %s\n", GCSTR x.debu_print());
+               printf("frac : %s\n", GCSTR x.frac_print());
+               printf("deci : %s\n", GCSTR x.deci_print());
+            }
+            if (!strcmp(op, "^")) {
+               Q x = l ^ r;
                printf("debu : %s\n", GCSTR x.debu_print());
                printf("frac : %s\n", GCSTR x.frac_print());
                printf("deci : %s\n", GCSTR x.deci_print());
