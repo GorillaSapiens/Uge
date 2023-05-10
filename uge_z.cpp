@@ -670,7 +670,7 @@ Z Z::root(const Z& other) const {
 
    // and now the fun stuff...
 
-   // root(n) = 2 * sqrt(z/(2^n))
+   // z.root(n) = 2 * (z/2^n).root(n)
    Z result = (*this >> (uint64_t)other).root(other) << 1;
    Z result_plus_1 = result + 1;
 
