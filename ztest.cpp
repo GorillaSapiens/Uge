@@ -111,6 +111,10 @@ int main(int argc, char **argv) {
                Z x = l.pow(r);
                printf("prnt : %s\n", GCSTR x.print());
             }
+            if (!strcmp(op, "root")) {
+               Z x = l.root(r);
+               printf("prnt : %s\n", GCSTR x.print());
+            }
             if (!strcmp(op, "==")) {
                bool result = (l == r);
                printf("%s\n", result ? "true" : "false");

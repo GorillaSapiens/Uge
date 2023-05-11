@@ -6,7 +6,9 @@
 
 #include "uge_err.hpp"
 #include "uge_ramprintf.hpp"
+#include "uge_gcstr.hpp"
 #include "uge_z.hpp"
+#include "primes.hpp"
 
 using namespace uge;
 
@@ -661,17 +663,39 @@ Z Z::root(const Z& other) const {
    // we'll do this recursively...
 
    // base cases
-   if (other == 1) { // trivial
-      return *this;
-   }
-   if (size == 0) { // trivial
+   if (other == 1 || size == 0 || *this == 1) { // trivial
       return *this;
    }
 
    // and now the fun stuff...
 
+   Z result;
+   bool hard = true;
+
+   Z last(primes[(sizeof(primes) / sizeof(primes[0])) - 1]);
+   last = last.pow(other);
+   if (*this <= last) {
+      // z.root(n) = p * (z/p^n).root(n)
+      for (int i = 0; i < sizeof(primes) / sizeof(primes[0]); i++) {
+         Z p(primes[i]);
+         Z pn = p.pow(other);
+         if (pn > *this) {
+            break;
+         }
+         if ((*this % pn).isZero()) {
+            result = *this / pn;
+            result = p * result.root(other);
+            hard = false;
+            break;
+         }
+      }
+   }
+
    // z.root(n) = 2 * (z/2^n).root(n)
-   Z result = (*this >> (uint64_t)other).root(other) << 1;
+   if (hard) {
+      result = (*this >> (uint64_t)other).root(other) << 1;
+   }
+
    Z result_plus_1 = result + 1;
 
    while (result_plus_1.pow(other) < *this) {
