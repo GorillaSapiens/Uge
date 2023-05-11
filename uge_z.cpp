@@ -8,7 +8,7 @@
 #include "uge_ramprintf.hpp"
 #include "uge_gcstr.hpp"
 #include "uge_z.hpp"
-#include "primes.hpp"
+#include "uge_primes.hpp"
 
 using namespace uge;
 
