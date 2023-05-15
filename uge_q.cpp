@@ -720,8 +720,19 @@ Q Q::pow(const Q &power, uint64_t precision) const {
    Z n = (num + den * whl).pow(pn) * m;
    Z d = den.pow(pn) * m;
 
+   bool retpos = true;
+   if (!pos) {
+      if (!(pn % 2).isZero()) {
+         retpos = false;
+      }
+   }
+
+   if (!retpos && (pd % 2).isZero()) {
+      throw (UGE_ERR("even root of negative number"));
+   }
+
    n = n.root(pd);
    d = d.root(pd);
 
-   return Q(1, (int)0, n, d); // constructor will simplify()
+   return Q(retpos, (int)0, n, d); // constructor will simplify()
 }
