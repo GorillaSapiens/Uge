@@ -454,6 +454,16 @@ Q Q::operator ^ (Q const & obj) const { // truncates to integer
    }
 }
 
+Q Q::operator >> (int64_t smallbits) const {
+   Q result = *this;
+   return result >>= smallbits;
+}
+
+Q Q::operator << (int64_t smallbits) const {
+   Q result = *this;
+   return result <<= smallbits;
+}
+
 bool Q::operator == (const Q &other) const {
    Q l(*this);
    l.simplify();
@@ -524,6 +534,20 @@ Q& Q::operator|=(const Q& other) {
 
 Q& Q::operator^=(const Q& other) {
    *this = *this ^ other;
+   return *this;
+}
+
+Q& Q::operator >>= (int64_t bits) {
+   num = (int) 0;
+   den = 1;
+   whl >>= bits;
+   return *this;
+}
+
+Q& Q::operator <<= (int64_t bits) {
+   num = (int) 0;
+   den = 1;
+   whl <<= bits;
    return *this;
 }
 

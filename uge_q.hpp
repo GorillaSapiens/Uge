@@ -52,6 +52,8 @@ namespace uge {
          Q operator & (Q const & obj) const; // beware, see note below
          Q operator | (Q const & obj) const; // beware, see note below
          Q operator ^ (Q const & obj) const; // beware, see note below
+         Q operator >> (int64_t bits) const; // beware, see note below
+         Q operator << (int64_t bits) const; // beware, see note below
 
          bool operator == (const Q &other) const;
          bool operator != (const Q &other) const;
@@ -69,6 +71,8 @@ namespace uge {
          Q& operator&=(const Q& other); // beware, see note below
          Q& operator|=(const Q& other); // beware, see note below
          Q& operator^=(const Q& other); // beware, see note below
+         Q& operator>>= (int64_t bits); // beware, see note below
+         Q& operator<<= (int64_t bits); // beware, see note below
 
          // returns pointer that must be free'd
          char *debu_print(void) const;
@@ -90,8 +94,8 @@ namespace uge {
    };
 };
 
-// NB: bitwise operators ~, &, |, ^ only work on positive whole numbers
-// if used on anything else, they are first transformed to positive whole
+// NB: bitwise operators ~, &, |, ^, <<, >> only work on whole numbers
+// if used on anything else, they are first transformed to whole
 // numbers.
 
 #endif // _INCLUDE_UGE_Q_HPP_
