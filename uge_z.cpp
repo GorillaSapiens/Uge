@@ -6,7 +6,7 @@
 
 #include "uge_err.hpp"
 #include "uge_ramprintf.hpp"
-#include "uge_gcstr.hpp"
+#include "gcstr.hpp"
 #include "uge_z.hpp"
 #include "uge_primes.hpp"
 

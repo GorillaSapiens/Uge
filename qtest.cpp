@@ -10,7 +10,7 @@
 #include <assert.h>
 
 #include "uge_ramprintf.hpp"
-#include "uge_gcstr.hpp"
+#include "gcstr.hpp"
 #include "uge_q.hpp"
 
 using namespace uge;
