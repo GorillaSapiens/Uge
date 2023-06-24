@@ -13,6 +13,8 @@
 #include "gcstr.hpp"
 #include "uge_q.hpp"
 
+#define PRECISION 4096
+
 using namespace uge;
 
 int main(int argc, char **argv) {
@@ -50,7 +52,7 @@ int main(int argc, char **argv) {
          printf("frac_print: %s\n", GCSTR l.frac_print());
          printf("deci_print: %s\n", GCSTR l.deci_print());
 
-         Q r = l.sqrt(4096);
+         Q r = l.sqrt(PRECISION);
 
          printf("sqrt debu_print: %s\n", GCSTR r.debu_print());
          printf("sqrt frac_print: %s\n", GCSTR r.frac_print());
@@ -127,7 +129,7 @@ int main(int argc, char **argv) {
                printf("deci : %s\n", GCSTR x.deci_print());
             }
             else if (!strcmp(op, "**")) {
-               Q x = l.pow(r, 4096);
+               Q x = l.pow(r, PRECISION);
                printf("debu : %s\n", GCSTR x.debu_print());
                printf("frac : %s\n", GCSTR x.frac_print());
                printf("deci : %s\n", GCSTR x.deci_print());

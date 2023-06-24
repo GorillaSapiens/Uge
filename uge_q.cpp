@@ -735,14 +735,11 @@ Q Q::sqrt(uint64_t precision) const {
 }
 
 Q Q::pow(const Q &power, uint64_t precision) const {
-   Z m = 1;
-   m <<= precision;
-
    Z pn = power.num + power.den * power.whl;
    Z pd = power.den;
 
-   Z n = (num + den * whl).pow(pn) * m;
-   Z d = den.pow(pn) * m;
+   Z n = (num + den * whl).pow(pn);
+   Z d = den.pow(pn);
 
    bool retpos = true;
    if (!pos) {
@@ -755,8 +752,16 @@ Q Q::pow(const Q &power, uint64_t precision) const {
       throw (UGE_ERR("even root of negative number"));
    }
 
-   n = n.root(pd);
-   d = d.root(pd);
+   Z nr = n.root(pd);
+   Z dr = d.root(pd);
 
-   return Q(retpos, (int)0, n, d); // constructor will simplify()
+   if (nr.pow(pd) != n || dr.pow(pd) != d) {
+      Z m = 1;
+      m <<= precision;
+
+      nr = (n * m).root(pd);
+      dr = (d * m).root(pd);
+   }
+
+   return Q(retpos, (int)0, nr, dr); // constructor will simplify()
 }
