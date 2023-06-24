@@ -8,7 +8,6 @@
 #include "uge_ramprintf.hpp"
 #include "gcstr.hpp"
 #include "uge_z.hpp"
-#include "uge_primes.hpp"
 
 using namespace uge;
 
@@ -668,42 +667,21 @@ Z Z::root(const Z& other) const {
    }
 
    // and now the fun stuff...
+   Z low((uint64_t)0);
+   Z high(*this);
+   Z mid = (low + high) / 2;
 
-   Z result;
-   bool hard = true;
-
-   Z last(primes[(sizeof(primes) / sizeof(primes[0])) - 1]);
-   last = last.pow(other);
-   if (*this <= last) {
-      // z.root(n) = p * (z/p^n).root(n)
-      for (int i = 0; i < sizeof(primes) / sizeof(primes[0]); i++) {
-         Z p(primes[i]);
-         Z pn = p.pow(other);
-         if (pn > *this) {
-            break;
-         }
-         if ((*this % pn).isZero()) {
-            result = *this / pn;
-            result = p * result.root(other);
-            hard = false;
-            break;
-         }
+   do {
+      if (mid.pow(other) > *this) {
+         high = mid;
       }
-   }
+      else {
+         low = mid;
+      }
+      mid = (low + high) / 2;
+   } while (mid != low);
 
-   // z.root(n) = 2 * (z/2^n).root(n)
-   if (hard) {
-      result = (*this >> (uint64_t)other).root(other) << 1;
-   }
-
-   Z result_plus_1 = result + 1;
-
-   while (result_plus_1.pow(other) < *this) {
-      result = result_plus_1;
-      result_plus_1 = result + 1;
-   }
-
-   return result;
+   return low;
 }
 
 char *Z::print(void) const {

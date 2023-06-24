@@ -34,7 +34,7 @@ qtest.o: /usr/include/stdio.h /usr/include/stdlib.h /usr/include/stdint.h
 qtest.o: /usr/include/assert.h /usr/include/features.h
 qtest.o: /usr/include/features-time64.h /usr/include/stdc-predef.h
 qtest.o: /usr/include/printf.h /usr/include/string.h /usr/include/strings.h
-qtest.o: uge_ramprintf.hpp uge_q.hpp uge_z.hpp
+qtest.o: uge_ramprintf.hpp gcstr.hpp uge_q.hpp uge_z.hpp
 uge_q.o: /usr/include/math.h /usr/include/string.h /usr/include/strings.h
 uge_q.o: /usr/include/features.h /usr/include/features-time64.h
 uge_q.o: /usr/include/stdc-predef.h /usr/include/assert.h uge_err.hpp
@@ -48,9 +48,9 @@ uge_z.o: /usr/include/math.h /usr/include/string.h /usr/include/strings.h
 uge_z.o: /usr/include/features.h /usr/include/features-time64.h
 uge_z.o: /usr/include/stdc-predef.h /usr/include/assert.h uge_err.hpp
 uge_z.o: uge_ramprintf.hpp gcstr.hpp /usr/include/stdlib.h uge_z.hpp
-uge_z.o: /usr/include/stdint.h uge_primes.hpp
+uge_z.o: /usr/include/stdint.h
 ztest.o: /usr/include/stdio.h /usr/include/stdlib.h /usr/include/stdint.h
 ztest.o: /usr/include/assert.h /usr/include/features.h
 ztest.o: /usr/include/features-time64.h /usr/include/stdc-predef.h
 ztest.o: /usr/include/printf.h /usr/include/string.h /usr/include/strings.h
-ztest.o: uge_ramprintf.hpp uge_z.hpp
+ztest.o: gcstr.hpp uge_ramprintf.hpp uge_z.hpp
