@@ -678,6 +678,7 @@ Z Z::root(const Z& other) const {
       else {
          low = mid;
       }
+      // binary search, newtons method was 100 times slower!
       mid = (low + high) / 2;
    } while (mid != low);
 
