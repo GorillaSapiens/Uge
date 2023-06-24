@@ -71,73 +71,76 @@ int main(int argc, char **argv) {
                Z x = l + r;
                printf("prnt : %s\n", GCSTR x.print());
             }
-            if (!strcmp(op, "-")) {
+            else if (!strcmp(op, "-")) {
                Z x = l - r;
                printf("prnt : %s\n", GCSTR x.print());
             }
-            if (!strcmp(op, "*")) {
+            else if (!strcmp(op, "*")) {
                Z x = l * r;
                printf("prnt : %s\n", GCSTR x.print());
             }
-            if (!strcmp(op, "/")) {
+            else if (!strcmp(op, "/")) {
                Z x = l / r;
                printf("prnt : %s\n", GCSTR x.print());
             }
-            if (!strcmp(op, "%")) {
+            else if (!strcmp(op, "%")) {
                Z x = l % r;
                printf("prnt : %s\n", GCSTR x.print());
             }
-            if (!strcmp(op, "&")) {
+            else if (!strcmp(op, "&")) {
                Z x = l & r;
                printf("prnt : %s\n", GCSTR x.print());
             }
-            if (!strcmp(op, "|")) {
+            else if (!strcmp(op, "|")) {
                Z x = l | r;
                printf("prnt : %s\n", GCSTR x.print());
             }
-            if (!strcmp(op, "^")) {
+            else if (!strcmp(op, "^")) {
                Z x = l ^ r;
                printf("prnt : %s\n", GCSTR x.print());
             }
-            if (!strcmp(op, "<<")) {
+            else if (!strcmp(op, "<<")) {
                Z x = l << (uint64_t) r;
                printf("prnt : %s\n", GCSTR x.print());
             }
-            if (!strcmp(op, ">>")) {
+            else if (!strcmp(op, ">>")) {
                Z x = l >> (uint64_t) r;
                printf("prnt : %s\n", GCSTR x.print());
             }
-            if (!strcmp(op, "**")) {
+            else if (!strcmp(op, "**")) {
                Z x = l.pow(r);
                printf("prnt : %s\n", GCSTR x.print());
             }
-            if (!strcmp(op, "root")) {
+            else if (!strcmp(op, "root")) {
                Z x = l.root(r);
                printf("prnt : %s\n", GCSTR x.print());
             }
-            if (!strcmp(op, "==")) {
+            else if (!strcmp(op, "==")) {
                bool result = (l == r);
                printf("%s\n", result ? "true" : "false");
             }
-            if (!strcmp(op, "!=")) {
+            else if (!strcmp(op, "!=")) {
                bool result = (l != r);
                printf("%s\n", result ? "true" : "false");
             }
-            if (!strcmp(op, "<")) {
+            else if (!strcmp(op, "<")) {
                bool result = (l < r);
                printf("%s\n", result ? "true" : "false");
             }
-            if (!strcmp(op, ">")) {
+            else if (!strcmp(op, ">")) {
                bool result = (l > r);
                printf("%s\n", result ? "true" : "false");
             }
-            if (!strcmp(op, "<=")) {
+            else if (!strcmp(op, "<=")) {
                bool result = (l <= r);
                printf("%s\n", result ? "true" : "false");
             }
-            if (!strcmp(op, ">=")) {
+            else if (!strcmp(op, ">=")) {
                bool result = (l >= r);
                printf("== %s\n", result ? "true" : "false");
+            }
+            else {
+               printf("unknown op '%s'\n", op);
             }
          }
          catch (std::string e) {
