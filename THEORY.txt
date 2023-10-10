@@ -15,9 +15,9 @@ instead of working in base 10, Z works in base 65536.  Child's play for
 a computer.
 
 Q represents numbers as four quantities: a sign (positive or negative),
-a whole number (an unsigned integer), and a fractional part expressed
-as a whole number numerator and whole number denominator (both are
-unsigned integers).
+a whole number (an unsigned integer of type Z), and a fractional part
+expressed as a whole number numerator and whole number denominator
+(both are unsigned integers of type Z).
 
 This may seem odd compared to IEEE 754 and other standards, but it solves
 a critical problem.  When representing common fractions, it does not
