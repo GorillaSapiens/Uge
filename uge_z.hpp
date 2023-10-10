@@ -1,5 +1,5 @@
-#ifndef _INCLUDE_INTEGER_HPP_
-#define _INCLUDE_INTEGER_HPP_
+#ifndef _INCLUDE_UGE_Z_HPP_
+#define _INCLUDE_UGE_Z_HPP_
 
 #include <stdint.h>
 
@@ -84,4 +84,4 @@ namespace uge {
    };
 };
 
-#endif // _INCLUDE_INTEGER_HPP_
+#endif // _INCLUDE_UGE_Z_HPP_
