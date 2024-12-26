@@ -786,3 +786,81 @@ Z Z::apply(const Z &b, bool inva, bool invb, enum boolop op, bool invo) const {
    ret.fixZero();
    return ret;
 }
+
+// returns true is max has been exceeded
+bool Z::deci_lengths(Z &lead, Z &repeat, uint64_t max) const {
+   static const Z zero;
+   Z remainder = *this;
+   Z factor2;
+   Z factor5;
+   bool maxlead = false;
+   bool maxrepeat = false;
+
+   // number of times "2" is a factor
+   while (remainder.size > 1 && remainder.data[0] == 0) {
+      factor2 += sizeof(uint16_t) * 8;
+      remainder /= 65536; // there may be faster ways to do this.
+      if (factor2 > max) {
+         maxlead = true;
+         factor2 = max;
+	 break;
+      }
+   }
+   while (!maxlead && remainder.data[0] != 0 && (remainder.data[0] & 1) == 0) {
+      factor2 += 1;
+      remainder /= 2;
+      if (factor2 > max) {
+         maxlead = true;
+         factor2 = max;
+	 break;
+      }
+   }
+
+   // number of times "5" is a factor
+   // he highest power of 5 less than 2^64 is 5^27
+#define FIVE_27 7450580596923828125ULL
+   while (!maxlead && remainder.size > 1 && (remainder % FIVE_27) == zero) {
+      factor5 += 27;
+      remainder /= FIVE_27;
+      if (factor5 > max) {
+         maxlead = true;
+         factor5 = max;
+	 break;
+      }
+   }
+   while (!maxlead && (remainder % 5) == zero) {
+      factor5 += 1;
+      remainder /= 5;
+      if (factor5 > max) {
+         maxlead = true;
+         factor5 = max;
+	 break;
+      }
+   }
+
+   if (factor2 > factor5) {
+      lead = factor2;
+   }
+   else {
+      lead = factor5;
+   }
+
+   if (remainder == 1) {
+      repeat = zero;
+   }
+   else {
+      Z ten = 10;
+      repeat = 1;
+
+      while (ten.pow(repeat) % remainder != 1) {
+         repeat += 1;
+	 if (repeat > max) {
+            maxrepeat = true;
+	    repeat = max;
+	    break;
+	 }
+      }
+   }
+
+   return maxlead || maxrepeat;
+}

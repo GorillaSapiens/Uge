@@ -70,7 +70,6 @@ namespace uge {
          // returns pointer that must be free'd
          char *dprint(void) const;
 
-
          // the following enum and method are for use with the Q class
          // for full details, see the implementation.
 
@@ -81,6 +80,7 @@ namespace uge {
          };
 
          Z apply(const Z &b, bool inva, bool invb, enum boolop op, bool invo) const;
+	 bool deci_lengths(Z &lead, Z &repeat, uint64_t max = 20) const;
    };
 };
 

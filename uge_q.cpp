@@ -14,9 +14,6 @@ using namespace uge;
 // constant used for repeated fraction guess when parsing (double)
 #define BIGPOWEROF2 512
 
-// max characters after decimal point when trying to find repeated fraction
-#define MAX_DECI 256
-
 static Z gcd(Z x, Z y) {
    // euclid
    Z a = x;
@@ -592,13 +589,8 @@ char *Q::frac_print(void) const {
    }
 }
 
-typedef struct remchain_s {
-   int digit;
-   Z *remainder;
-   struct remchain_s *next;
-} remchain_t;
-
-char *Q::deci_print(void) const {
+char *Q::deci_print(uint64_t max) const {
+   static const Z zero;
    char *ret = NULL;
 
    if (!pos) {
@@ -613,67 +605,37 @@ char *Q::deci_print(void) const {
 
    raprintf(ret, ".");
 
-   remchain_t *head = NULL;
-   remchain_t *tail = NULL;
-   int remchain_count = 0;
+   Z lead;
+   Z repeat;
 
-   Z remainder = num;
+   bool bad = den.deci_lengths(lead, repeat, max);
 
-   head = tail = (remchain_t *) malloc(sizeof(remchain_t));
-   remchain_count++;
-   head->digit = -1;
-   head->remainder = new Z(remainder);
-   head->next = NULL;
+   Z remainder = num * 10;
+   Z digit;
 
-   while(1) {
-      remainder *= 10;
-      Z digit = remainder / den;
+   for (Z i; i < lead; i += 1) {
+      digit = remainder / den;
       remainder = remainder % den;
-
-      tail->next = (remchain_t *) malloc(sizeof(remchain_t));
-      remchain_count++;
-      tail->next->digit = (uint64_t) digit;
-      tail->next->remainder = new Z(remainder);
-      tail->next->next = NULL;
-      tail = tail->next;
-
-      if (remainder.isZero() || remchain_count > MAX_DECI) {
-         for (remchain_t *tmp = head; tmp; tmp = tmp->next) {
-            if (tmp->digit >= 0) {
-               raprintf(ret, "%c", '0' + tmp->digit);
-            }
+      raprintf(ret, "%s", GCSTR digit.print());
+      remainder *= 10;
+   }
+   if (bad && lead >= max) {
+      raprintf(ret, "...");
+   }
+   else {
+      if (repeat != zero) {
+         raprintf(ret, "(");
+         for (Z i; i < repeat; i += 1) {
+            digit = remainder / den;
+            remainder = remainder % den;
+            raprintf(ret, "%s", GCSTR digit.print());
+            remainder *= 10;
          }
-         if (remchain_count > MAX_DECI) {
+         if (bad && repeat >= max) {
             raprintf(ret, "...");
          }
-         goto fini;
+         raprintf(ret, ")");
       }
-      else {
-         for (remchain_t *tmp = head; tmp != tail; tmp = tmp->next) {
-            if (*(tmp->remainder) == *(tail->remainder)) {
-               for (remchain_t *tmp2 = head; tmp2; tmp2 = tmp2->next) {
-                  if (tmp2->digit >= 0) {
-                     raprintf(ret, "%c", '0' + tmp2->digit);
-                  }
-                  if (tmp2 == tmp) {
-                     raprintf(ret, "(");
-                  }
-               }
-               raprintf(ret, ")");
-               goto fini;
-            }
-         }
-      }
-   }
-
-   fini:
-
-   remchain_t *next;
-   remchain_t *tmp;
-   for (tmp = head, next = tmp->next; tmp; tmp = next) {
-      next = tmp->next;
-      delete tmp->remainder;
-      free((void *)tmp);
    }
 
    return ret;

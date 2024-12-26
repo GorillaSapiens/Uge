@@ -81,7 +81,7 @@ namespace uge {
          char *frac_print(void) const;
 
          // returns pointer that must be free'd
-         char *deci_print(void) const;
+         char *deci_print(uint64_t max = 16) const;
 
          explicit operator int64_t () const;
          explicit operator double() const;
@@ -89,6 +89,7 @@ namespace uge {
          Q floor(void) const;
          int sgn(void) const;
 
+	 // NB: sqrt is a rational approximation to the given precision
          Q sqrt(uint64_t precision) const;
          Q pow(const Q &power, uint64_t precision) const;
    };
