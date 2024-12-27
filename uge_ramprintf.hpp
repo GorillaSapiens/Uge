@@ -20,4 +20,5 @@ namespace uge {
 };
 
 #endif // _INCLUDE_UGE_RAMPRINTF_H_
+
 // vim: expandtab:noai:ts=3:sw=3

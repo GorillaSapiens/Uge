@@ -85,4 +85,5 @@ namespace uge {
 };
 
 #endif // _INCLUDE_UGE_Z_HPP_
+
 // vim: expandtab:noai:ts=3:sw=3

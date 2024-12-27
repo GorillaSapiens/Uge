@@ -100,4 +100,5 @@ namespace uge {
 // numbers.
 
 #endif // _INCLUDE_UGE_Q_HPP_
+
 // vim: expandtab:noai:ts=3:sw=3

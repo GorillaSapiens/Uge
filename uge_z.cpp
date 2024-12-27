@@ -866,4 +866,5 @@ bool Z::deci_lengths(Z &lead, Z &repeat, uint64_t max) const {
 
    return maxlead || maxrepeat;
 }
+
 // vim: expandtab:noai:ts=3:sw=3
