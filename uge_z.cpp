@@ -24,7 +24,7 @@ Z::~Z() {
 }
 
 void Z::grow(void) {
-   // NB: caller responsible for changing size
+   // NB: caller responsible for changing the size field
    data = (uint16_t *) realloc(data, sizeof(uint16_t) * (size + 1));
    data[size] = 0;
    assert(data);
@@ -797,45 +797,47 @@ bool Z::deci_lengths(Z &lead, Z &repeat, uint64_t max) const {
    bool maxrepeat = false;
 
    // number of times "2" is a factor
-   while (remainder.size > 1 && remainder.data[0] == 0) {
-      factor2 += sizeof(uint16_t) * 8;
-      remainder /= 65536; // there may be faster ways to do this.
-      if (factor2 > max) {
-         maxlead = true;
-         factor2 = max;
-	 break;
+   if (remainder.size > 1) {
+      uint64_t spot = 0;
+      while (remainder.data[spot] == 0 && spot < remainder.size) {
+         spot++;
+      }
+      if (spot > 0) {
+         factor2 += spot * 16;
+         memmove(remainder.data,
+            remainder.data + spot,
+            sizeof(uint16_t) * (remainder.size - spot));
+         remainder.size -= spot;
+         remainder.data = (uint16_t *)
+            realloc(remainder.data, sizeof(uint16_t) * (remainder.size));
       }
    }
-   while (!maxlead && remainder.data[0] != 0 && (remainder.data[0] & 1) == 0) {
-      factor2 += 1;
-      remainder /= 2;
-      if (factor2 > max) {
-         maxlead = true;
-         factor2 = max;
-	 break;
+   if (remainder.size > 0) {
+      while (remainder.data[0] > 1 && (remainder.data[0] & 1) == 0) {
+         factor2 += 1;
+         remainder /= 2;
       }
+   }
+   if (factor2 > max) {
+      maxlead = true;
    }
 
    // number of times "5" is a factor
-   // he highest power of 5 less than 2^64 is 5^27
-#define FIVE_27 7450580596923828125ULL
-   while (!maxlead && remainder.size > 1 && (remainder % FIVE_27) == zero) {
-      factor5 += 27;
-      remainder /= FIVE_27;
-      if (factor5 > max) {
-         maxlead = true;
-         factor5 = max;
-	 break;
+   while (remainder.size > 0) {
+      uint64_t sum = 0;
+      for (uint64_t i = 0 ; i < remainder.size; i++) {
+         sum += remainder.data[i];
+      }
+      if ((sum % 5) == 0) {
+         remainder = remainder / 5;
+         factor5 += 1;
+      }
+      else {
+         break;
       }
    }
-   while (!maxlead && (remainder % 5) == zero) {
-      factor5 += 1;
-      remainder /= 5;
-      if (factor5 > max) {
-         maxlead = true;
-         factor5 = max;
-	 break;
-      }
+   if (factor5 > max) {
+      maxlead = true;
    }
 
    if (factor2 > factor5) {
@@ -854,13 +856,14 @@ bool Z::deci_lengths(Z &lead, Z &repeat, uint64_t max) const {
 
       while (ten.pow(repeat) % remainder != 1) {
          repeat += 1;
-	 if (repeat > max) {
+         if (repeat > max) {
             maxrepeat = true;
-	    repeat = max;
-	    break;
-	 }
+            repeat = max;
+            break;
+         }
       }
    }
 
    return maxlead || maxrepeat;
 }
+// vim: expandtab:noai:ts=3:sw=3

@@ -727,3 +727,4 @@ Q Q::pow(const Q &power, uint64_t precision) const {
 
    return Q(retpos, (int)0, nr, dr); // constructor will simplify()
 }
+// vim: expandtab:noai:ts=3:sw=3

@@ -36,3 +36,4 @@ namespace uge {
 #define GCSTR (const char *)(_gcstr)
 
 #endif // _INCLUDE_UGE_GCSTR_H_
+// vim: expandtab:noai:ts=3:sw=3

@@ -81,7 +81,7 @@ namespace uge {
          char *frac_print(void) const;
 
          // returns pointer that must be free'd
-         char *deci_print(uint64_t max = 16) const;
+         char *deci_print(uint64_t max = 1024) const;
 
          explicit operator int64_t () const;
          explicit operator double() const;
@@ -100,3 +100,4 @@ namespace uge {
 // numbers.
 
 #endif // _INCLUDE_UGE_Q_HPP_
+// vim: expandtab:noai:ts=3:sw=3

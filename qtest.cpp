@@ -170,3 +170,4 @@ int main(int argc, char **argv) {
       free(p);
    }
 }
+// vim: expandtab:noai:ts=3:sw=3

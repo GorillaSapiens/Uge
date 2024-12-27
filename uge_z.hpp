@@ -80,8 +80,9 @@ namespace uge {
          };
 
          Z apply(const Z &b, bool inva, bool invb, enum boolop op, bool invo) const;
-	 bool deci_lengths(Z &lead, Z &repeat, uint64_t max = 20) const;
+	 bool deci_lengths(Z &lead, Z &repeat, uint64_t max = 1024) const;
    };
 };
 
 #endif // _INCLUDE_UGE_Z_HPP_
+// vim: expandtab:noai:ts=3:sw=3
