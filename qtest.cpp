@@ -160,6 +160,7 @@ int main(int argc, char **argv) {
             else {
                printf("unknown op '%s'\n", op);
             }
+            printf("== done==\n\n");
          }
          catch (std::string e) {
             std::cerr << e;
