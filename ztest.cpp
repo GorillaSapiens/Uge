@@ -15,6 +15,7 @@
 using namespace uge;
 
 int main(int argc, char **argv) {
+   int ibase = 10, obase = 10;
    char *p;
 
    while (p = /*assign*/ mgets()) {
@@ -39,80 +40,94 @@ int main(int argc, char **argv) {
          return 0;
       }
       else if (1 == res) {
-         Z l(bufl);
+         Z l(bufl, ibase);
 
          printf("== input ==\n");
-         printf("print: %s\n", GCSTR l.print());
+         printf("print: %s\n", GCSTR l.print(ibase));
+         printf("== output ==\n");
+         printf("print: %s\n", GCSTR l.print(obase));
          printf("== done==\n\n");
       }
       else if (2 == res) {
          if (!strcmp(bufl, "sqrt")) {
-            Z l(op);
+            Z l(op, ibase);
 
             printf("== input ==\n");
-            printf("print: sqrt %s\n", GCSTR l.print());
+            printf("print: sqrt %s\n", GCSTR l.print(ibase));
             printf("== result==\n");
-            printf("sqrt : %s\n", GCSTR l.sqrt().print());
+            printf("sqrt : %s\n", GCSTR l.sqrt().print(obase));
             printf("\n");
+         }
+         else if (!strcmp(bufl, "ibase")) {
+            ibase = atoi(op);
+            printf("ibase = %d, obase = %d\n", ibase, obase);
+         }
+         else if (!strcmp(bufl, "obase")) {
+            obase = atoi(op);
+            printf("ibase = %d, obase = %d\n", ibase, obase);
+         }
+         else if (!strcmp(bufl, "base")) {
+            ibase = obase = atoi(op);
+            printf("ibase = %d, obase = %d\n", ibase, obase);
          }
       }
       else if (3 == res) {
-         Z l(bufl);
-         Z r(bufr);
+         Z l(bufl, ibase);
+         Z r(bufr, ibase);
 
          printf("== input ==\n");
-         printf("print: %s %s %s\n", GCSTR l.print(), op, GCSTR r.print());
+         printf("print: %s %s %s\n", GCSTR l.print(ibase), op, GCSTR r.print(ibase));
 
          printf("== result ==\n");
 
          try {
             if (!strcmp(op, "+")) {
                Z x = l + r;
-               printf("prnt : %s\n", GCSTR x.print());
+               printf("prnt : %s\n", GCSTR x.print(obase));
             }
             else if (!strcmp(op, "-")) {
                Z x = l - r;
-               printf("prnt : %s\n", GCSTR x.print());
+               printf("prnt : %s\n", GCSTR x.print(obase));
             }
             else if (!strcmp(op, "*")) {
                Z x = l * r;
-               printf("prnt : %s\n", GCSTR x.print());
+               printf("prnt : %s\n", GCSTR x.print(obase));
             }
             else if (!strcmp(op, "/")) {
                Z x = l / r;
-               printf("prnt : %s\n", GCSTR x.print());
+               printf("prnt : %s\n", GCSTR x.print(obase));
             }
             else if (!strcmp(op, "%")) {
                Z x = l % r;
-               printf("prnt : %s\n", GCSTR x.print());
+               printf("prnt : %s\n", GCSTR x.print(obase));
             }
             else if (!strcmp(op, "&")) {
                Z x = l & r;
-               printf("prnt : %s\n", GCSTR x.print());
+               printf("prnt : %s\n", GCSTR x.print(obase));
             }
             else if (!strcmp(op, "|")) {
                Z x = l | r;
-               printf("prnt : %s\n", GCSTR x.print());
+               printf("prnt : %s\n", GCSTR x.print(obase));
             }
             else if (!strcmp(op, "^")) {
                Z x = l ^ r;
-               printf("prnt : %s\n", GCSTR x.print());
+               printf("prnt : %s\n", GCSTR x.print(obase));
             }
             else if (!strcmp(op, "<<")) {
                Z x = l << (uint64_t) r;
-               printf("prnt : %s\n", GCSTR x.print());
+               printf("prnt : %s\n", GCSTR x.print(obase));
             }
             else if (!strcmp(op, ">>")) {
                Z x = l >> (uint64_t) r;
-               printf("prnt : %s\n", GCSTR x.print());
+               printf("prnt : %s\n", GCSTR x.print(obase));
             }
             else if (!strcmp(op, "**")) {
                Z x = l.pow(r);
-               printf("prnt : %s\n", GCSTR x.print());
+               printf("prnt : %s\n", GCSTR x.print(obase));
             }
             else if (!strcmp(op, "root")) {
                Z x = l.root(r);
-               printf("prnt : %s\n", GCSTR x.print());
+               printf("prnt : %s\n", GCSTR x.print(obase));
             }
             else if (!strcmp(op, "==")) {
                bool result = (l == r);

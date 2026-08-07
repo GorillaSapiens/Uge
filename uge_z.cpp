@@ -1,6 +1,7 @@
 #include <math.h>
 #include <string.h>
 #include <assert.h>
+#include <inttypes.h>
 
 #include <string>
 
@@ -61,53 +62,99 @@ Z& Z::operator=(const Z& other) {
    return *this;
 }
 
-Z::Z(const char *orig) {
+Z::Z(const char *orig, uint64_t radix) {
 
-   size = 0;
-   data = NULL;
+   if (radix < 2 ||
+       radix > (((uint64_t) 1) << (sizeof(data[0]) * 8))) {
+      throw (UGE_ERR("unsupported radix"));
+   }
+
+   size = 1;
+   data = (uint16_t *) malloc(sizeof(uint16_t));
+   data[0] = 0;
 
    while (*orig) {
-      if ((*orig < '0') || (*orig > '9')) {
-         break;
+      uint32_t digit;
+
+      if (*orig >= '0' && *orig <= '9') {
+         digit = *orig - '0';
+         orig++;
       }
-      // times 10
-      if (size) {
-         uint64_t place = 0;
-         uint32_t carry = 0;
-         while (place != size) {
-            carry += data[place] * 10;
-            data[place] = carry; // truncation here
-            carry >>= 16;
-            place++;
-         }
-         if (carry) {
-            grow();
-            data[place] = carry;
-            size++;
-         }
+      else if (*orig >= 'A' && *orig <= 'Z') {
+         digit = *orig - 'A' + 10;
+         orig++;
       }
-      // plus string data
-      if (!size) {
-         size = 1;
-         data = (uint16_t *) malloc(sizeof(uint16_t));
-         data[0] = (uint16_t) (*orig - '0');
+      else if (*orig >= 'a' && *orig <= 'z') {
+         digit = *orig - 'a' + 10;
+         orig++;
+      }
+      else if (*orig == '{') {
+         orig++;
+
+         if (*orig < '0' || *orig > '9') {
+            break;
+         }
+
+         uint32_t value = 0;
+
+         while (*orig >= '0' && *orig <= '9') {
+            value = value * 10 + (*orig - '0');
+
+            if (value > 0xffff) {
+               break;
+            }
+
+            orig++;
+         }
+
+         if (value > 0xffff || *orig != '}') {
+            break;
+         }
+
+         orig++;
+         digit = value;
       }
       else {
-         uint64_t place = 0;
-         uint32_t carry = (uint32_t) (*orig - '0');
-         while (place != size && carry) {
-            carry += data[place];
-            data[place] = carry; // truncation here
-            carry >>= 16;
-            place++;
-         }
-         if (carry) {
-            grow();
-            data[place] = carry;
-            size++;
-         }
+         break;
       }
-      orig++;
+
+      if (digit >= radix) {
+         break;
+      }
+
+      // times radix
+      uint64_t place = 0;
+      uint32_t carry = 0;
+
+      while (place != size) {
+         carry += data[place] * radix;
+         data[place] = carry; // truncation here
+         carry >>= 16;
+         place++;
+      }
+
+      if (carry) {
+         grow();
+         data[place] = carry;
+         size++;
+      }
+
+      // plus digit
+      place = 0;
+      carry = digit;
+
+      while (place != size && carry) {
+         carry += data[place];
+         data[place] = carry; // truncation here
+         carry >>= 16;
+         place++;
+      }
+
+      if (carry) {
+         grow();
+         data[place] = carry;
+         size++;
+      }
    }
 
    fixZero();
@@ -685,7 +732,7 @@ Z Z::root(const Z& other) const {
    return low;
 }
 
-char *Z::print(void) const {
+char *Z::print(uint64_t radix) const {
    if (isZero()) {
       return strdup("0");
    }
@@ -696,18 +743,28 @@ char *Z::print(void) const {
 
    char *ret = NULL;
 
+   if (radix < 2 || radix > (((uint64_t)1) << (sizeof(rem.data[0]) * 8))) {
+      return rpprintf(ret, "{radix %" PRIu64 " not supported}", radix);
+   }
+
    while (copy > (uint64_t)0) {
-      divide(copy, (uint64_t) 10, quot, rem);
+      divide(copy, (uint64_t) radix, quot, rem);
       if (!rem.isZero()) {
-         raprintf(ret, "%d", rem.data[0]);
+         if (rem.data[0] < 10) {
+            rpprintf(ret, "%d", rem.data[0]);
+         }
+         else if (rem.data[0] < 36) {
+            rpprintf(ret, "%c", rem.data[0] - 10 + 'A');
+         }
+         else {
+            rpprintf(ret, "{%d}", rem.data[0]);
+         }
       }
       else {
-         raprintf(ret, "0");
+         rpprintf(ret, "0");
       }
       copy = quot;
    }
-
-   strrev(ret);
 
    return ret;
 }

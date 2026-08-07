@@ -18,7 +18,7 @@ namespace uge {
       public:
          Z();
          Z(const Z &orig); // copy constructor
-         Z(const char *p);
+         Z(const char *p, uint64_t radix = 10);
          Z(uint64_t d);
          ~Z();
 
@@ -65,7 +65,7 @@ namespace uge {
          explicit operator uint64_t() const;
 
          // returns pointer that must be free'd
-         char *print(void) const;
+         char *print(uint64_t radix = 10) const;
 
          // returns pointer that must be free'd
          char *dprint(void) const;
@@ -80,7 +80,7 @@ namespace uge {
          };
 
          Z apply(const Z &b, bool inva, bool invb, enum boolop op, bool invo) const;
-	 bool deci_lengths(Z &lead, Z &repeat, uint64_t max = 1024) const;
+	      bool deci_lengths(Z &lead, Z &repeat, uint64_t max = 1024) const;
    };
 };
 

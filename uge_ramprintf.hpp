@@ -11,6 +11,9 @@ namespace uge {
    // realloc and append to origin
    char *raprintf(char *&origin, const char *fmt, ...);
 
+   // realloc and prepend to origin
+   char *rpprintf(char *&origin, const char *fmt, ...);
+
    // reverse a string in place
    void strrev(char *str);
 
