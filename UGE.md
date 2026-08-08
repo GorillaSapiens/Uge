@@ -228,6 +228,12 @@ tantau(x)
 atantau(x)
 atan2tau(y,x)
 
+sindeg(x)
+cosdeg(x)
+tandeg(x)
+atandeg(x)
+atan2deg(y,x)
+
 ln(x)
 e(x)
 pi
@@ -277,9 +283,9 @@ radian arguments.  Because the cached `pi` is a rational approximation, the
 two modes can differ very slightly for general inputs.  Both modes still take
 ordinary `sin()`, `cos()`, and `tan()` arguments in radians.
 
-The explicit `*pi` and `*tau` functions are never affected by `trigmode`.
-They always retain the meanings described below.  Enter `trigmode` by itself
-to display the current setting.
+The explicit `*pi`, `*tau`, and `*deg` functions are never affected by
+`trigmode`.  They always retain the meanings described below.  Enter
+`trigmode` by itself to display the current setting.
 
 The `*pi` variants measure angles in half-turns: `sinpi(x)` means `sin(pi*x)`,
 while `atanpi(x)` and `atan2pi(y,x)` return their answers divided by pi.  The
@@ -298,6 +304,30 @@ costau(1/2)    -> -1
 atanpi(1)      -> 1/4
 atantau(1)     -> 1/8
 atan2tau(1,0)  -> 1/4
+```
+
+The `*deg` variants are convenience wrappers around the turn-based functions.
+Forward trig divides the degree argument by 360 before calling the matching
+`*tau` function, while inverse trig converts the returned fraction of a turn
+back to degrees:
+
+```
+sindeg(x)       -> sintau(x/360)
+cosdeg(x)       -> costau(x/360)
+tandeg(x)       -> tantau(x/360)
+atandeg(x)      -> atantau(x)*360
+atan2deg(y,x)   -> atan2tau(y,x)*360
+```
+
+This preserves exact degree results whenever the underlying turn-normalized
+function has an exact rational result:
+
+```
+sindeg(30)      -> 0.5
+cosdeg(60)      -> 0.5
+tandeg(45)      -> 1
+atandeg(1)      -> 45
+atan2deg(1,0)   -> 90
 ```
 
 `pi` and `tau` are built-in values and may also be written `pi()` and `tau()`.
@@ -354,10 +384,39 @@ or mixed fraction, with the numerator and denominator themselves written in
 `obase`.  `decimal()` always prints positional notation in radix 10 regardless
 of `obase`.  `debug()` exposes the internal `Q` representation.
 
-For example:
+### Base 10 examples
+
+In base 10, mixed fractions can be printed exactly while `positional()` shows
+the same value in ordinary decimal notation:
+
+```
+base 10
+fraction(2.625)
+2'5/8
+
+positional(2'5/8)
+2.625
+
+fraction(7/3)
+2'1/3
+
+positional(7/3)
+2.(3)
+```
+
+### Base 12 examples
+
+The same output functions follow `obase`.  With base 12 selected, both the
+mixed-fraction components and positional digits are written in duodecimal:
 
 ```
 base 12
+fraction(2'5/8)
+2'5/8
+
+positional(2'5/8)
+2.76
+
 fraction(.49 + .03)
 5/10
 

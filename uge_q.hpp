@@ -116,6 +116,15 @@ namespace uge {
          Q atantau(uint64_t precision) const;
          Q atan2tau(const Q &x, uint64_t precision) const;
 
+         // Degree convenience variants.  These are thin wrappers around the
+         // tau-normalized functions: forward trig divides degrees by 360;
+         // inverse trig multiplies turns by 360.
+         Q sindeg(uint64_t precision) const;
+         Q cosdeg(uint64_t precision) const;
+         Q tandeg(uint64_t precision) const;
+         Q atandeg(uint64_t precision) const;
+         Q atan2deg(const Q &x, uint64_t precision) const;
+
          Q ln(uint64_t precision) const;
          Q e(uint64_t precision) const;
          static Q pi(uint64_t precision);

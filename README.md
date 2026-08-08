@@ -44,7 +44,8 @@ The calculator includes:
 - `sqrt`, `sin`, `cos`, `tan`, `atan`, `atan2`, `ln`, and `e(x)`;
 - built-in `pi` and `tau` values;
 - `sinpi`/`cospi`/`tanpi` and `sintau`/`costau`/`tantau` families for normalized
-  angular arguments, including their inverse variants;
+  angular arguments, including their inverse variants, plus degree convenience
+  functions such as `sindeg` and `atan2deg`;
 - a default normalized trig evaluation mode that preserves exact results such
   as `sin(pi/2) == 1` when possible, with `trigmode direct` available to call
   the underlying rational-radian approximations directly;

@@ -81,7 +81,9 @@ int main(int argc, char **argv) {
                 !strcmp(bufl, "cospi") || !strcmp(bufl, "tanpi") ||
                 !strcmp(bufl, "atanpi") || !strcmp(bufl, "sintau") ||
                 !strcmp(bufl, "costau") || !strcmp(bufl, "tantau") ||
-                !strcmp(bufl, "atantau") || !strcmp(bufl, "ln") ||
+                !strcmp(bufl, "atantau") || !strcmp(bufl, "sindeg") ||
+                !strcmp(bufl, "cosdeg") || !strcmp(bufl, "tandeg") ||
+                !strcmp(bufl, "atandeg") || !strcmp(bufl, "ln") ||
                 !strcmp(bufl, "e")) {
                Q l(op, ibase);
                Q r;
@@ -98,6 +100,10 @@ int main(int argc, char **argv) {
                else if (!strcmp(bufl, "costau")) r = l.costau(PRECISION);
                else if (!strcmp(bufl, "tantau")) r = l.tantau(PRECISION);
                else if (!strcmp(bufl, "atantau")) r = l.atantau(PRECISION);
+               else if (!strcmp(bufl, "sindeg")) r = l.sindeg(PRECISION);
+               else if (!strcmp(bufl, "cosdeg")) r = l.cosdeg(PRECISION);
+               else if (!strcmp(bufl, "tandeg")) r = l.tandeg(PRECISION);
+               else if (!strcmp(bufl, "atandeg")) r = l.atandeg(PRECISION);
                else if (!strcmp(bufl, "ln")) r = l.ln(PRECISION);
                else r = l.e(PRECISION);
 
@@ -122,12 +128,13 @@ int main(int argc, char **argv) {
          }
          else if (3 == res) {
             if (!strcmp(bufl, "atan2") || !strcmp(bufl, "atan2pi") ||
-                !strcmp(bufl, "atan2tau")) {
+                !strcmp(bufl, "atan2tau") || !strcmp(bufl, "atan2deg")) {
                Q y(op, ibase);
                Q x(bufr, ibase);
                Q r = !strcmp(bufl, "atan2") ? y.atan2(x, PRECISION) :
                      !strcmp(bufl, "atan2pi") ? y.atan2pi(x, PRECISION) :
-                                                 y.atan2tau(x, PRECISION);
+                     !strcmp(bufl, "atan2tau") ? y.atan2tau(x, PRECISION) :
+                                                 y.atan2deg(x, PRECISION);
                printf("== input ==\n");
                printf("prnt : %s %s %s\n", bufl, GCSTR y.print(ibase), GCSTR x.print(ibase));
                printf("== result ==\n");

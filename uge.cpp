@@ -658,6 +658,26 @@ class Parser {
          if (a.size() != 2) throw std::string("atan2tau() takes two arguments");
          return Value(a[0].atan2tau(a[1], ctx.precision));
       }
+      if (name == "sindeg") {
+         if (a.size() != 1) throw std::string("sindeg() takes one argument");
+         return Value(a[0].sindeg(ctx.precision));
+      }
+      if (name == "cosdeg") {
+         if (a.size() != 1) throw std::string("cosdeg() takes one argument");
+         return Value(a[0].cosdeg(ctx.precision));
+      }
+      if (name == "tandeg") {
+         if (a.size() != 1) throw std::string("tandeg() takes one argument");
+         return Value(a[0].tandeg(ctx.precision));
+      }
+      if (name == "atandeg") {
+         if (a.size() != 1) throw std::string("atandeg() takes one argument");
+         return Value(a[0].atandeg(ctx.precision));
+      }
+      if (name == "atan2deg") {
+         if (a.size() != 2) throw std::string("atan2deg() takes two arguments");
+         return Value(a[0].atan2deg(a[1], ctx.precision));
+      }
       if (name == "ln") {
          if (a.size() != 1) throw std::string("ln() takes one argument");
          return Value(a[0].ln(ctx.precision));

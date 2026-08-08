@@ -1168,6 +1168,26 @@ Q Q::atan2pi(const Q &x, uint64_t precision) const {
    return Q((int64_t)2) * atan2tau(x, precision);
 }
 
+Q Q::sindeg(uint64_t precision) const {
+   return (*this / Q((int64_t)360)).sintau(precision);
+}
+
+Q Q::cosdeg(uint64_t precision) const {
+   return (*this / Q((int64_t)360)).costau(precision);
+}
+
+Q Q::tandeg(uint64_t precision) const {
+   return (*this / Q((int64_t)360)).tantau(precision);
+}
+
+Q Q::atandeg(uint64_t precision) const {
+   return Q((int64_t)360) * atantau(precision);
+}
+
+Q Q::atan2deg(const Q &x, uint64_t precision) const {
+   return Q((int64_t)360) * atan2tau(x, precision);
+}
+
 // ln(x) = 2 * (z + z^3/3 + z^5/5 + ...), z=(x-1)/(x+1).
 // This helper is used only for 1 <= x <= 2, so 0 <= z <= 1/3.
 static Q ln_series(const Q &x, uint64_t precision) {
