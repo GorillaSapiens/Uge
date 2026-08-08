@@ -28,11 +28,17 @@ static const uint64_t DEFAULT_PRECISION = 256;
 static const uint64_t MAX_RADIX = 65536;
 static const size_t MAX_HISTORY = 1000;
 
+enum TrigMode {
+   TRIG_NORMALIZED,
+   TRIG_DIRECT
+};
+
 struct Context {
    uint64_t ibase;
    uint64_t obase;
    uint64_t print_max;
    uint64_t precision;
+   TrigMode trigmode;
    std::map<std::string, Q> vars;
    Q last;
    Q pi_cache;
@@ -40,9 +46,13 @@ struct Context {
 
    Context()
       : ibase(10), obase(10), print_max(DEFAULT_PRINT_MAX),
-        precision(DEFAULT_PRECISION), last((int64_t)0),
+        precision(DEFAULT_PRECISION), trigmode(TRIG_NORMALIZED), last((int64_t)0),
         pi_cache((int64_t)0), e_cache((int64_t)0) {}
 };
+
+static const char *trigmode_name(TrigMode mode) {
+   return mode == TRIG_DIRECT ? "direct" : "normalized";
+}
 
 static void set_precision(Context &ctx, uint64_t precision) {
    if (precision == ctx.precision && ctx.pi_cache.sgn() != 0) {
@@ -575,22 +585,37 @@ class Parser {
       }
       if (name == "sin") {
          if (a.size() != 1) throw std::string("sin() takes one argument");
+         if (ctx.trigmode == TRIG_NORMALIZED) {
+            return Value((a[0] / ctx.pi_cache).sinpi(ctx.precision));
+         }
          return Value(a[0].sin(ctx.precision));
       }
       if (name == "cos") {
          if (a.size() != 1) throw std::string("cos() takes one argument");
+         if (ctx.trigmode == TRIG_NORMALIZED) {
+            return Value((a[0] / ctx.pi_cache).cospi(ctx.precision));
+         }
          return Value(a[0].cos(ctx.precision));
       }
       if (name == "tan") {
          if (a.size() != 1) throw std::string("tan() takes one argument");
+         if (ctx.trigmode == TRIG_NORMALIZED) {
+            return Value((a[0] / ctx.pi_cache).tanpi(ctx.precision));
+         }
          return Value(a[0].tan(ctx.precision));
       }
       if (name == "atan") {
          if (a.size() != 1) throw std::string("atan() takes one argument");
+         if (ctx.trigmode == TRIG_NORMALIZED) {
+            return Value(a[0].atanpi(ctx.precision) * ctx.pi_cache);
+         }
          return Value(a[0].atan(ctx.precision));
       }
       if (name == "atan2") {
          if (a.size() != 2) throw std::string("atan2() takes two arguments");
+         if (ctx.trigmode == TRIG_NORMALIZED) {
+            return Value(a[0].atan2pi(a[1], ctx.precision) * ctx.pi_cache);
+         }
          return Value(a[0].atan2(a[1], ctx.precision));
       }
       if (name == "sinpi") {
@@ -778,6 +803,7 @@ static bool execute_statement(Context &ctx, std::string stmt) {
    if (stmt == "help") {
       printf("Type expressions using bc-like syntax.  See UGE.md for full help.\n");
       printf("ibase/obase/base assignments are always interpreted in decimal.\n");
+      printf("trigmode normalized (default) or trigmode direct selects ordinary trig evaluation.\n");
       printf("Output: positional(x), fraction(x), decimal(x).\n");
       printf("maxdigits controls rendering; precision controls approximations.\n");
       return true;
@@ -785,6 +811,26 @@ static bool execute_statement(Context &ctx, std::string stmt) {
    if (stmt == "warranty") {
       printf("Uge is free software; see LICENSE for copying and warranty terms.\n");
       return true;
+   }
+
+   {
+      std::string rest;
+      if (starts_word(stmt, "trigmode", rest)) {
+         if (rest.empty()) {
+            printf("%s\n", trigmode_name(ctx.trigmode));
+            return true;
+         }
+         if (rest[0] == '=') rest = trim(rest.substr(1));
+         if (rest == "normalized") {
+            ctx.trigmode = TRIG_NORMALIZED;
+            return true;
+         }
+         if (rest == "direct") {
+            ctx.trigmode = TRIG_DIRECT;
+            return true;
+         }
+         throw std::string("trigmode must be 'normalized' or 'direct'");
+      }
    }
 
    // Friendly command forms inherited from ztest/qtest.  The Parser's

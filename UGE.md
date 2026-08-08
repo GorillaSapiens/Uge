@@ -244,6 +244,43 @@ xor(x,y)
 The ordinary trig functions use radians.  `atan2(y,x)` is quadrant-aware and
 returns an angle in `(-pi,pi]`; `atan2(0,0)` is undefined.
 
+The calculator has two evaluation modes for the ordinary radian trig names:
+
+```
+trigmode normalized
+trigmode direct
+```
+
+`normalized` is the default.  In normalized mode the ordinary functions use
+the calculator's cached `pi` value as the angular normalization unit:
+
+```
+sin(x)       -> sinpi(x/pi)
+cos(x)       -> cospi(x/pi)
+tan(x)       -> tanpi(x/pi)
+atan(x)      -> atanpi(x)*pi
+atan2(y,x)   -> atan2pi(y,x)*pi
+```
+
+This lets expressions involving the same cached `pi` value retain exact
+normalized results where possible.  For example:
+
+```
+sin(pi/2)    -> 1
+cos(pi)      -> -1
+tan(pi/4)    -> 1
+```
+
+`direct` mode instead calls the ordinary `Q::sin()`, `Q::cos()`, `Q::tan()`,
+`Q::atan()`, and `Q::atan2()` implementations directly on their rational
+radian arguments.  Because the cached `pi` is a rational approximation, the
+two modes can differ very slightly for general inputs.  Both modes still take
+ordinary `sin()`, `cos()`, and `tan()` arguments in radians.
+
+The explicit `*pi` and `*tau` functions are never affected by `trigmode`.
+They always retain the meanings described below.  Enter `trigmode` by itself
+to display the current setting.
+
 The `*pi` variants measure angles in half-turns: `sinpi(x)` means `sin(pi*x)`,
 while `atanpi(x)` and `atan2pi(y,x)` return their answers divided by pi.  The
 `*tau` variants measure angles in turns: `sintau(x)` means `sin(tau*x)`, while
