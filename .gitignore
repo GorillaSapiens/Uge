@@ -1,4 +1,5 @@
 *.o
 qtest
 ztest
+uge
 Makefile.bak

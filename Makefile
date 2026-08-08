@@ -6,7 +6,7 @@ OBJS=\
    uge_q.o \
    uge_ramprintf.o
 
-all: ztest qtest
+all: ztest qtest uge
 
 tar:
 	rm -f ../`basename $$(git rev-parse --show-toplevel)`.*.tar.gz
@@ -18,6 +18,9 @@ ztest: ztest.o $(OBJS)
 qtest: qtest.o $(OBJS)
 	$(CPP) $(CFLAGS) qtest.o $(OBJS) -o qtest
 
+uge: uge.o $(OBJS)
+	$(CPP) $(CFLAGS) uge.o $(OBJS) -o uge
+
 %.o: %.cpp
 	$(CPP) -c $(CFLAGS) $< -o $@
 
@@ -26,7 +29,7 @@ qtest: qtest.o $(OBJS)
 
 .PHONY: clean
 clean:
-	rm -f *.o ztest qtest
+	rm -f *.o ztest qtest uge
 
 .PHONY: depend
 depend:
