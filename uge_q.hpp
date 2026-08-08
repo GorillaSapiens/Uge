@@ -101,9 +101,25 @@ namespace uge {
          Q tan(uint64_t precision) const;
          Q atan(uint64_t precision) const;
          Q atan2(const Q &x, uint64_t precision) const;
+
+         // Trigonometric variants whose arguments/results are normalized by
+         // pi (half-turns) or tau (turns).  Exact rational argument reduction
+         // and exact special values are used before approximation.
+         Q sinpi(uint64_t precision) const;
+         Q cospi(uint64_t precision) const;
+         Q tanpi(uint64_t precision) const;
+         Q atanpi(uint64_t precision) const;
+         Q atan2pi(const Q &x, uint64_t precision) const;
+         Q sintau(uint64_t precision) const;
+         Q costau(uint64_t precision) const;
+         Q tantau(uint64_t precision) const;
+         Q atantau(uint64_t precision) const;
+         Q atan2tau(const Q &x, uint64_t precision) const;
+
          Q ln(uint64_t precision) const;
          Q e(uint64_t precision) const;
          static Q pi(uint64_t precision);
+         static Q tau(uint64_t precision);
    };
 };
 

@@ -215,10 +215,25 @@ cos(x)
 tan(x)
 atan(x)
 atan2(y,x)
+
+sinpi(x)
+cospi(x)
+tanpi(x)
+atanpi(x)
+atan2pi(y,x)
+
+sintau(x)
+costau(x)
+tantau(x)
+atantau(x)
+atan2tau(y,x)
+
 ln(x)
 e(x)
 pi
 pi()
+tau
+tau()
 abs(x)
 floor(x)
 sgn(x)
@@ -226,10 +241,31 @@ pow(x,y)
 xor(x,y)
 ```
 
-Angles are in radians.  `atan2(y,x)` is quadrant-aware and returns an angle in
-`(-pi,pi]`; `atan2(0,0)` is undefined.  `pi` is a built-in value and may be
-written either as `pi` or `pi()`.  `e(x)` means e raised to the power x, so
-`e(1)` gives Euler's constant and `e(0)` is 1.
+The ordinary trig functions use radians.  `atan2(y,x)` is quadrant-aware and
+returns an angle in `(-pi,pi]`; `atan2(0,0)` is undefined.
+
+The `*pi` variants measure angles in half-turns: `sinpi(x)` means `sin(pi*x)`,
+while `atanpi(x)` and `atan2pi(y,x)` return their answers divided by pi.  The
+`*tau` variants measure angles in turns: `sintau(x)` means `sin(tau*x)`, while
+`atantau(x)` and `atan2tau(y,x)` return fractions of a full turn.  `atan2pi()`
+returns in `(-1,1]` and `atan2tau()` returns in `(-1/2,1/2]`.  Normalized
+arguments are reduced exactly as rational numbers before any approximation is
+introduced.  Consequently important values such as these are exact `Q`s:
+
+```
+sinpi(1)       -> 0
+cospi(1)       -> -1
+tanpi(1/4)     -> 1
+sintau(1/4)    -> 1
+costau(1/2)    -> -1
+atanpi(1)      -> 1/4
+atantau(1)     -> 1/8
+atan2tau(1,0)  -> 1/4
+```
+
+`pi` and `tau` are built-in values and may also be written `pi()` and `tau()`.
+`tau` is derived exactly as twice the cached approximation of `pi`.  `e(x)`
+means e raised to the power x, so `e(1)` gives Euler's constant and `e(0)` is 1.
 
 `sqrt()`, non-rational powers, trigonometric functions, `ln()`, `e()`, and
 `pi` use `Q`'s rational approximation mechanism.  No floating-point type is

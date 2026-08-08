@@ -856,6 +856,12 @@ Q Q::pi(uint64_t precision) {
    return binary_trunc(ret, precision);
 }
 
+Q Q::tau(uint64_t precision) {
+   // tau is derived from the same pi approximation; multiplying by two is
+   // exact and does not require a second transcendental calculation.
+   return Q((int64_t)2) * Q::pi(precision);
+}
+
 static Q atan_positive(const Q &x, const Q &p, uint64_t precision) {
    Q one((int64_t)1);
    Q half = one / Q((int64_t)2);
@@ -1012,6 +1018,154 @@ Q Q::tan(uint64_t precision) const {
       throw(UGE_ERR("tangent undefined"));
    }
    return binary_trunc(sin_series(r, work) / c, work);
+}
+
+
+// Return the exact fractional part of a number of turns in [0,1).
+static Q turn_fraction(const Q &x) {
+   return x - x.floor();
+}
+
+static Q qratio(int64_t n, int64_t d) {
+   return Q(n) / Q(d);
+}
+
+Q Q::sintau(uint64_t precision) const {
+   Q r = turn_fraction(*this);
+   Q zero((int64_t)0);
+   Q one((int64_t)1);
+   Q half = qratio(1, 2);
+   Q quarter = qratio(1, 4);
+
+   // Exact rational values for rational turns.  These are mathematical
+   // identities, not results of the approximation machinery.
+   if (r == zero || r == half) return zero;
+   if (r == quarter) return one;
+   if (r == qratio(3, 4)) return -one;
+   if (r == qratio(1, 12) || r == qratio(5, 12)) return half;
+   if (r == qratio(7, 12) || r == qratio(11, 12)) return -half;
+
+   // Use the symmetric interval (-1/2,1/2], then reflect exactly into
+   // [-1/4,1/4].  Only after that do we introduce an approximation to tau.
+   if (r > half) r -= one;
+   if (r > quarter) r = half - r;
+   else if (r < -quarter) r = -half - r;
+
+   uint64_t work = guarded_precision(precision, 32);
+   Q angle = binary_trunc(r * Q::tau(work), work);
+   return sin_series(angle, work);
+}
+
+Q Q::costau(uint64_t precision) const {
+   Q r = turn_fraction(*this);
+   Q zero((int64_t)0);
+   Q one((int64_t)1);
+   Q half = qratio(1, 2);
+   Q quarter = qratio(1, 4);
+
+   if (r == zero) return one;
+   if (r == half) return -one;
+   if (r == quarter || r == qratio(3, 4)) return zero;
+   if (r == qratio(1, 6) || r == qratio(5, 6)) return half;
+   if (r == qratio(1, 3) || r == qratio(2, 3)) return -half;
+
+   if (r > half) r -= one;
+
+   int sign = 1;
+   if (r < zero) r = -r;       // cosine is even
+   if (r > quarter) {
+      r = half - r;
+      sign = -1;
+   }
+
+   uint64_t work = guarded_precision(precision, 32);
+   Q angle = binary_trunc(r * Q::tau(work), work);
+   Q ret = cos_series(angle, work);
+   return sign < 0 ? -ret : ret;
+}
+
+Q Q::tantau(uint64_t precision) const {
+   Q one((int64_t)1);
+   Q half = qratio(1, 2);
+   Q quarter = qratio(1, 4);
+   Q eighth = qratio(1, 8);
+
+   // Tangent has period one half-turn.  Reduce that period exactly.
+   Q turns = (*this / half).floor();
+   Q r = *this - turns * half;       // [0,1/2)
+   if (r > quarter) r -= half;       // (-1/4,1/4]
+
+   if (r.sgn() == 0) return Q((int64_t)0);
+   if (r == quarter || r == -quarter) {
+      throw(UGE_ERR("tangent undefined"));
+   }
+   if (r == eighth) return one;
+   if (r == -eighth) return -one;
+
+   uint64_t work = guarded_precision(precision, 40);
+   Q angle = binary_trunc(r * Q::tau(work), work);
+   Q c = cos_series(angle, work);
+   if (c.sgn() == 0) {
+      throw(UGE_ERR("tangent undefined"));
+   }
+   return binary_trunc(sin_series(angle, work) / c, work);
+}
+
+Q Q::sinpi(uint64_t precision) const {
+   return (*this / Q((int64_t)2)).sintau(precision);
+}
+
+Q Q::cospi(uint64_t precision) const {
+   return (*this / Q((int64_t)2)).costau(precision);
+}
+
+Q Q::tanpi(uint64_t precision) const {
+   return (*this / Q((int64_t)2)).tantau(precision);
+}
+
+Q Q::atantau(uint64_t precision) const {
+   if (sgn() == 0) return Q((int64_t)0);
+
+   Q one((int64_t)1);
+   if (abs() == one) {
+      Q eighth = qratio(1, 8);
+      return sgn() < 0 ? -eighth : eighth;
+   }
+
+   uint64_t work = guarded_precision(precision, 20);
+   Q p = Q::pi(work);
+   Q ret = atan_positive(abs(), p, work);
+   if (sgn() < 0) ret = -ret;
+   return binary_trunc(ret / (Q((int64_t)2) * p), work);
+}
+
+Q Q::atanpi(uint64_t precision) const {
+   return Q((int64_t)2) * atantau(precision);
+}
+
+Q Q::atan2tau(const Q &x, uint64_t precision) const {
+   int ys = sgn();
+   int xs = x.sgn();
+
+   if (!ys && !xs) {
+      throw(UGE_ERR("atan2 undefined for (0,0)"));
+   }
+
+   Q zero((int64_t)0);
+   Q quarter = qratio(1, 4);
+   Q half = qratio(1, 2);
+
+   // Axes are exact in turns.
+   if (!xs) return ys > 0 ? quarter : -quarter;
+   if (!ys) return xs > 0 ? zero : half;
+
+   Q ret = (*this / x).atantau(precision);
+   if (xs > 0) return ret;
+   return ys > 0 ? ret + half : ret - half;
+}
+
+Q Q::atan2pi(const Q &x, uint64_t precision) const {
+   return Q((int64_t)2) * atan2tau(x, precision);
 }
 
 // ln(x) = 2 * (z + z^3/3 + z^5/5 + ...), z=(x-1)/(x+1).

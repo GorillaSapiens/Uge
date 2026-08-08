@@ -593,6 +593,46 @@ class Parser {
          if (a.size() != 2) throw std::string("atan2() takes two arguments");
          return Value(a[0].atan2(a[1], ctx.precision));
       }
+      if (name == "sinpi") {
+         if (a.size() != 1) throw std::string("sinpi() takes one argument");
+         return Value(a[0].sinpi(ctx.precision));
+      }
+      if (name == "cospi") {
+         if (a.size() != 1) throw std::string("cospi() takes one argument");
+         return Value(a[0].cospi(ctx.precision));
+      }
+      if (name == "tanpi") {
+         if (a.size() != 1) throw std::string("tanpi() takes one argument");
+         return Value(a[0].tanpi(ctx.precision));
+      }
+      if (name == "atanpi") {
+         if (a.size() != 1) throw std::string("atanpi() takes one argument");
+         return Value(a[0].atanpi(ctx.precision));
+      }
+      if (name == "atan2pi") {
+         if (a.size() != 2) throw std::string("atan2pi() takes two arguments");
+         return Value(a[0].atan2pi(a[1], ctx.precision));
+      }
+      if (name == "sintau") {
+         if (a.size() != 1) throw std::string("sintau() takes one argument");
+         return Value(a[0].sintau(ctx.precision));
+      }
+      if (name == "costau") {
+         if (a.size() != 1) throw std::string("costau() takes one argument");
+         return Value(a[0].costau(ctx.precision));
+      }
+      if (name == "tantau") {
+         if (a.size() != 1) throw std::string("tantau() takes one argument");
+         return Value(a[0].tantau(ctx.precision));
+      }
+      if (name == "atantau") {
+         if (a.size() != 1) throw std::string("atantau() takes one argument");
+         return Value(a[0].atantau(ctx.precision));
+      }
+      if (name == "atan2tau") {
+         if (a.size() != 2) throw std::string("atan2tau() takes two arguments");
+         return Value(a[0].atan2tau(a[1], ctx.precision));
+      }
       if (name == "ln") {
          if (a.size() != 1) throw std::string("ln() takes one argument");
          return Value(a[0].ln(ctx.precision));
@@ -600,6 +640,10 @@ class Parser {
       if (name == "pi") {
          if (!a.empty()) throw std::string("pi() takes no arguments");
          return Value(ctx.pi_cache);
+      }
+      if (name == "tau") {
+         if (!a.empty()) throw std::string("tau() takes no arguments");
+         return Value(Q((int64_t)2) * ctx.pi_cache);
       }
       if (name == "e") {
          if (a.size() != 1) throw std::string("e() takes one argument");
@@ -642,6 +686,7 @@ class Parser {
          advance();
          if (tok.kind == Token::LPAREN) return call_function(name);
          if (name == "pi") return Value(ctx.pi_cache);
+         if (name == "tau") return Value(Q((int64_t)2) * ctx.pi_cache);
          return Value(config_value(ctx, name), name);
       }
 

@@ -46,9 +46,9 @@ int main(int argc, char **argv) {
 
       try {
          if (1 == res) {
-            if (!strcmp(bufl, "pi")) {
-               Q r = Q::pi(PRECISION);
-               printf("== pi ==\n");
+            if (!strcmp(bufl, "pi") || !strcmp(bufl, "tau")) {
+               Q r = !strcmp(bufl, "pi") ? Q::pi(PRECISION) : Q::tau(PRECISION);
+               printf("== %s ==\n", bufl);
                print_q("", r, obase);
                printf("\n");
                free(p);
@@ -77,7 +77,11 @@ int main(int argc, char **argv) {
          else if (2 == res) {
             if (!strcmp(bufl, "sqrt") || !strcmp(bufl, "sin") ||
                 !strcmp(bufl, "cos") || !strcmp(bufl, "tan") ||
-                !strcmp(bufl, "atan") || !strcmp(bufl, "ln") ||
+                !strcmp(bufl, "atan") || !strcmp(bufl, "sinpi") ||
+                !strcmp(bufl, "cospi") || !strcmp(bufl, "tanpi") ||
+                !strcmp(bufl, "atanpi") || !strcmp(bufl, "sintau") ||
+                !strcmp(bufl, "costau") || !strcmp(bufl, "tantau") ||
+                !strcmp(bufl, "atantau") || !strcmp(bufl, "ln") ||
                 !strcmp(bufl, "e")) {
                Q l(op, ibase);
                Q r;
@@ -86,6 +90,14 @@ int main(int argc, char **argv) {
                else if (!strcmp(bufl, "cos")) r = l.cos(PRECISION);
                else if (!strcmp(bufl, "tan")) r = l.tan(PRECISION);
                else if (!strcmp(bufl, "atan")) r = l.atan(PRECISION);
+               else if (!strcmp(bufl, "sinpi")) r = l.sinpi(PRECISION);
+               else if (!strcmp(bufl, "cospi")) r = l.cospi(PRECISION);
+               else if (!strcmp(bufl, "tanpi")) r = l.tanpi(PRECISION);
+               else if (!strcmp(bufl, "atanpi")) r = l.atanpi(PRECISION);
+               else if (!strcmp(bufl, "sintau")) r = l.sintau(PRECISION);
+               else if (!strcmp(bufl, "costau")) r = l.costau(PRECISION);
+               else if (!strcmp(bufl, "tantau")) r = l.tantau(PRECISION);
+               else if (!strcmp(bufl, "atantau")) r = l.atantau(PRECISION);
                else if (!strcmp(bufl, "ln")) r = l.ln(PRECISION);
                else r = l.e(PRECISION);
 
@@ -109,12 +121,15 @@ int main(int argc, char **argv) {
             }
          }
          else if (3 == res) {
-            if (!strcmp(bufl, "atan2")) {
+            if (!strcmp(bufl, "atan2") || !strcmp(bufl, "atan2pi") ||
+                !strcmp(bufl, "atan2tau")) {
                Q y(op, ibase);
                Q x(bufr, ibase);
-               Q r = y.atan2(x, PRECISION);
+               Q r = !strcmp(bufl, "atan2") ? y.atan2(x, PRECISION) :
+                     !strcmp(bufl, "atan2pi") ? y.atan2pi(x, PRECISION) :
+                                                 y.atan2tau(x, PRECISION);
                printf("== input ==\n");
-               printf("prnt : atan2 %s %s\n", GCSTR y.print(ibase), GCSTR x.print(ibase));
+               printf("prnt : %s %s %s\n", bufl, GCSTR y.print(ibase), GCSTR x.print(ibase));
                printf("== result ==\n");
                print_q("", r, obase);
                printf("== done==\n\n");
