@@ -210,6 +210,15 @@ Functions implemented by the current `Q` type are exposed directly:
 
 ```
 sqrt(x)
+sin(x)
+cos(x)
+tan(x)
+atan(x)
+atan2(y,x)
+ln(x)
+e(x)
+pi
+pi()
 abs(x)
 floor(x)
 sgn(x)
@@ -217,9 +226,16 @@ pow(x,y)
 xor(x,y)
 ```
 
-`sqrt()` and non-rational powers use `Q`'s rational approximation mechanism.
-The approximation precision is controlled by the special `precision` value,
-which controls the working precision used when Uge must approximate a
+Angles are in radians.  `atan2(y,x)` is quadrant-aware and returns an angle in
+`(-pi,pi]`; `atan2(0,0)` is undefined.  `pi` is a built-in value and may be
+written either as `pi` or `pi()`.  `e(x)` means e raised to the power x, so
+`e(1)` gives Euler's constant and `e(0)` is 1.
+
+`sqrt()`, non-rational powers, trigonometric functions, `ln()`, `e()`, and
+`pi` use `Q`'s rational approximation mechanism.  No floating-point type is
+introduced: the returned value is a rational approximation represented by a
+`Q`.  The approximation precision is controlled by the special `precision`
+value, which controls the working precision used when Uge must approximate a
 non-rational result.  It defaults to 256:
 
 ```
@@ -227,6 +243,19 @@ precision = 8192
 ```
 
 `precision` is always assigned using decimal input, regardless of `ibase`.
+
+The calculator caches `pi` and `e(1)` at the current `precision`.  Both values
+are computed once at startup and recomputed only when `precision` changes.
+Changing `maxdigits` does not invalidate the cache because it affects only
+output formatting.
+
+The transcendental functions are implemented without floating point.  `sin()`,
+`cos()`, `atan()`, `ln()`, and `e()` use rational series with range reduction;
+`pi` uses Machin's arctangent formula; `tan()` is formed from sine and cosine;
+and `atan2()` applies the standard quadrant corrections to arctangent.  During
+these approximate calculations, intermediate values are truncated to a binary
+working-precision grid to keep their exact rational denominators from growing
+without useful bound.
 
 ## Output forms
 

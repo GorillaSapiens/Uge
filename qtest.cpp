@@ -46,6 +46,15 @@ int main(int argc, char **argv) {
 
       try {
          if (1 == res) {
+            if (!strcmp(bufl, "pi")) {
+               Q r = Q::pi(PRECISION);
+               printf("== pi ==\n");
+               print_q("", r, obase);
+               printf("\n");
+               free(p);
+               continue;
+            }
+
             Q l(bufl, ibase);
 
             printf("== input ==\n");
@@ -66,13 +75,24 @@ int main(int argc, char **argv) {
             printf("== done==\n\n");
          }
          else if (2 == res) {
-            if (!strcmp(bufl, "sqrt")) {
+            if (!strcmp(bufl, "sqrt") || !strcmp(bufl, "sin") ||
+                !strcmp(bufl, "cos") || !strcmp(bufl, "tan") ||
+                !strcmp(bufl, "atan") || !strcmp(bufl, "ln") ||
+                !strcmp(bufl, "e")) {
                Q l(op, ibase);
+               Q r;
+               if (!strcmp(bufl, "sqrt")) r = l.sqrt(PRECISION);
+               else if (!strcmp(bufl, "sin")) r = l.sin(PRECISION);
+               else if (!strcmp(bufl, "cos")) r = l.cos(PRECISION);
+               else if (!strcmp(bufl, "tan")) r = l.tan(PRECISION);
+               else if (!strcmp(bufl, "atan")) r = l.atan(PRECISION);
+               else if (!strcmp(bufl, "ln")) r = l.ln(PRECISION);
+               else r = l.e(PRECISION);
 
                printf("== input ==\n");
-               printf("prnt : sqrt %s\n", GCSTR l.print(ibase));
+               printf("prnt : %s %s\n", bufl, GCSTR l.print(ibase));
                printf("== result ==\n");
-               printf("prnt : %s\n", GCSTR l.sqrt(PRECISION).print(obase));
+               printf("prnt : %s\n", GCSTR r.print(obase));
                printf("\n");
             }
             else if (!strcmp(bufl, "ibase")) {
@@ -89,6 +109,19 @@ int main(int argc, char **argv) {
             }
          }
          else if (3 == res) {
+            if (!strcmp(bufl, "atan2")) {
+               Q y(op, ibase);
+               Q x(bufr, ibase);
+               Q r = y.atan2(x, PRECISION);
+               printf("== input ==\n");
+               printf("prnt : atan2 %s %s\n", GCSTR y.print(ibase), GCSTR x.print(ibase));
+               printf("== result ==\n");
+               print_q("", r, obase);
+               printf("== done==\n\n");
+               free(p);
+               continue;
+            }
+
             Q l(bufl, ibase);
             Q r(bufr, ibase);
 

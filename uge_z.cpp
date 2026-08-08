@@ -47,17 +47,31 @@ void Z::fixZero(void) {
 
 Z::Z(const Z &orig) {
    size = orig.size;
-   data = (uint16_t *) malloc(sizeof(uint16_t) * size);
-   memcpy(data, orig.data, sizeof(uint16_t) * size);
+   if (size) {
+      data = (uint16_t *) malloc(sizeof(uint16_t) * size);
+      memcpy(data, orig.data, sizeof(uint16_t) * size);
+   }
+   else {
+      data = NULL;
+   }
 }
 
 Z& Z::operator=(const Z& other) {
+   if (this == &other) {
+      return *this;
+   }
+
    if (data) {
       free((void *) data);
    }
    size = other.size;
-   data = (uint16_t *) malloc(sizeof(uint16_t) * size);
-   memcpy(data, other.data, sizeof(uint16_t) * size);
+   if (size) {
+      data = (uint16_t *) malloc(sizeof(uint16_t) * size);
+      memcpy(data, other.data, sizeof(uint16_t) * size);
+   }
+   else {
+      data = NULL;
+   }
 
    return *this;
 }

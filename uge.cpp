@@ -35,11 +35,28 @@ struct Context {
    uint64_t precision;
    std::map<std::string, Q> vars;
    Q last;
+   Q pi_cache;
+   Q e_cache;
 
    Context()
       : ibase(10), obase(10), print_max(DEFAULT_PRINT_MAX),
-        precision(DEFAULT_PRECISION), last((int64_t)0) {}
+        precision(DEFAULT_PRECISION), last((int64_t)0),
+        pi_cache((int64_t)0), e_cache((int64_t)0) {}
 };
+
+static void set_precision(Context &ctx, uint64_t precision) {
+   if (precision == ctx.precision && ctx.pi_cache.sgn() != 0) {
+      return;
+   }
+
+   // Compute first so a failure leaves the existing precision/cache intact.
+   Q new_pi = Q::pi(precision);
+   Q new_e = Q((int64_t)1).e(precision);
+
+   ctx.precision = precision;
+   ctx.pi_cache = new_pi;
+   ctx.e_cache = new_e;
+}
 
 static std::string trim(const std::string &s) {
    size_t a = 0;
@@ -135,7 +152,7 @@ static void set_named_value(Context &ctx, const std::string &name, const Q &valu
       throw std::string(name) + " must be between 1 and 1000000";
    }
    if (name == "maxdigits") ctx.print_max = (uint64_t)n;
-   if (name == "precision") ctx.precision = (uint64_t)n;
+   if (name == "precision") set_precision(ctx, (uint64_t)n);
 }
 
 struct Token {
@@ -556,6 +573,39 @@ class Parser {
          if (a.size() != 1) throw std::string("sqrt() takes one argument");
          return Value(a[0].sqrt(ctx.precision));
       }
+      if (name == "sin") {
+         if (a.size() != 1) throw std::string("sin() takes one argument");
+         return Value(a[0].sin(ctx.precision));
+      }
+      if (name == "cos") {
+         if (a.size() != 1) throw std::string("cos() takes one argument");
+         return Value(a[0].cos(ctx.precision));
+      }
+      if (name == "tan") {
+         if (a.size() != 1) throw std::string("tan() takes one argument");
+         return Value(a[0].tan(ctx.precision));
+      }
+      if (name == "atan") {
+         if (a.size() != 1) throw std::string("atan() takes one argument");
+         return Value(a[0].atan(ctx.precision));
+      }
+      if (name == "atan2") {
+         if (a.size() != 2) throw std::string("atan2() takes two arguments");
+         return Value(a[0].atan2(a[1], ctx.precision));
+      }
+      if (name == "ln") {
+         if (a.size() != 1) throw std::string("ln() takes one argument");
+         return Value(a[0].ln(ctx.precision));
+      }
+      if (name == "pi") {
+         if (!a.empty()) throw std::string("pi() takes no arguments");
+         return Value(ctx.pi_cache);
+      }
+      if (name == "e") {
+         if (a.size() != 1) throw std::string("e() takes one argument");
+         if (a[0] == Q((int64_t)1)) return Value(ctx.e_cache);
+         return Value(a[0].e(ctx.precision));
+      }
       if (name == "abs") {
          if (a.size() != 1) throw std::string("abs() takes one argument");
          return Value(a[0].abs());
@@ -591,6 +641,7 @@ class Parser {
          std::string name = tok.text;
          advance();
          if (tok.kind == Token::LPAREN) return call_function(name);
+         if (name == "pi") return Value(ctx.pi_cache);
          return Value(config_value(ctx, name), name);
       }
 
@@ -697,7 +748,16 @@ static bool execute_statement(Context &ctx, std::string stmt) {
    for (size_t i = 0; i < sizeof(commands) / sizeof(commands[0]); i++) {
       std::string rest;
       if (starts_word(stmt, commands[i], rest) && !rest.empty()) {
-         stmt = std::string(commands[i]) + "=" + rest;
+         // "base 12" is a convenience assignment.  Explicit operators
+         // such as "precision += 16" or "base == 12" already have their
+         // normal parser meaning and must not be rewritten.
+         if (isdigit((unsigned char)rest[0])) {
+            stmt = std::string(commands[i]) + "=" + rest;
+         }
+         else if (rest[0] == '=' &&
+                  (rest.size() == 1 || rest[1] != '=')) {
+            stmt = std::string(commands[i]) + rest;
+         }
          break;
       }
    }
@@ -1047,6 +1107,8 @@ int main(int argc, char **argv) {
    }
 
    Context ctx;
+   set_precision(ctx, DEFAULT_PRECISION);
+
    for (size_t i = 0; i < files.size(); i++) {
       std::ifstream f(files[i].c_str());
       if (!f) {

@@ -770,6 +770,379 @@ int Q::sgn(void) const {
    return pos ? 1 : -1;
 }
 
+static uint64_t guarded_precision(uint64_t precision, uint64_t guard) {
+   if (precision > (uint64_t)INT64_MAX ||
+       guard > (uint64_t)INT64_MAX - precision) {
+      throw(UGE_ERR("precision too large"));
+   }
+   return precision + guard;
+}
+
+static Q precision_epsilon(uint64_t precision) {
+   if (precision > (uint64_t)INT64_MAX) {
+      throw(UGE_ERR("precision too large"));
+   }
+
+   Z d = 1;
+   d <<= (int64_t)precision;
+   return Q(true, Z((uint64_t)0), Z((uint64_t)1), d);
+}
+
+// Truncate a rational to a binary fixed-point grid.  Approximation routines
+// use this to prevent exact intermediate fractions from accumulating enormous
+// and useless denominators (for example, products of Taylor factorials).
+static Q binary_trunc(const Q &q, uint64_t precision) {
+   if (q.sgn() == 0) {
+      return Q((int64_t)0);
+   }
+
+   Q eps = precision_epsilon(precision);
+   Q mag = (q.abs() / eps).floor() * eps;
+   return q.sgn() < 0 ? -mag : mag;
+}
+
+static uint64_t z_bit_length(Z z) {
+   uint64_t ret = 0;
+   while (!z.isZero()) {
+      z >>= 1;
+      ret++;
+   }
+   return ret;
+}
+
+// Taylor series for atan(x), used only with |x| <= 1/3.  At that
+// magnitude the terms decrease quickly, and the alternating-series
+// remainder is bounded by the first omitted term.
+static Q atan_series(const Q &x, uint64_t precision) {
+   if (x.sgn() == 0) {
+      return Q((int64_t)0);
+   }
+
+   Q eps = precision_epsilon(precision);
+   Q xr = binary_trunc(x, precision);
+   Q x2 = binary_trunc(xr * xr, precision);
+   Q term = xr;
+   Q sum = xr;
+
+   for (uint64_t k = 1; ; k++) {
+      if (k > (UINT64_MAX - 1) / 2) {
+         throw(UGE_ERR("atan series overflow"));
+      }
+      uint64_t a = 2 * k - 1;
+      uint64_t b = 2 * k + 1;
+      term = binary_trunc(
+         -(term * x2 * Q((int64_t)a) / Q((int64_t)b)), precision);
+      sum = binary_trunc(sum + term, precision);
+      if (term.abs() < eps) {
+         return sum;
+      }
+   }
+}
+
+Q Q::pi(uint64_t precision) {
+   // Machin's formula:
+   // pi = 16 atan(1/5) - 4 atan(1/239)
+   // Eight guard bits are enough to cover the small integer multipliers
+   // and the two truncation errors.
+   uint64_t work = guarded_precision(precision, 8);
+   Q a = atan_series(Q((int64_t)1) / Q((int64_t)5), work);
+   Q b = atan_series(Q((int64_t)1) / Q((int64_t)239), work);
+   Q ret = Q((int64_t)16) * a - Q((int64_t)4) * b;
+
+   // The series result is already an approximation.  Collapse its very
+   // large exact denominator onto the requested binary precision grid so
+   // using pi as an input to another approximation does not cause needless
+   // denominator growth.
+   return binary_trunc(ret, precision);
+}
+
+static Q atan_positive(const Q &x, const Q &p, uint64_t precision) {
+   Q one((int64_t)1);
+   Q half = one / Q((int64_t)2);
+
+   if (x > one) {
+      return p / Q((int64_t)2) - atan_positive(one / x, p, precision);
+   }
+
+   if (x > half) {
+      // atan(x) = pi/4 + atan((x-1)/(x+1)); for 1/2 < x <= 1
+      // the transformed argument has magnitude at most 1/3.
+      Q reduced = (x - one) / (x + one);
+      return p / Q((int64_t)4) + atan_series(reduced, precision);
+   }
+
+   return atan_series(x, precision);
+}
+
+Q Q::atan(uint64_t precision) const {
+   if (sgn() == 0) {
+      return Q((int64_t)0);
+   }
+
+   uint64_t work = guarded_precision(precision, 12);
+   Q p = Q::pi(work);
+   Q ret = atan_positive(abs(), p, work);
+   return pos ? ret : -ret;
+}
+
+Q Q::atan2(const Q &x, uint64_t precision) const {
+   int ys = sgn();
+   int xs = x.sgn();
+
+   if (!ys && !xs) {
+      throw(UGE_ERR("atan2 undefined for (0,0)"));
+   }
+
+   uint64_t work = guarded_precision(precision, 16);
+   Q p = Q::pi(work);
+
+   if (!xs) {
+      return ys > 0 ? p / Q((int64_t)2) : -p / Q((int64_t)2);
+   }
+
+   if (!ys) {
+      return xs > 0 ? Q((int64_t)0) : p;
+   }
+
+   Q ratio = *this / x;
+   Q ret = atan_positive(ratio.abs(), p, work);
+   if (ratio.sgn() < 0) {
+      ret = -ret;
+   }
+   if (xs > 0) {
+      return ret;
+   }
+   return ys > 0 ? ret + p : ret - p;
+}
+
+static Q sin_series(const Q &x, uint64_t precision) {
+   if (x.sgn() == 0) {
+      return Q((int64_t)0);
+   }
+
+   Q eps = precision_epsilon(precision);
+   Q xr = binary_trunc(x, precision);
+   Q x2 = binary_trunc(xr * xr, precision);
+   Q term = xr;
+   Q sum = xr;
+
+   for (uint64_t k = 1; ; k++) {
+      if (k > (UINT64_MAX - 1) / 2) {
+         throw(UGE_ERR("sin series overflow"));
+      }
+      uint64_t a = 2 * k;
+      uint64_t b = 2 * k + 1;
+      term = binary_trunc(
+         -(term * x2 / Q((int64_t)a) / Q((int64_t)b)), precision);
+      sum = binary_trunc(sum + term, precision);
+      if (term.abs() < eps) {
+         return sum;
+      }
+   }
+}
+
+static Q cos_series(const Q &x, uint64_t precision) {
+   Q eps = precision_epsilon(precision);
+   Q xr = binary_trunc(x, precision);
+   Q x2 = binary_trunc(xr * xr, precision);
+   Q term((int64_t)1);
+   Q sum((int64_t)1);
+
+   for (uint64_t k = 1; ; k++) {
+      if (k > UINT64_MAX / 2) {
+         throw(UGE_ERR("cos series overflow"));
+      }
+      uint64_t a = 2 * k - 1;
+      uint64_t b = 2 * k;
+      term = binary_trunc(
+         -(term * x2 / Q((int64_t)a) / Q((int64_t)b)), precision);
+      sum = binary_trunc(sum + term, precision);
+      if (term.abs() < eps) {
+         return sum;
+      }
+   }
+}
+
+static Q reduce_angle(const Q &x, uint64_t precision) {
+   Q p = Q::pi(precision);
+   Q period = Q((int64_t)2) * p;
+   Q turns = (x / period).floor();
+   Q r = x - turns * period;
+
+   // floor() above leaves r in [0,2*pi); use the symmetric interval.
+   if (r > p) {
+      r -= period;
+   }
+   return r;
+}
+
+Q Q::sin(uint64_t precision) const {
+   if (sgn() == 0) {
+      return Q((int64_t)0);
+   }
+
+   // Range reduction by an approximate pi multiplies pi's error by the
+   // number of turns.  Keep enough extra bits for the integer magnitude
+   // of the argument, plus a fixed cushion for the series arithmetic.
+   uint64_t work = guarded_precision(
+      precision, guarded_precision(z_bit_length(whl), 32));
+   return sin_series(reduce_angle(*this, work), work);
+}
+
+Q Q::cos(uint64_t precision) const {
+   if (sgn() == 0) {
+      return Q((int64_t)1);
+   }
+
+   uint64_t work = guarded_precision(
+      precision, guarded_precision(z_bit_length(whl), 32));
+   return cos_series(reduce_angle(*this, work), work);
+}
+
+Q Q::tan(uint64_t precision) const {
+   if (sgn() == 0) {
+      return Q((int64_t)0);
+   }
+
+   uint64_t work = guarded_precision(
+      precision, guarded_precision(z_bit_length(whl), 40));
+   Q r = reduce_angle(*this, work);
+   Q c = cos_series(r, work);
+   if (c.sgn() == 0) {
+      throw(UGE_ERR("tangent undefined"));
+   }
+   return binary_trunc(sin_series(r, work) / c, work);
+}
+
+// ln(x) = 2 * (z + z^3/3 + z^5/5 + ...), z=(x-1)/(x+1).
+// This helper is used only for 1 <= x <= 2, so 0 <= z <= 1/3.
+static Q ln_series(const Q &x, uint64_t precision) {
+   Q one((int64_t)1);
+   if (x == one) {
+      return Q((int64_t)0);
+   }
+
+   Q eps = precision_epsilon(precision);
+   Q z = binary_trunc((x - one) / (x + one), precision);
+   Q z2 = binary_trunc(z * z, precision);
+   Q power = z;
+   Q sum = z;
+   uint64_t d = 1;
+
+   for (;;) {
+      if (d > UINT64_MAX - 2) {
+         throw(UGE_ERR("ln series overflow"));
+      }
+      d += 2;
+      power = binary_trunc(power * z2, precision);
+      sum = binary_trunc(sum + power / Q((int64_t)d), precision);
+
+      if (d > UINT64_MAX - 2) {
+         throw(UGE_ERR("ln series overflow"));
+      }
+      Q next = binary_trunc(
+         (power * z2) / Q((int64_t)(d + 2)), precision);
+      Q bound = Q((int64_t)2) * next / (one - z2);
+      if (bound < eps) {
+         return Q((int64_t)2) * sum;
+      }
+   }
+}
+
+Q Q::ln(uint64_t precision) const {
+   if (!pos || sgn() == 0) {
+      throw(UGE_ERR("logarithm of non-positive number"));
+   }
+
+   Q one((int64_t)1);
+   Q two((int64_t)2);
+   if (*this == one) {
+      return Q((int64_t)0);
+   }
+
+   Q m = *this;
+   int64_t shifts = 0;
+   while (m >= two) {
+      m /= two;
+      if (shifts == INT64_MAX) {
+         throw(UGE_ERR("ln argument too large"));
+      }
+      shifts++;
+   }
+   while (m < one) {
+      m *= two;
+      if (shifts == INT64_MIN) {
+         throw(UGE_ERR("ln argument too small"));
+      }
+      shifts--;
+   }
+
+   uint64_t shiftmag = shifts < 0 ? (uint64_t)(-(shifts + 1)) + 1
+                                  : (uint64_t)shifts;
+   uint64_t shiftbits = 0;
+   for (uint64_t t = shiftmag; t; t >>= 1) shiftbits++;
+
+   uint64_t work = guarded_precision(precision, 16);
+   uint64_t ln2work = guarded_precision(work, shiftbits);
+   Q ret = ln_series(m, work);
+   if (shifts) {
+      ret += Q(shifts) * ln_series(two, ln2work);
+   }
+   return ret;
+}
+
+// Taylor series for exp(x), used only with |x| <= 1/2.  Once the next
+// term is small enough, the remaining tail is less than twice that term.
+static Q exp_series(const Q &x, uint64_t precision) {
+   Q eps = precision_epsilon(precision);
+   Q one((int64_t)1);
+   Q xr = binary_trunc(x, precision);
+   Q sum = one;
+   Q term = one;
+
+   for (uint64_t n = 1; ; n++) {
+      if (n > (uint64_t)INT64_MAX - 2) {
+         throw(UGE_ERR("exp series overflow"));
+      }
+      term = binary_trunc(term * xr / Q((int64_t)n), precision);
+      sum = binary_trunc(sum + term, precision);
+
+      Q next = binary_trunc(term * xr / Q((int64_t)(n + 1)), precision);
+      if (Q((int64_t)2) * next.abs() < eps) {
+         return sum;
+      }
+   }
+}
+
+Q Q::e(uint64_t precision) const {
+   if (sgn() == 0) {
+      return Q((int64_t)1);
+   }
+
+   Q half = Q((int64_t)1) / Q((int64_t)2);
+   Q r = *this;
+   uint64_t squarings = 0;
+
+   // exp(x) = exp(x / 2^k)^(2^k).  Keeping the series argument close
+   // to zero makes convergence fast; the extra working bits absorb the
+   // error amplification from the subsequent squarings.
+   while (r.abs() > half) {
+      r /= Q((int64_t)2);
+      if (squarings == UINT64_MAX) {
+         throw(UGE_ERR("exponent too large"));
+      }
+      squarings++;
+   }
+
+   uint64_t work = guarded_precision(
+      precision, guarded_precision(squarings, 24));
+   Q ret = exp_series(r, work);
+   while (squarings--) {
+      ret = binary_trunc(ret * ret, work);
+   }
+   return ret;
+}
+
 Q Q::sqrt(uint64_t precision) const {
    if (!pos) {
       throw(UGE_ERR("square root of negative number."));

@@ -93,9 +93,17 @@ namespace uge {
          Q floor(void) const;
          int sgn(void) const;
 
-	 // NB: sqrt is a rational approximation to the given precision
+         // These return rational approximations to the given precision.
          Q sqrt(uint64_t precision) const;
          Q pow(const Q &power, uint64_t precision) const;
+         Q sin(uint64_t precision) const;
+         Q cos(uint64_t precision) const;
+         Q tan(uint64_t precision) const;
+         Q atan(uint64_t precision) const;
+         Q atan2(const Q &x, uint64_t precision) const;
+         Q ln(uint64_t precision) const;
+         Q e(uint64_t precision) const;
+         static Q pi(uint64_t precision);
    };
 };
 
