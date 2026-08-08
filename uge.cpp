@@ -94,14 +94,14 @@ static Q q_pow(const Q &base, const Q &power, uint64_t precision) {
 
 static bool is_config_name(const std::string &name) {
    return name == "ibase" || name == "obase" || name == "base" ||
-          name == "scale" || name == "maxdigits" || name == "precision";
+          name == "maxdigits" || name == "precision";
 }
 
 static Q config_value(Context &ctx, const std::string &name) {
    if (name == "ibase") return Q((int64_t)ctx.ibase);
    if (name == "obase") return Q((int64_t)ctx.obase);
    if (name == "base") return Q((int64_t)ctx.ibase);
-   if (name == "scale" || name == "maxdigits") return Q((int64_t)ctx.print_max);
+   if (name == "maxdigits") return Q((int64_t)ctx.print_max);
    if (name == "precision") return Q((int64_t)ctx.precision);
    if (name == "last") return ctx.last;
    std::map<std::string, Q>::iterator i = ctx.vars.find(name);
@@ -134,7 +134,7 @@ static void set_named_value(Context &ctx, const std::string &name, const Q &valu
    if (n < 1 || n > 1000000) {
       throw std::string(name) + " must be between 1 and 1000000";
    }
-   if (name == "scale" || name == "maxdigits") ctx.print_max = (uint64_t)n;
+   if (name == "maxdigits") ctx.print_max = (uint64_t)n;
    if (name == "precision") ctx.precision = (uint64_t)n;
 }
 
@@ -683,6 +683,7 @@ static bool execute_statement(Context &ctx, std::string stmt) {
       printf("Type expressions using bc-like syntax.  See UGE.md for full help.\n");
       printf("ibase/obase/base assignments are always interpreted in decimal.\n");
       printf("Output: positional(x), fraction(x), decimal(x).\n");
+      printf("maxdigits controls rendering; precision controls approximations.\n");
       return true;
    }
    if (stmt == "warranty") {
@@ -692,7 +693,7 @@ static bool execute_statement(Context &ctx, std::string stmt) {
 
    // Friendly command forms inherited from ztest/qtest.  The Parser's
    // special-variable assignment path deliberately parses their RHS in base 10.
-   static const char *commands[] = { "ibase", "obase", "base", "scale", "maxdigits", "precision" };
+   static const char *commands[] = { "ibase", "obase", "base", "maxdigits", "precision" };
    for (size_t i = 0; i < sizeof(commands) / sizeof(commands[0]); i++) {
       std::string rest;
       if (starts_word(stmt, commands[i], rest) && !rest.empty()) {

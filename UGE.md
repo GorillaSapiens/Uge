@@ -219,13 +219,14 @@ xor(x,y)
 
 `sqrt()` and non-rational powers use `Q`'s rational approximation mechanism.
 The approximation precision is controlled by the special `precision` value,
-which is specified in bits and defaults to 256:
+which controls the working precision used when Uge must approximate a
+non-rational result.  It defaults to 256:
 
 ```
 precision = 8192
 ```
 
-Like base-setting commands, `precision` is always assigned using decimal input.
+`precision` is always assigned using decimal input, regardless of `ibase`.
 
 ## Output forms
 
@@ -267,17 +268,19 @@ decimal(.49 + .03)
 
 The `5/10` above is a base-12 fraction: denominator `10` means twelve.
 
-`scale` is accepted as a `bc`-familiar name, but Uge does not use `bc`'s
-fixed-point scale semantics.  Arithmetic remains exact.  In `uge`, `scale`
-(and its clearer alias `maxdigits`) limits how far positional output searches
-or prints a non-repeating prefix or repetend.  The default is 1024.
+`maxdigits` limits how far positional output searches or prints a
+non-repeating prefix or repetend.  The default is 1024.
 
 ```
-scale = 200
+maxdigits = 200
 maxdigits 200
 ```
 
-These configuration values are also assigned in decimal.
+`maxdigits` and `precision` are assigned using decimal input, regardless of
+`ibase`.
+
+There is deliberately no `bc`-style `scale` setting.  `Q` arithmetic is exact,
+so division is not truncated to a fixed number of fractional digits.
 
 ## Deliberate differences from GNU `bc`
 
@@ -285,8 +288,8 @@ The user interface is intentionally familiar, but `uge` is not a complete `bc`
 implementation.
 
 - All ordinary numeric values are exact `Q` rational numbers.
-- Division is exact; it is not truncated to a decimal `scale`.
-- `scale` therefore does not change arithmetic.
+- Division is exact; there is no fixed-point `scale` setting.
+- `maxdigits` affects positional rendering only; it does not change arithmetic.
 - General user-defined functions, arrays, control-flow statements, and the GNU
   math library are not implemented.
 - Only mathematical functions already supported by Uge are exposed.
