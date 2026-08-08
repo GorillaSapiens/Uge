@@ -32,7 +32,7 @@ namespace uge {
          Q();
          Q(const Q &orig); // copy constructor
          Q(bool p, Z w, Z n, Z d);
-         Q(const char *p);
+         Q(const char *p, uint64_t radix = 10);
          Q(double d);
          Q(int64_t i);
 
@@ -78,8 +78,12 @@ namespace uge {
          char *debu_print(void) const;
 
          // returns pointer that must be free'd
-         char *frac_print(void) const;
+         char *frac_print(uint64_t radix = 10) const;
 
+         // returns pointer that must be free'd
+         char *print(uint64_t radix = 10, uint64_t max = 1024) const;
+
+         // decimal compatibility wrapper
          // returns pointer that must be free'd
          char *deci_print(uint64_t max = 1024) const;
 

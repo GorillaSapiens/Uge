@@ -85,26 +85,82 @@ Q::Q(bool p, Z w, Z n, Z d) {
    simplify();
 }
 
-static Z llpow10(Z n) {
+static Z llpow(Z base, Z n) {
    if (n.isZero()) {
       return 1;
    }
    else if (n == 1) {
-      return 10;
+      return base;
    }
    else {
       Z a = n / 2;
       Z b = n - a;
-      return llpow10(a) * llpow10(b);
+      return llpow(base, a) * llpow(base, b);
    }
 }
 
-Q::Q(const char *orig) {
+static bool radix_digit(const char *&p, uint64_t radix, uint32_t &digit) {
+   if (*p >= '0' && *p <= '9') {
+      digit = *p - '0';
+      p++;
+   }
+   else if (*p >= 'A' && *p <= 'Z') {
+      digit = *p - 'A' + 10;
+      p++;
+   }
+   else if (*p >= 'a' && *p <= 'z') {
+      digit = *p - 'a' + 10;
+      p++;
+   }
+   else if (*p == '{') {
+      const char *q = p + 1;
+      if (*q < '0' || *q > '9') {
+         return false;
+      }
+
+      uint64_t value = 0;
+      while (*q >= '0' && *q <= '9') {
+         value = value * 10 + (*q - '0');
+         if (value > 0xffff) {
+            return false;
+         }
+         q++;
+      }
+      if (*q != '}') {
+         return false;
+      }
+
+      digit = value;
+      p = q + 1;
+   }
+   else {
+      return false;
+   }
+
+   return digit < radix;
+}
+
+static uint64_t radix_digits(const char *p, uint64_t radix) {
+   uint64_t ret = 0;
+   uint32_t digit;
+
+   while (*p && radix_digit(p, radix, digit)) {
+      ret++;
+   }
+
+   return ret;
+}
+
+Q::Q(const char *orig, uint64_t radix) {
+   // Let Z enforce the supported radix range.
+   Z radix_check("", radix);
+   Z base(radix);
+
    char *tick = strchr((char *)orig, '\'');
    char *slash = strchr((char *)orig, '/');
-   char *dee = strchr((char *)orig, 'd');
 
-   if (dee) {
+   // The old d<number> escape is explicitly decimal because atof() is.
+   if (radix == 10 && *orig == 'd') {
       double d = atof(orig + 1);
       *this = Q(d);
    }
@@ -122,17 +178,17 @@ Q::Q(const char *orig) {
 
       if (slash) {
          if (tick) {
-            whl = Z(p);
-            num = Z(tick + 1);
+            whl = Z(p, radix);
+            num = Z(tick + 1, radix);
          }
          else {
             whl = (int) 0;
-            num = Z(p);
+            num = Z(p, radix);
          }
-         den = Z(slash + 1);
+         den = Z(slash + 1, radix);
       }
       else {
-         whl = Z(p);
+         whl = Z(p, radix);
          num = (int) 0;
          den = 1;
       }
@@ -142,31 +198,6 @@ Q::Q(const char *orig) {
    else {
       char *freeme = strdup(orig);
       char *p = freeme;
-
-      for (char *q = p; *q; q++) {
-         switch(*q) {
-            case '0':
-            case '1':
-            case '2':
-            case '3':
-            case '4':
-            case '5':
-            case '6':
-            case '7':
-            case '8':
-            case '9':
-            case '(':
-            case ')':
-            case 'e':
-            case 'E':
-            case '+':
-            case '-':
-            case '.':
-               break;
-            default:
-               *q = 0;
-         }
-      }
 
       bool negexp = false;
       Z exp;
@@ -184,7 +215,8 @@ Q::Q(const char *orig) {
          p++;
       }
 
-      if (strchr(p, 'e') || strchr(p, 'E')) {
+      // e/E is unambiguous only while E is not a valid digit.
+      if (radix <= 14 && (strchr(p, 'e') || strchr(p, 'E'))) {
          char *q = strchr(p, 'e');
          if (!q) {
             q = strchr(p, 'E');
@@ -194,7 +226,10 @@ Q::Q(const char *orig) {
             negexp = true;
             q++;
          }
-         exp = Z(q);
+         else if (*q == '+') {
+            q++;
+         }
+         exp = Z(q, radix);
       }
 
       if (strchr(p, '(')) {
@@ -205,26 +240,26 @@ Q::Q(const char *orig) {
             free((void *)freeme);
             throw(UGE_ERR("no matching ')'"));
          }
-         repetend_den = llpow10(r - q) - 1;
-         repetend_num = Z(q);
+         *r = 0;
+         uint64_t repeatlen = radix_digits(q, radix);
+         repetend_den = llpow(base, Z(repeatlen)) - 1;
+         repetend_num = Z(q, radix);
       }
 
-      int fraclen = 0;
+      uint64_t fraclen = 0;
 
       if (strchr(p, '.')) {
          char *q = strchr(p, '.');
          *q++ = 0;
-         whl = Z(p);
-         num = Z(q);
-         fraclen = strlen(q);
-         den = llpow10(fraclen);
+         whl = Z(p, radix);
+         num = Z(q, radix);
+         fraclen = radix_digits(q, radix);
+         den = llpow(base, Z(fraclen));
       }
       else {
-         whl = Z(p);
+         whl = Z(p, radix);
          num = (int) 0;
          den = 1;
-
-         fraclen = 0;
       }
 
       free((void *)freeme);
@@ -240,13 +275,13 @@ Q::Q(const char *orig) {
       }
 
       if (negexp) {
-         Z x = llpow10(exp);
+         Z x = llpow(base, exp);
          Q r(1, (uint64_t)0, 1, x);
          *this = *this * r;
          simplify();
       }
       else if (!exp.isZero()) {
-         Q r(1, llpow10(exp), (uint64_t)0, 1);
+         Q r(1, llpow(base, exp), (uint64_t)0, 1);
          *this = *this * r;
          simplify();
       }
@@ -560,7 +595,7 @@ char *Q::debu_print(void) const {
    return ret;
 }
 
-char *Q::frac_print(void) const {
+char *Q::frac_print(uint64_t radix) const {
    if (whl.isZero() && num.isZero()) {
       return strdup("0");
    }
@@ -570,34 +605,90 @@ char *Q::frac_print(void) const {
    }
    if (num.isZero()) {
       char *p;
-      char *ret = mprintf("%s%s", mark, p = /*assign*/ whl.print());
+      char *ret = mprintf("%s%s", mark, p = /*assign*/ whl.print(radix));
       free((void *)p);
       return ret;
    }
    else if (whl.isZero()) {
       char *ret = mprintf("%s%s/%s", mark,
-          GCSTR num.print(),
-          GCSTR den.print());
+          GCSTR num.print(radix),
+          GCSTR den.print(radix));
       return ret;
    }
    else {
       char *ret = mprintf("%s%s'%s/%s", mark,
-          GCSTR whl.print(),
-          GCSTR num.print(),
-          GCSTR den.print());
+          GCSTR whl.print(radix),
+          GCSTR num.print(radix),
+          GCSTR den.print(radix));
       return ret;
    }
 }
 
-char *Q::deci_print(uint64_t max) const {
-   static const Z zero;
+// Find the non-repeating prefix and repeating period lengths for 1/den
+// in the requested radix.  Returns true if max truncated either search.
+static bool radix_lengths(const Z &den, uint64_t radix,
+                          Z &lead, Z &repeat, uint64_t max) {
+   static const Z one(1);
+   Z remainder = den;
+   Z base(radix);
+   bool maxlead = false;
+   bool maxrepeat = false;
+
+
+   // Each radix digit can cancel one gcd(remainder, radix).  When the
+   // remainder becomes coprime to the radix, what remains must repeat.
+   while (remainder != one) {
+      Z g = gcd(remainder, base);
+      if (g == one) {
+         break;
+      }
+      remainder /= g;
+      lead += 1;
+
+      if (lead >= max && remainder != one) {
+         maxlead = true;
+         lead = max;
+         break;
+      }
+   }
+
+   if (maxlead || remainder == one) {
+      return maxlead;
+   }
+
+   // remainder is now coprime to radix.  The repeat length is the
+   // multiplicative order of radix modulo remainder.
+   Z power = base % remainder;
+   repeat = 1;
+
+   while (power != one) {
+      if (repeat >= max) {
+         maxrepeat = true;
+         repeat = max;
+         break;
+      }
+      power = (power * base) % remainder;
+      repeat += 1;
+   }
+
+   return maxrepeat;
+}
+
+char *Q::print(uint64_t radix, uint64_t max) const {
    char *ret = NULL;
+
+   if (whl.isZero() && num.isZero()) {
+      return strdup("0");
+   }
+
+   // Let Z enforce the supported radix range for nonzero Q values.
+   Z radix_check("", radix);
 
    if (!pos) {
       raprintf(ret, "-");
    }
 
-   raprintf(ret, "%s", GCSTR whl.print());
+   raprintf(ret, "%s", GCSTR whl.print(radix));
 
    if (num.isZero()) {
       return ret;
@@ -608,37 +699,39 @@ char *Q::deci_print(uint64_t max) const {
    Z lead;
    Z repeat;
 
-   bool bad = den.deci_lengths(lead, repeat, max);
+   bool bad = radix_lengths(den, radix, lead, repeat, max);
 
-   Z remainder = num * 10;
+   Z remainder = num * radix;
    Z digit;
 
    for (Z i; i < lead; i += 1) {
       digit = remainder / den;
-      remainder = remainder % den;
-      raprintf(ret, "%s", GCSTR digit.print());
-      remainder *= 10;
+      remainder %= den;
+      raprintf(ret, "%s", GCSTR digit.print(radix));
+      remainder *= radix;
    }
    if (bad && lead >= max) {
       raprintf(ret, "...");
    }
-   else {
-      if (repeat != zero) {
-         raprintf(ret, "(");
-         for (Z i; i < repeat; i += 1) {
-            digit = remainder / den;
-            remainder = remainder % den;
-            raprintf(ret, "%s", GCSTR digit.print());
-            remainder *= 10;
-         }
-         if (bad && repeat >= max) {
-            raprintf(ret, "...");
-         }
-         raprintf(ret, ")");
+   else if (!repeat.isZero()) {
+      raprintf(ret, "(");
+      for (Z i; i < repeat; i += 1) {
+         digit = remainder / den;
+         remainder %= den;
+         raprintf(ret, "%s", GCSTR digit.print(radix));
+         remainder *= radix;
       }
+      if (bad && repeat >= max) {
+         raprintf(ret, "...");
+      }
+      raprintf(ret, ")");
    }
 
    return ret;
+}
+
+char *Q::deci_print(uint64_t max) const {
+   return print(10, max);
 }
 
 Q::operator double() const {

@@ -6,7 +6,6 @@
 #include <stdint.h>
 #include <assert.h>
 #include <string.h>
-#include <assert.h>
 
 #include "uge_ramprintf.hpp"
 #include "gcstr.hpp"
@@ -16,7 +15,14 @@
 
 using namespace uge;
 
+static void print_q(const char *label, const Q &q, uint64_t radix) {
+   printf("%sdebu : %s\n", label, GCSTR q.debu_print());
+   printf("%sfrac : %s\n", label, GCSTR q.frac_print(radix));
+   printf("%sprnt : %s\n", label, GCSTR q.print(radix));
+}
+
 int main(int argc, char **argv) {
+   int ibase = 10, obase = 10;
    char *p;
 
    while (p = /*assign*/ mgets()) {
@@ -38,134 +44,123 @@ int main(int argc, char **argv) {
          }
       }
 
-      if (-1 == res) {
-         printf("exiting\n");
-         return 0;
-      }
-      else if (1 == res) {
-         Q l(bufl);
+      try {
+         if (1 == res) {
+            Q l(bufl, ibase);
 
-         printf("== input ==\n");
+            printf("== input ==\n");
+            print_q("", l, ibase);
 
-         printf("debu_print: %s\n", GCSTR l.debu_print());
-         printf("frac_print: %s\n", GCSTR l.frac_print());
-         printf("deci_print: %s\n", GCSTR l.deci_print());
+            printf("== output ==\n");
+            printf("frac : %s\n", GCSTR l.frac_print(obase));
+            printf("prnt : %s\n", GCSTR l.print(obase));
 
-         Q r = l.sqrt(PRECISION);
+            Q r = l.sqrt(PRECISION);
+            printf("== sqrt ==\n");
+            print_q("sqrt ", r, obase);
 
-         printf("sqrt debu_print: %s\n", GCSTR r.debu_print());
-         printf("sqrt frac_print: %s\n", GCSTR r.frac_print());
-         printf("sqrt deci_print: %s\n", GCSTR r.deci_print());
+            r = ~l;
+            printf("== ~ ==\n");
+            print_q("~ ", r, obase);
 
-         r = ~l;
+            printf("== done==\n\n");
+         }
+         else if (2 == res) {
+            if (!strcmp(bufl, "sqrt")) {
+               Q l(op, ibase);
 
-         printf("~ debu_print: %s\n", GCSTR r.debu_print());
-         printf("~ frac_print: %s\n", GCSTR r.frac_print());
-         printf("~ deci_print: %s\n", GCSTR r.deci_print());
+               printf("== input ==\n");
+               printf("prnt : sqrt %s\n", GCSTR l.print(ibase));
+               printf("== result ==\n");
+               printf("prnt : %s\n", GCSTR l.sqrt(PRECISION).print(obase));
+               printf("\n");
+            }
+            else if (!strcmp(bufl, "ibase")) {
+               ibase = atoi(op);
+               printf("ibase = %d, obase = %d\n", ibase, obase);
+            }
+            else if (!strcmp(bufl, "obase")) {
+               obase = atoi(op);
+               printf("ibase = %d, obase = %d\n", ibase, obase);
+            }
+            else if (!strcmp(bufl, "base")) {
+               ibase = obase = atoi(op);
+               printf("ibase = %d, obase = %d\n", ibase, obase);
+            }
+         }
+         else if (3 == res) {
+            Q l(bufl, ibase);
+            Q r(bufr, ibase);
 
-         printf("== done==\n\n");
-      }
-      else if (3 == res) {
-         Q l(bufl);
-         Q r(bufr);
+            printf("== input ==\n");
+            printf("debu : %s %s %s\n", GCSTR l.debu_print(), op, GCSTR r.debu_print());
+            printf("frac : %s %s %s\n", GCSTR l.frac_print(ibase), op, GCSTR r.frac_print(ibase));
+            printf("prnt : %s %s %s\n", GCSTR l.print(ibase), op, GCSTR r.print(ibase));
 
-         printf("== input ==\n");
-         printf("(%s) (%s) (%s)\n", bufl, op, bufr);
+            printf("== result ==\n");
 
-         printf("debu_print: %s %s %s\n", GCSTR l.debu_print(), op, GCSTR r.debu_print());
-         printf("frac_print: %s %s %s\n", GCSTR l.frac_print(), op, GCSTR r.frac_print());
-         printf("deci_print: %s %s %s\n", GCSTR l.deci_print(), op, GCSTR r.deci_print());
-
-         printf("== result ==\n");
-
-         try {
             if (!strcmp(op, "+")) {
                Q x = l + r;
-               printf("debu : %s\n", GCSTR x.debu_print());
-               printf("frac : %s\n", GCSTR x.frac_print());
-               printf("deci : %s\n", GCSTR x.deci_print());
+               print_q("", x, obase);
             }
             else if (!strcmp(op, "-")) {
                Q x = l - r;
-               printf("debu : %s\n", GCSTR x.debu_print());
-               printf("frac : %s\n", GCSTR x.frac_print());
-               printf("deci : %s\n", GCSTR x.deci_print());
+               print_q("", x, obase);
             }
             else if (!strcmp(op, "*")) {
                Q x = l * r;
-               printf("debu : %s\n", GCSTR x.debu_print());
-               printf("frac : %s\n", GCSTR x.frac_print());
-               printf("deci : %s\n", GCSTR x.deci_print());
+               print_q("", x, obase);
             }
             else if (!strcmp(op, "/")) {
                Q x = l / r;
-               printf("debu : %s\n", GCSTR x.debu_print());
-               printf("frac : %s\n", GCSTR x.frac_print());
-               printf("deci : %s\n", GCSTR x.deci_print());
+               print_q("", x, obase);
             }
             else if (!strcmp(op, "%")) {
                Q x = l % r;
-               printf("debu : %s\n", GCSTR x.debu_print());
-               printf("frac : %s\n", GCSTR x.frac_print());
-               printf("deci : %s\n", GCSTR x.deci_print());
+               print_q("", x, obase);
             }
             else if (!strcmp(op, "&")) {
                Q x = l & r;
-               printf("debu : %s\n", GCSTR x.debu_print());
-               printf("frac : %s\n", GCSTR x.frac_print());
-               printf("deci : %s\n", GCSTR x.deci_print());
+               print_q("", x, obase);
             }
             else if (!strcmp(op, "|")) {
                Q x = l | r;
-               printf("debu : %s\n", GCSTR x.debu_print());
-               printf("frac : %s\n", GCSTR x.frac_print());
-               printf("deci : %s\n", GCSTR x.deci_print());
+               print_q("", x, obase);
             }
             else if (!strcmp(op, "^")) {
                Q x = l ^ r;
-               printf("debu : %s\n", GCSTR x.debu_print());
-               printf("frac : %s\n", GCSTR x.frac_print());
-               printf("deci : %s\n", GCSTR x.deci_print());
+               print_q("", x, obase);
             }
             else if (!strcmp(op, "**")) {
                Q x = l.pow(r, PRECISION);
-               printf("debu : %s\n", GCSTR x.debu_print());
-               printf("frac : %s\n", GCSTR x.frac_print());
-               printf("deci : %s\n", GCSTR x.deci_print());
+               print_q("", x, obase);
             }
             else if (!strcmp(op, "==")) {
-               bool result = (l == r);
-               printf("%s\n", result ? "true" : "false");
+               printf("%s\n", l == r ? "true" : "false");
             }
             else if (!strcmp(op, "!=")) {
-               bool result = (l != r);
-               printf("%s\n", result ? "true" : "false");
+               printf("%s\n", l != r ? "true" : "false");
             }
             else if (!strcmp(op, "<")) {
-               bool result = (l < r);
-               printf("%s\n", result ? "true" : "false");
+               printf("%s\n", l < r ? "true" : "false");
             }
             else if (!strcmp(op, ">")) {
-               bool result = (l > r);
-               printf("%s\n", result ? "true" : "false");
+               printf("%s\n", l > r ? "true" : "false");
             }
             else if (!strcmp(op, "<=")) {
-               bool result = (l <= r);
-               printf("%s\n", result ? "true" : "false");
+               printf("%s\n", l <= r ? "true" : "false");
             }
             else if (!strcmp(op, ">=")) {
-               bool result = (l >= r);
-               printf("%s\n", result ? "true" : "false");
+               printf("%s\n", l >= r ? "true" : "false");
             }
             else {
                printf("unknown op '%s'\n", op);
             }
             printf("== done==\n\n");
          }
-         catch (std::string e) {
-            std::cerr << e;
-         }
-         printf("\n");
+      }
+      catch (std::string e) {
+         std::cerr << e;
       }
 
       free(p);
