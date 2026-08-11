@@ -28,6 +28,17 @@ static const uint64_t DEFAULT_PRECISION = 256;
 static const uint64_t MAX_RADIX = 65536;
 static const size_t MAX_HISTORY = 1000;
 
+// Exact Q values produced by the current transcendental algorithms at the
+// default working precision.  Baking them avoids recomputing pi and e every
+// time the calculator starts.  tau remains exactly 2*pi and is derived from
+// the cached pi value.
+static const char *DEFAULT_PI =
+   "3'16395309179817738009521987751666139093583423331470737840399399094199505546377/"
+   "115792089237316195423570985008687907853269984665640564039457584007913129639936";
+static const char *DEFAULT_E =
+   "2'1395383763998404564551641476471604842687402116246163394048959135660013395822003768913/"
+   "1942668892225729070919461906823518906642406839052139521251812409738904285205208498176";
+
 enum TrigMode {
    TRIG_NORMALIZED,
    TRIG_DIRECT
@@ -60,8 +71,16 @@ static void set_precision(Context &ctx, uint64_t precision) {
    }
 
    // Compute first so a failure leaves the existing precision/cache intact.
-   C new_pi = C::pi(precision);
-   C new_e = C((int64_t)1).e(precision);
+   C new_pi;
+   C new_e;
+   if (precision == DEFAULT_PRECISION) {
+      new_pi = C(DEFAULT_PI);
+      new_e = C(DEFAULT_E);
+   }
+   else {
+      new_pi = C::pi(precision);
+      new_e = C((int64_t)1).e(precision);
+   }
 
    ctx.precision = precision;
    ctx.pi_cache = new_pi;

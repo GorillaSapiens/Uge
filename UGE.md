@@ -420,10 +420,12 @@ precision = 8192
 
 `precision` is always assigned using decimal input, regardless of `ibase`.
 
-The calculator caches `pi` and `e` (`e(1)`) at the current `precision`.  Both values
-are computed once at startup and recomputed only when `precision` changes.
-Changing `maxdigits` does not invalidate the cache because it affects only
-output formatting.
+The calculator caches `pi` and `e` (`e(1)`) at the current `precision`.  At the
+default precision of 256, the exact rational values produced by Uge's algorithms
+are baked into the program so startup does not have to recompute them.  Other
+precisions are computed normally.  Returning to precision 256 reloads the baked
+values.  `tau` is always derived as exactly `2*pi`.  Changing `maxdigits` does
+not invalidate the cache because it affects only output formatting.
 
 The transcendental functions are implemented without floating point.  The `Q`
 layer supplies the real rational series and range reduction; `C` builds the
