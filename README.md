@@ -5,16 +5,22 @@ A big and little numbers package, with an interactive exact-rational calculator.
 > "It's 'Uge, with a capital U!"
 
 Uge was written to avoid many of the surprises that come from representing
-numbers with floating point.  Its `Z` type provides arbitrary-size unsigned
-integers, while its `Q` type represents values as exact rational numbers:
+numbers with floating point. Its numeric types are layered:
 
-```
-(sign) * (whole + numerator / denominator)
-```
+- `Z` provides arbitrary-size unsigned integers.
+- `Q` represents exact rational numbers using `Z`:
+  ```
+  (sign) * (whole + numerator / denominator)
+  ```
+- `C` represents complex numbers as a pair of `Q` values:
+  ```
+  real + imaginary * i
+  ```
 
 Fractions are preserved through ordinary arithmetic instead of being rounded to
-floating-point or fixed-decimal approximations.  Arbitrary-radix input and
-output are supported from base 2 through base 65536.
+floating-point or fixed-decimal approximations. Complex values likewise retain
+exact rational real and imaginary components whenever the operation permits it.
+Arbitrary-radix input and output are supported from base 2 through base 65536.
 
 ## The `uge` calculator
 
@@ -44,8 +50,8 @@ The calculator includes:
 - `sqrt`, `sin`, `cos`, `tan`, `atan`, `atan2`, `ln`, and `e(x)`;
 - built-in `pi` and `tau` values;
 - `sinpi`/`cospi`/`tanpi` and `sintau`/`costau`/`tantau` families for normalized
-  angular arguments, including their inverse variants, plus degree convenience
-  functions such as `sindeg` and `atan2deg`;
+  angular arguments, including their inverse variants;
+- `sindeg`/`cosdeg`/`tandeg` and corresponding inverse degree functions;
 - a default normalized trig evaluation mode that preserves exact results such
   as `sin(pi/2) == 1` when possible, with `trigmode direct` available to call
   the underlying rational-radian approximations directly;
@@ -53,19 +59,37 @@ The calculator includes:
   `maxdigits` for positional output.
 
 Transcendental results are rational approximations computed without introducing
-a floating-point type.  Ordinary rational arithmetic remains exact.
+a floating-point type. Ordinary rational arithmetic remains exact.
 
 See [UGE.md](UGE.md) for the calculator language, commands, functions, radix
 syntax, output formats, and differences from GNU `bc`.
 
 ## Library interface
 
-`Z` and `Q` provide the usual arithmetic and comparison operators.  `Q` also
-provides operations such as `abs()`, `floor()`, `sgn()`, powers, roots, and the
-transcendental functions used by the calculator.
+`Z`, `Q`, and `C` provide progressively richer numeric layers.
+
+`Z` supplies arbitrary-size integer magnitude arithmetic.
+
+`Q` supplies exact signed rational arithmetic and operations such as `abs()`,
+`floor()`, `sgn()`, powers, roots, and transcendental functions. When a
+transcendental result is not rational, it is represented by a rational
+approximation at the requested working precision.
+
+`C` is built from two `Q` values, one real and one imaginary. Ordinary complex
+addition, subtraction, multiplication, division, and integral powers therefore
+remain exact when their component arithmetic is exact. `C` also provides
+complex operations such as conjugation, norm, magnitude, argument, square root,
+exponential, logarithm, powers, and trigonometric functions. Functions with
+multiple complex values use the usual principal-value convention. Complex
+transcendental results remain pairs of rational approximations rather than
+introducing a floating-point representation.
+
+When the imaginary component of a `C` value is zero, its normal textual output
+omits the imaginary part, so real-valued complex results retain the familiar
+`Q` representation.
 
 Several textual representations are available, including detailed internal
-output, exact fractions, and positional output with repeating digits.  Values
+output, exact fractions, and positional output with repeating digits. Values
 may also be converted to ordinary C++ numeric types when desired.
 
 Build the library tests and calculator with:
@@ -74,4 +98,4 @@ Build the library tests and calculator with:
 make
 ```
 
-This produces `ztest`, `qtest`, and `uge`.
+The current top-level Makefile produces `ztest`, `qtest`, `ctest`, and `uge`.
