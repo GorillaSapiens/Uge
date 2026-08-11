@@ -5,9 +5,10 @@ DEPFLAGS=-MMD -MP
 OBJS=\
    uge_z.o \
    uge_q.o \
+   uge_c.o \
    uge_ramprintf.o
 
-PROGS=ztest qtest uge
+PROGS=ztest qtest ctest uge
 PROG_OBJS=$(PROGS:%=%.o)
 DEPS=$(OBJS:.o=.d) $(PROG_OBJS:.o=.d)
 
@@ -24,6 +25,9 @@ qtest: qtest.o $(OBJS)
 	$(CXX) $(CXXFLAGS) $^ -o $@
 
 uge: uge.o $(OBJS)
+	$(CXX) $(CXXFLAGS) $^ -o $@
+
+ctest: ctest.o $(OBJS)
 	$(CXX) $(CXXFLAGS) $^ -o $@
 
 %.o: %.cpp
