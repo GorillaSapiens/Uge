@@ -1,8 +1,10 @@
 # `uge` calculator
 
-`uge` is an interactive exact-rational calculator built on Uge's `Q` type.
-Its command language intentionally resembles GNU `bc`, but calculations remain
-exact rational values instead of decimal fixed-point values.
+`uge` is an interactive exact rational/complex calculator built on Uge's `C`
+type.  Its command language intentionally resembles GNU `bc`.  Every calculator
+value is a complex number whose real and imaginary components are `Q` rationals.
+When the imaginary component is zero it is omitted from normal output, so ordinary
+real calculations retain the same appearance and exact-rational behavior.
 
 That distinction matters for non-decimal input.  For example:
 
@@ -21,7 +23,7 @@ addition.  No conversion through decimal fixed-point takes place.
 make
 ```
 
-This builds `uge`, `ztest`, and `qtest`.
+This builds `uge`, `ztest`, `qtest`, and `ctest`.
 
 Run the calculator with:
 
@@ -120,6 +122,42 @@ base 2
 
 Mixed fractions such as `2'1/3` are also accepted as numeric literals.
 
+
+### Complex values
+
+The built-in constant `i` is the imaginary unit.  A numeric coefficient may be
+written directly before `i`, so the calculator accepts the same forms that its
+normal complex printer emits:
+
+```
+i
+i * i
+-1
+
+2i
+1 + 2i
+1+2i
+
+1/2i
+0.5i
+```
+
+The adjacency rule is deliberately limited to a trailing `i`; Uge does not
+otherwise add general implicit multiplication.  Thus `2i`, `1/2i`, and `(1+2)i`
+mean multiplication by `i`, while unrelated forms such as `2pi` still require
+an explicit `*`.
+
+The real and imaginary components independently retain exact `Q` arithmetic.
+For example:
+
+```
+fraction((1/2 + 1/3i) + (1/4 - 1/7i))
+3/4+4/21i
+```
+
+Radix input and output apply to both components.  Lowercase `i` remains distinct
+from the uppercase radix digits used for bases above 10.
+
 ## Expressions
 
 The usual `bc`-style arithmetic operators are supported:
@@ -145,8 +183,8 @@ Unary operators are:
 +  -  !  ~
 ```
 
-`~` and the bitwise operators below operate on the whole-number part, matching
-the underlying `Q` operations:
+`~` and the bitwise operators below require a real operand and then use the
+underlying `Q` operation:
 
 ```
 &  |  <<  >>
@@ -161,6 +199,12 @@ Comparisons produce 0 or 1:
 ==  !=  <  <=  >  >=
 ```
 
+`==` and `!=` compare both complex components.  Complex numbers have no natural
+ordering, so `<`, `<=`, `>`, and `>=` require both operands to be real.  `%`,
+`~`, bitwise operators, shifts, `floor()`, `sgn()`, and the `atan2` family also
+require the relevant operands to be real.
+
+Logical tests treat `0+0i` as false and every other complex value as true.
 Logical AND and OR are also supported:
 
 ```
@@ -206,7 +250,7 @@ an explicit output command.
 
 ## Functions
 
-Functions implemented by the current `Q` type are exposed directly:
+Functions implemented by the current `C` type are exposed directly:
 
 ```
 sqrt(x)
@@ -241,14 +285,39 @@ pi()
 tau
 tau()
 abs(x)
+real(x)
+imag(x)
+conj(x)
+norm(x)
+arg(x)
 floor(x)
 sgn(x)
 pow(x,y)
 xor(x,y)
 ```
 
-The ordinary trig functions use radians.  `atan2(y,x)` is quadrant-aware and
-returns an angle in `(-pi,pi]`; `atan2(0,0)` is undefined.
+The ordinary trig functions use radians.  `sin`, `cos`, `tan`, and `atan` accept
+complex arguments.  `atan2(y,x)` remains the usual real quadrant-aware function,
+returns an angle in `(-pi,pi]`, and requires real `y` and `x`; `atan2(0,0)` is
+undefined.
+
+`sqrt()`, `ln()`, `e()`, powers, and the ordinary trig functions use the complex
+extensions supplied by `C`.  Where a complex function needs a branch, Uge uses
+the principal value.  Thus, for example, `sqrt(-1)` is `i`.
+
+Complex-specific helpers are:
+
+```
+real(z)   # real component
+imag(z)   # imaginary component
+conj(z)   # complex conjugate
+norm(z)   # real^2 + imag^2
+abs(z)    # magnitude
+arg(z)    # principal argument in radians
+```
+
+`norm()` is exact when its component arithmetic is exact.  `abs()` and `arg()`
+may require approximation.
 
 The calculator has two evaluation modes for the ordinary radian trig names:
 
@@ -277,11 +346,11 @@ cos(pi)      -> -1
 tan(pi/4)    -> 1
 ```
 
-`direct` mode instead calls the ordinary `Q::sin()`, `Q::cos()`, `Q::tan()`,
-`Q::atan()`, and `Q::atan2()` implementations directly on their rational
-radian arguments.  Because the cached `pi` is a rational approximation, the
-two modes can differ very slightly for general inputs.  Both modes still take
-ordinary `sin()`, `cos()`, and `tan()` arguments in radians.
+`direct` mode instead calls the ordinary `C::sin()`, `C::cos()`, `C::tan()`,
+`C::atan()`, and `C::atan2()` implementations directly.  Because the cached
+`pi` is a rational approximation, the two modes can differ very slightly for
+general inputs.  Both modes still take ordinary `sin()`, `cos()`, and `tan()`
+arguments in radians.
 
 The explicit `*pi`, `*tau`, and `*deg` functions are never affected by
 `trigmode`.  They always retain the meanings described below.  Enter
@@ -291,9 +360,10 @@ The `*pi` variants measure angles in half-turns: `sinpi(x)` means `sin(pi*x)`,
 while `atanpi(x)` and `atan2pi(y,x)` return their answers divided by pi.  The
 `*tau` variants measure angles in turns: `sintau(x)` means `sin(tau*x)`, while
 `atantau(x)` and `atan2tau(y,x)` return fractions of a full turn.  `atan2pi()`
-returns in `(-1,1]` and `atan2tau()` returns in `(-1/2,1/2]`.  Normalized
-arguments are reduced exactly as rational numbers before any approximation is
-introduced.  Consequently important values such as these are exact `Q`s:
+returns in `(-1,1]` and `atan2tau()` returns in `(-1/2,1/2]`.  For real
+rational arguments, normalized angles are reduced exactly before any
+approximation is introduced.  Consequently important real values such as these
+remain exact (and print with no imaginary component):
 
 ```
 sinpi(1)       -> 0
@@ -319,8 +389,8 @@ atandeg(x)      -> atantau(x)*360
 atan2deg(y,x)   -> atan2tau(y,x)*360
 ```
 
-This preserves exact degree results whenever the underlying turn-normalized
-function has an exact rational result:
+For real inputs this preserves exact degree results whenever the underlying
+turn-normalized function has an exact rational result:
 
 ```
 sindeg(30)      -> 0.5
@@ -335,11 +405,11 @@ atan2deg(1,0)   -> 90
 means e raised to the power x, so `e(1)` gives Euler's constant and `e(0)` is 1.
 
 `sqrt()`, non-rational powers, trigonometric functions, `ln()`, `e()`, and
-`pi` use `Q`'s rational approximation mechanism.  No floating-point type is
-introduced: the returned value is a rational approximation represented by a
-`Q`.  The approximation precision is controlled by the special `precision`
-value, which controls the working precision used when Uge must approximate a
-non-rational result.  It defaults to 256:
+`pi` ultimately use `Q`'s rational approximation mechanism.  No floating-point
+type is introduced: a complex approximate result is still a `C` containing
+rational approximations in its `Q` components.  The special `precision` value
+controls the working precision used when Uge must approximate a result.  It
+defaults to 256:
 
 ```
 precision = 8192
@@ -352,13 +422,12 @@ are computed once at startup and recomputed only when `precision` changes.
 Changing `maxdigits` does not invalidate the cache because it affects only
 output formatting.
 
-The transcendental functions are implemented without floating point.  `sin()`,
-`cos()`, `atan()`, `ln()`, and `e()` use rational series with range reduction;
-`pi` uses Machin's arctangent formula; `tan()` is formed from sine and cosine;
-and `atan2()` applies the standard quadrant corrections to arctangent.  During
-these approximate calculations, intermediate values are truncated to a binary
-working-precision grid to keep their exact rational denominators from growing
-without useful bound.
+The transcendental functions are implemented without floating point.  The `Q`
+layer supplies the real rational series and range reduction; `C` builds the
+standard complex extensions on top of those operations.  `pi` uses Machin's
+arctangent formula.  During approximate calculations, intermediate `Q` values
+are truncated to a binary working-precision grid to keep their exact rational
+denominators from growing without useful bound.
 
 ## Output forms
 
@@ -381,8 +450,10 @@ print expression
 `positional()` and `pos()` print in `obase`, just like ordinary expression
 output.  `fraction()` and `frac()` print the exact value as an integer, fraction,
 or mixed fraction, with the numerator and denominator themselves written in
-`obase`.  `decimal()` always prints positional notation in radix 10 regardless
-of `obase`.  `debug()` exposes the internal `Q` representation.
+`obase`.  For complex values each component is formatted in that radix and a
+zero imaginary component is omitted.  `decimal()` always prints positional
+notation in radix 10 regardless of `obase`.  `debug()` exposes the internal
+`C` representation and its two `Q` components.
 
 ### Base 10 examples
 
@@ -440,16 +511,21 @@ maxdigits 200
 `maxdigits` and `precision` are assigned using decimal input, regardless of
 `ibase`.
 
-There is deliberately no `bc`-style `scale` setting.  `Q` arithmetic is exact,
-so division is not truncated to a fixed number of fractional digits.
+There is deliberately no `bc`-style `scale` setting.  `Q` component arithmetic
+is exact, so division is not truncated to a fixed number of fractional digits.
 
 ## Deliberate differences from GNU `bc`
 
 The user interface is intentionally familiar, but `uge` is not a complete `bc`
 implementation.
 
-- All ordinary numeric values are exact `Q` rational numbers.
-- Division is exact; there is no fixed-point `scale` setting.
+- All calculator values are `C` complex numbers with `Q` rational components.
+  A zero imaginary component is suppressed in normal output.
+- `i` is a built-in constant; forms such as `2i` and `1+2i` are accepted.
+- Complex ordering is not defined; ordering and integer-style operations require
+  real operands.
+- Division is exact whenever the underlying rational component arithmetic is
+  exact; there is no fixed-point `scale` setting.
 - `maxdigits` affects positional rendering only; it does not change arithmetic.
 - General user-defined functions, arrays, control-flow statements, and the GNU
   math library are not implemented.

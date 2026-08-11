@@ -270,6 +270,9 @@ Q C::norm(void) const {
 }
 
 Q C::abs(uint64_t precision) const {
+   if (im.sgn() == 0) {
+      return re.abs();
+   }
    return norm().sqrt(precision);
 }
 
@@ -319,6 +322,9 @@ C C::sqrt(uint64_t precision) const {
 C C::ln(uint64_t precision) const {
    if (is_zero()) {
       throw(UGE_ERR("logarithm of zero"));
+   }
+   if (im.sgn() == 0 && re.sgn() > 0) {
+      return C(re.ln(precision));
    }
 
    uint64_t work = guarded_precision(precision, 16);
@@ -415,6 +421,9 @@ C C::cos(uint64_t precision) const {
 }
 
 C C::tan(uint64_t precision) const {
+   if (im.sgn() == 0) {
+      return C(re.tan(precision));
+   }
    uint64_t work = guarded_precision(precision, 16);
    return sin(work) / cos(work);
 }
@@ -459,6 +468,9 @@ C C::cospi(uint64_t precision) const {
 }
 
 C C::tanpi(uint64_t precision) const {
+   if (im.sgn() == 0) {
+      return C(re.tanpi(precision));
+   }
    uint64_t work = guarded_precision(precision, 16);
    return sinpi(work) / cospi(work);
 }
@@ -498,6 +510,9 @@ C C::costau(uint64_t precision) const {
 }
 
 C C::tantau(uint64_t precision) const {
+   if (im.sgn() == 0) {
+      return C(re.tantau(precision));
+   }
    uint64_t work = guarded_precision(precision, 16);
    return sintau(work) / costau(work);
 }

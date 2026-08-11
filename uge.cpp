@@ -17,7 +17,7 @@
 #include <vector>
 
 #include "gcstr.hpp"
-#include "uge_q.hpp"
+#include "uge_c.hpp"
 
 using namespace uge;
 
@@ -39,10 +39,10 @@ struct Context {
    uint64_t print_max;
    uint64_t precision;
    TrigMode trigmode;
-   std::map<std::string, Q> vars;
-   Q last;
-   Q pi_cache;
-   Q e_cache;
+   std::map<std::string, C> vars;
+   C last;
+   C pi_cache;
+   C e_cache;
 
    Context()
       : ibase(10), obase(10), print_max(DEFAULT_PRINT_MAX),
@@ -60,8 +60,8 @@ static void set_precision(Context &ctx, uint64_t precision) {
    }
 
    // Compute first so a failure leaves the existing precision/cache intact.
-   Q new_pi = Q::pi(precision);
-   Q new_e = Q((int64_t)1).e(precision);
+   C new_pi = C::pi(precision);
+   C new_e = C((int64_t)1).e(precision);
 
    ctx.precision = precision;
    ctx.pi_cache = new_pi;
@@ -88,34 +88,36 @@ static bool starts_word(const std::string &s, const std::string &word,
    return true;
 }
 
-static bool q_is_zero(const Q &q) {
-   return q.sgn() == 0;
+static bool c_is_zero(const C &c) {
+   return c.is_zero();
 }
 
-static int64_t q_to_whole(const Q &q, const char *what) {
+static const Q &c_to_real(const C &c, const char *what) {
+   if (!c.is_real()) {
+      throw std::string(what) + " must be real";
+   }
+   return c.real();
+}
+
+static int64_t c_to_whole(const C &c, const char *what) {
+   const Q &q = c_to_real(c, what);
    if (q != q.floor()) {
       throw std::string(what) + " must be a whole number";
    }
    return (int64_t)q;
 }
 
-static Q q_bool(bool b) {
-   return Q((int64_t)(b ? 1 : 0));
+static C c_bool(bool b) {
+   return C((int64_t)(b ? 1 : 0));
 }
 
-static void check_divisor(const Q &q) {
-   if (q_is_zero(q)) {
+static void check_divisor(const C &q) {
+   if (c_is_zero(q)) {
       throw std::string("divide by zero");
    }
 }
 
-static Q q_pow(const Q &base, const Q &power, uint64_t precision) {
-   if (power < Q((int64_t)0)) {
-      check_divisor(base);
-      Q positive = -power;
-      Q one((int64_t)1);
-      return one / base.pow(positive, precision);
-   }
+static C c_pow(const C &base, const C &power, uint64_t precision) {
    return base.pow(power, precision);
 }
 
@@ -124,19 +126,19 @@ static bool is_config_name(const std::string &name) {
           name == "maxdigits" || name == "precision";
 }
 
-static Q config_value(Context &ctx, const std::string &name) {
-   if (name == "ibase") return Q((int64_t)ctx.ibase);
-   if (name == "obase") return Q((int64_t)ctx.obase);
-   if (name == "base") return Q((int64_t)ctx.ibase);
-   if (name == "maxdigits") return Q((int64_t)ctx.print_max);
-   if (name == "precision") return Q((int64_t)ctx.precision);
+static C config_value(Context &ctx, const std::string &name) {
+   if (name == "ibase") return C((int64_t)ctx.ibase);
+   if (name == "obase") return C((int64_t)ctx.obase);
+   if (name == "base") return C((int64_t)ctx.ibase);
+   if (name == "maxdigits") return C((int64_t)ctx.print_max);
+   if (name == "precision") return C((int64_t)ctx.precision);
    if (name == "last") return ctx.last;
-   std::map<std::string, Q>::iterator i = ctx.vars.find(name);
-   if (i == ctx.vars.end()) return Q((int64_t)0);
+   std::map<std::string, C>::iterator i = ctx.vars.find(name);
+   if (i == ctx.vars.end()) return C((int64_t)0);
    return i->second;
 }
 
-static void set_named_value(Context &ctx, const std::string &name, const Q &value) {
+static void set_named_value(Context &ctx, const std::string &name, const C &value) {
    if (name == "last") {
       ctx.last = value;
       return;
@@ -146,7 +148,7 @@ static void set_named_value(Context &ctx, const std::string &name, const Q &valu
       return;
    }
 
-   int64_t n = q_to_whole(value, name.c_str());
+   int64_t n = c_to_whole(value, name.c_str());
    if (name == "ibase" || name == "obase" || name == "base") {
       if (n < 2 || n > (int64_t)MAX_RADIX) {
          std::ostringstream os;
@@ -287,7 +289,7 @@ class Lexer {
          pos++;
       }
 
-      // Q supports scientific notation only while E is not a radix digit.
+      // C supports scientific notation only while E is not a radix digit.
       if (radix <= 14 && pos < src.size() && (src[pos] == 'e' || src[pos] == 'E')) {
          pos++;
          if (pos < src.size() && (src[pos] == '+' || src[pos] == '-')) pos++;
@@ -348,12 +350,12 @@ public:
 };
 
 struct Value {
-   Q q;
+   C c;
    std::string lvalue;
    bool assignment;
 
-   Value(const Q &v = Q((int64_t)0), const std::string &l = "", bool a = false)
-      : q(v), lvalue(l), assignment(a) {}
+   Value(const C &v = C((int64_t)0), const std::string &l = "", bool a = false)
+      : c(v), lvalue(l), assignment(a) {}
 };
 
 class Parser {
@@ -395,20 +397,20 @@ class Parser {
       advance();
       Value right = parse_assignment();
 
-      Q result = right.q;
+      C result = right.c;
       if (assignop != "=") {
-         Q old = left.q;
-         if (assignop == "+=") result = old + right.q;
-         else if (assignop == "-=") result = old - right.q;
-         else if (assignop == "*=") result = old * right.q;
-         else if (assignop == "/=") { check_divisor(right.q); result = old / right.q; }
-         else if (assignop == "%=") { check_divisor(right.q); result = old % right.q; }
-         else if (assignop == "^=") result = q_pow(old, right.q, ctx.precision);
+         C old = left.c;
+         if (assignop == "+=") result = old + right.c;
+         else if (assignop == "-=") result = old - right.c;
+         else if (assignop == "*=") result = old * right.c;
+         else if (assignop == "/=") { check_divisor(right.c); result = old / right.c; }
+         else if (assignop == "%=") { check_divisor(right.c); result = old % right.c; }
+         else if (assignop == "^=") result = c_pow(old, right.c, ctx.precision);
       }
 
       set_named_value(ctx, left.lvalue, result);
       lex.set_radix(ctx.ibase);
-      left.q = result;
+      left.c = result;
       left.lvalue.clear();
       left.assignment = true;
       return left;
@@ -418,7 +420,7 @@ class Parser {
       Value v = parse_logical_and();
       while (take_op("||")) {
          Value r = parse_logical_and();
-         v = Value(q_bool(!q_is_zero(v.q) || !q_is_zero(r.q)));
+         v = Value(c_bool(!c_is_zero(v.c) || !c_is_zero(r.c)));
       }
       return v;
    }
@@ -427,7 +429,7 @@ class Parser {
       Value v = parse_not();
       while (take_op("&&")) {
          Value r = parse_not();
-         v = Value(q_bool(!q_is_zero(v.q) && !q_is_zero(r.q)));
+         v = Value(c_bool(!c_is_zero(v.c) && !c_is_zero(r.c)));
       }
       return v;
    }
@@ -435,7 +437,7 @@ class Parser {
    Value parse_not() {
       if (take_op("!")) {
          Value v = parse_bit_or();
-         return Value(q_bool(q_is_zero(v.q)));
+         return Value(c_bool(c_is_zero(v.c)));
       }
       return parse_bit_or();
    }
@@ -444,7 +446,7 @@ class Parser {
       Value v = parse_bit_and();
       while (take_op("|")) {
          Value r = parse_bit_and();
-         v = Value(v.q | r.q);
+         v = Value(v.c | r.c);
       }
       return v;
    }
@@ -453,7 +455,7 @@ class Parser {
       Value v = parse_compare();
       while (take_op("&")) {
          Value r = parse_compare();
-         v = Value(v.q & r.q);
+         v = Value(v.c & r.c);
       }
       return v;
    }
@@ -461,12 +463,12 @@ class Parser {
    Value parse_compare() {
       Value v = parse_assignment();
       for (;;) {
-         if (take_op("==")) { Value r = parse_assignment(); v = Value(q_bool(v.q == r.q)); }
-         else if (take_op("!=")) { Value r = parse_assignment(); v = Value(q_bool(v.q != r.q)); }
-         else if (take_op("<=")) { Value r = parse_assignment(); v = Value(q_bool(v.q <= r.q)); }
-         else if (take_op(">=")) { Value r = parse_assignment(); v = Value(q_bool(v.q >= r.q)); }
-         else if (take_op("<")) { Value r = parse_assignment(); v = Value(q_bool(v.q < r.q)); }
-         else if (take_op(">")) { Value r = parse_assignment(); v = Value(q_bool(v.q > r.q)); }
+         if (take_op("==")) { Value r = parse_assignment(); v = Value(c_bool(v.c == r.c)); }
+         else if (take_op("!=")) { Value r = parse_assignment(); v = Value(c_bool(v.c != r.c)); }
+         else if (take_op("<=")) { Value r = parse_assignment(); v = Value(c_bool(v.c <= r.c)); }
+         else if (take_op(">=")) { Value r = parse_assignment(); v = Value(c_bool(v.c >= r.c)); }
+         else if (take_op("<")) { Value r = parse_assignment(); v = Value(c_bool(v.c < r.c)); }
+         else if (take_op(">")) { Value r = parse_assignment(); v = Value(c_bool(v.c > r.c)); }
          else break;
       }
       return v;
@@ -477,15 +479,15 @@ class Parser {
       for (;;) {
          if (take_op("<<")) {
             Value r = parse_add();
-            int64_t n = q_to_whole(r.q, "shift count");
+            int64_t n = c_to_whole(r.c, "shift count");
             if (n < 0) throw std::string("shift count must not be negative");
-            v = Value(v.q << n);
+            v = Value(v.c << n);
          }
          else if (take_op(">>")) {
             Value r = parse_add();
-            int64_t n = q_to_whole(r.q, "shift count");
+            int64_t n = c_to_whole(r.c, "shift count");
             if (n < 0) throw std::string("shift count must not be negative");
-            v = Value(v.q >> n);
+            v = Value(v.c >> n);
          }
          else break;
       }
@@ -495,8 +497,8 @@ class Parser {
    Value parse_add() {
       Value v = parse_mul();
       for (;;) {
-         if (take_op("+")) { Value r = parse_mul(); v = Value(v.q + r.q); }
-         else if (take_op("-")) { Value r = parse_mul(); v = Value(v.q - r.q); }
+         if (take_op("+")) { Value r = parse_mul(); v = Value(v.c + r.c); }
+         else if (take_op("-")) { Value r = parse_mul(); v = Value(v.c - r.c); }
          else break;
       }
       return v;
@@ -505,9 +507,16 @@ class Parser {
    Value parse_mul() {
       Value v = parse_power();
       for (;;) {
-         if (take_op("*")) { Value r = parse_power(); v = Value(v.q * r.q); }
-         else if (take_op("/")) { Value r = parse_power(); check_divisor(r.q); v = Value(v.q / r.q); }
-         else if (take_op("%")) { Value r = parse_power(); check_divisor(r.q); v = Value(v.q % r.q); }
+         if (take_op("*")) { Value r = parse_power(); v = Value(v.c * r.c); }
+         else if (take_op("/")) { Value r = parse_power(); check_divisor(r.c); v = Value(v.c / r.c); }
+         else if (take_op("%")) { Value r = parse_power(); check_divisor(r.c); v = Value(v.c % r.c); }
+         // Allow the conventional complex spelling 2i (and therefore
+         // printed forms such as 1+2i and 1/2i) without enabling general
+         // implicit multiplication.
+         else if (tok.kind == Token::IDENT && tok.text == "i") {
+            Value r = parse_power();
+            v = Value(v.c * r.c);
+         }
          else break;
       }
       return v;
@@ -518,22 +527,22 @@ class Parser {
       if (op("^") || op("**")) {
          advance();
          Value r = parse_power();
-         v = Value(q_pow(v.q, r.q, ctx.precision));
+         v = Value(c_pow(v.c, r.c, ctx.precision));
       }
       return v;
    }
 
    Value parse_unary() {
-      if (take_op("+")) return Value(+parse_unary().q);
-      if (take_op("-")) return Value(-parse_unary().q);
-      if (take_op("~")) return Value(~parse_unary().q);
+      if (take_op("+")) return Value(+parse_unary().c);
+      if (take_op("-")) return Value(-parse_unary().c);
+      if (take_op("~")) return Value(~parse_unary().c);
       // Prefix ++/-- need to preserve which operator before advancing.
       if (op("++") || op("--")) {
          std::string which = tok.text;
          advance();
          Value v = parse_unary();
          if (v.lvalue.empty()) throw std::string("increment requires a variable");
-         Q n = v.q + Q((int64_t)(which == "++" ? 1 : -1));
+         C n = v.c + C((int64_t)(which == "++" ? 1 : -1));
          set_named_value(ctx, v.lvalue, n);
          lex.set_radix(ctx.ibase);
          return Value(n);
@@ -548,8 +557,8 @@ class Parser {
          if (v.lvalue.empty()) throw std::string("increment requires a variable");
          std::string which = tok.text;
          advance();
-         Q old = v.q;
-         Q n = old + Q((int64_t)(which == "++" ? 1 : -1));
+         C old = v.c;
+         C n = old + C((int64_t)(which == "++" ? 1 : -1));
          set_named_value(ctx, v.lvalue, n);
          lex.set_radix(ctx.ibase);
          v = Value(old);
@@ -557,8 +566,8 @@ class Parser {
       return v;
    }
 
-   std::vector<Q> parse_args() {
-      std::vector<Q> args;
+   std::vector<C> parse_args() {
+      std::vector<C> args;
       expect(Token::LPAREN, "'('");
       advance();
       if (tok.kind == Token::RPAREN) {
@@ -566,7 +575,7 @@ class Parser {
          return args;
       }
       for (;;) {
-         args.push_back(parse_logical_or().q);
+         args.push_back(parse_logical_or().c);
          if (tok.kind == Token::COMMA) {
             advance();
             continue;
@@ -578,7 +587,7 @@ class Parser {
    }
 
    Value call_function(const std::string &name) {
-      std::vector<Q> a = parse_args();
+      std::vector<C> a = parse_args();
       if (name == "sqrt") {
          if (a.size() != 1) throw std::string("sqrt() takes one argument");
          return Value(a[0].sqrt(ctx.precision));
@@ -688,16 +697,36 @@ class Parser {
       }
       if (name == "tau") {
          if (!a.empty()) throw std::string("tau() takes no arguments");
-         return Value(Q((int64_t)2) * ctx.pi_cache);
+         return Value(C((int64_t)2) * ctx.pi_cache);
       }
       if (name == "e") {
          if (a.size() != 1) throw std::string("e() takes one argument");
-         if (a[0] == Q((int64_t)1)) return Value(ctx.e_cache);
+         if (a[0] == C((int64_t)1)) return Value(ctx.e_cache);
          return Value(a[0].e(ctx.precision));
       }
       if (name == "abs") {
          if (a.size() != 1) throw std::string("abs() takes one argument");
-         return Value(a[0].abs());
+         return Value(C(a[0].abs(ctx.precision)));
+      }
+      if (name == "real") {
+         if (a.size() != 1) throw std::string("real() takes one argument");
+         return Value(C(a[0].real()));
+      }
+      if (name == "imag") {
+         if (a.size() != 1) throw std::string("imag() takes one argument");
+         return Value(C(a[0].imag()));
+      }
+      if (name == "conj") {
+         if (a.size() != 1) throw std::string("conj() takes one argument");
+         return Value(a[0].conj());
+      }
+      if (name == "norm") {
+         if (a.size() != 1) throw std::string("norm() takes one argument");
+         return Value(C(a[0].norm()));
+      }
+      if (name == "arg") {
+         if (a.size() != 1) throw std::string("arg() takes one argument");
+         return Value(C(a[0].arg(ctx.precision)));
       }
       if (name == "floor") {
          if (a.size() != 1) throw std::string("floor() takes one argument");
@@ -705,11 +734,11 @@ class Parser {
       }
       if (name == "sgn") {
          if (a.size() != 1) throw std::string("sgn() takes one argument");
-         return Value(Q((int64_t)a[0].sgn()));
+         return Value(C((int64_t)a[0].sgn()));
       }
       if (name == "pow") {
          if (a.size() != 2) throw std::string("pow() takes two arguments");
-         return Value(q_pow(a[0], a[1], ctx.precision));
+         return Value(c_pow(a[0], a[1], ctx.precision));
       }
       if (name == "xor") {
          if (a.size() != 2) throw std::string("xor() takes two arguments");
@@ -723,15 +752,16 @@ class Parser {
          std::string text = tok.text;
          uint64_t r = lex.get_radix();
          advance();
-         return Value(Q(text.c_str(), r));
+         return Value(C(text.c_str(), r));
       }
 
       if (tok.kind == Token::IDENT) {
          std::string name = tok.text;
          advance();
          if (tok.kind == Token::LPAREN) return call_function(name);
+         if (name == "i") return Value(C(Q((int64_t)0), Q((int64_t)1)));
          if (name == "pi") return Value(ctx.pi_cache);
-         if (name == "tau") return Value(Q((int64_t)2) * ctx.pi_cache);
+         if (name == "tau") return Value(C((int64_t)2) * ctx.pi_cache);
          return Value(config_value(ctx, name), name);
       }
 
@@ -789,8 +819,8 @@ static bool wrapped_call(const std::string &s, const char *name, std::string &in
    return true;
 }
 
-static void output_positional(Context &ctx, const Q &q, uint64_t radix) {
-   printf("%s\n", GCSTR q.print(radix, ctx.print_max));
+static void output_positional(Context &ctx, const C &c, uint64_t radix) {
+   printf("%s\n", GCSTR c.print(radix, ctx.print_max));
 }
 
 static bool starts_assignment_statement(const std::string &s) {
@@ -822,6 +852,7 @@ static bool execute_statement(Context &ctx, std::string stmt) {
    if (stmt == "quit" || stmt == "halt") return false;
    if (stmt == "help") {
       printf("Type expressions using bc-like syntax.  See UGE.md for full help.\n");
+      printf("Values are complex rationals; i is the imaginary unit (for example 1+2i).\n");
       printf("ibase/obase/base assignments are always interpreted in decimal.\n");
       printf("trigmode normalized (default) or trigmode direct selects ordinary trig evaluation.\n");
       printf("Output: positional(x), fraction(x), decimal(x).\n");
@@ -905,24 +936,24 @@ static bool execute_statement(Context &ctx, std::string stmt) {
    Value v = p.parse();
 
    if (mode == FRACTION) {
-      printf("%s\n", GCSTR v.q.frac_print(ctx.obase));
-      ctx.last = v.q;
+      printf("%s\n", GCSTR v.c.frac_print(ctx.obase));
+      ctx.last = v.c;
    }
    else if (mode == POSITIONAL) {
-      output_positional(ctx, v.q, ctx.obase);
-      ctx.last = v.q;
+      output_positional(ctx, v.c, ctx.obase);
+      ctx.last = v.c;
    }
    else if (mode == DECIMAL) {
-      output_positional(ctx, v.q, 10);
-      ctx.last = v.q;
+      output_positional(ctx, v.c, 10);
+      ctx.last = v.c;
    }
    else if (mode == DEBUG) {
-      printf("%s\n", GCSTR v.q.debu_print());
-      ctx.last = v.q;
+      printf("%s\n", GCSTR v.c.debu_print());
+      ctx.last = v.c;
    }
    else if (!assignment_statement) {
-      output_positional(ctx, v.q, ctx.obase);
-      ctx.last = v.q;
+      output_positional(ctx, v.c, ctx.obase);
+      ctx.last = v.c;
    }
 
    return true;
@@ -1236,7 +1267,7 @@ int main(int argc, char **argv) {
    }
 
    if (!quiet) {
-      printf("uge exact rational calculator\n");
+      printf("uge exact rational/complex calculator\n");
       printf("Copyright (C) GorillaSapiens; type 'help' for help.\n");
    }
 
