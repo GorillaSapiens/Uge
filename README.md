@@ -53,7 +53,7 @@ The calculator includes:
 - `sqrt`, `sin`, `cos`, `tan`, `atan`, `atan2`, `ln`, and `e(x)`, including
   complex principal values where applicable;
 - `real`, `imag`, `conj`, `norm`, `abs`, and `arg` for complex values;
-- built-in `pi` and `tau` values;
+- built-in `e`, `pi`, and `tau` values;
 - `sinpi`/`cospi`/`tanpi` and `sintau`/`costau`/`tantau` families for normalized
   angular arguments, including their inverse variants;
 - `sindeg`/`cosdeg`/`tandeg` and corresponding inverse degree functions;

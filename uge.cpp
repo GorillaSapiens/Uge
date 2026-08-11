@@ -760,6 +760,7 @@ class Parser {
          advance();
          if (tok.kind == Token::LPAREN) return call_function(name);
          if (name == "i") return Value(C(Q((int64_t)0), Q((int64_t)1)));
+         if (name == "e") return Value(ctx.e_cache);
          if (name == "pi") return Value(ctx.pi_cache);
          if (name == "tau") return Value(C((int64_t)2) * ctx.pi_cache);
          return Value(config_value(ctx, name), name);

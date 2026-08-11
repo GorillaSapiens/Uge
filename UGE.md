@@ -279,6 +279,7 @@ atandeg(x)
 atan2deg(y,x)
 
 ln(x)
+e
 e(x)
 pi
 pi()
@@ -400,9 +401,11 @@ atandeg(1)      -> 45
 atan2deg(1,0)   -> 90
 ```
 
-`pi` and `tau` are built-in values and may also be written `pi()` and `tau()`.
-`tau` is derived exactly as twice the cached approximation of `pi`.  `e(x)`
-means e raised to the power x, so `e(1)` gives Euler's constant and `e(0)` is 1.
+`e`, `pi`, and `tau` are built-in values.  `pi` and `tau` may also be
+written `pi()` and `tau()`.  Bare `e` is the cached approximation of Euler's
+constant, while `e(x)` means e raised to the power x, so `e(1)` is the same
+value as bare `e` and `e(0)` is 1.  `tau` is derived exactly as twice the cached
+approximation of `pi`.
 
 `sqrt()`, non-rational powers, trigonometric functions, `ln()`, `e()`, and
 `pi` ultimately use `Q`'s rational approximation mechanism.  No floating-point
@@ -417,7 +420,7 @@ precision = 8192
 
 `precision` is always assigned using decimal input, regardless of `ibase`.
 
-The calculator caches `pi` and `e(1)` at the current `precision`.  Both values
+The calculator caches `pi` and `e` (`e(1)`) at the current `precision`.  Both values
 are computed once at startup and recomputed only when `precision` changes.
 Changing `maxdigits` does not invalidate the cache because it affects only
 output formatting.
