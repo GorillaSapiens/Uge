@@ -1,107 +1,170 @@
 # Uge
 
-A big and little numbers package, with an interactive exact rational/complex calculator.
+A `bc`-like arbitrary-precision rational/complex calculator, backed by reusable C++ numeric classes.
 
 > "It's 'Uge, with a capital U!"
 
-Uge was written to avoid many of the surprises that come from representing
-numbers with floating point. Its numeric types are layered:
+## Why Uge?
 
-- `Z` provides arbitrary-size unsigned integers.
-- `Q` represents exact rational numbers using `Z`:
-  ```
-  (sign) * (whole + numerator / denominator)
-  ```
-- `C` represents complex numbers as a pair of `Q` values:
-  ```
-  real + imaginary * i
-  ```
+Uge keeps rational arithmetic exact instead of first forcing values into a
+floating-point or fixed-decimal representation.
 
-Fractions are preserved through ordinary arithmetic instead of being rounded to
-floating-point or fixed-decimal approximations. Complex values likewise retain
-exact rational real and imaginary components whenever the operation permits it.
-Arbitrary-radix input and output are supported from base 2 through base 65536.
+A small base-12 example shows the difference. In base 12, `.49 + .03` is
+exactly `.50` (the same value as `.5`):
 
-## The `uge` calculator
-
-The repository also includes `uge`, an interactive calculator built on `C`.
-Its language and user interface are intentionally familiar to GNU `bc` users.
-Every calculator value is a complex number whose real and imaginary components
-are exact `Q` rationals; values with a zero imaginary component print exactly as
-they did when the calculator was `Q`-only.
-
-For example, non-decimal fractions are converted directly to exact rationals:
-
+```text
+.49 = 57/144
+.03 =  3/144
+sum = 60/144 = 5/12 = .50 = .5
 ```
+
+GNU `bc` instead produces `.4B`, which is `59/144`:
+
+```text
+$ bc
+ibase=obase=12
+.49+.03
+.4B
+```
+
+Uge keeps the fractions exact:
+
+```text
 $ ./uge
 uge exact rational/complex calculator
 Copyright (C) GorillaSapiens; type 'help' for help.
 base 12
-.49 + .03
+.49+.03
 0.5
 ```
 
-The calculator includes:
+Complex arithmetic is built in:
 
-- variables, assignments, expression parsing, and `bc`-style operators;
-- exact complex arithmetic with built-in `i`, including forms such as `2i` and
-  `1+2i`;
-- editable command history with the Up/Down arrow keys;
-- independent `ibase` and `obase`, plus `base` to set both at once;
-- radices from 2 through 65536, including exact repeating positional notation;
-- positional, fractional, decimal, and debug output forms;
-- `sqrt`, `sin`, `cos`, `tan`, `atan`, `atan2`, `ln`, and `e(x)`, including
-  complex principal values where applicable;
-- `real`, `imag`, `conj`, `norm`, `abs`, and `arg` for complex values;
-- built-in `e`, `pi`, and `tau` values;
-- `sinpi`/`cospi`/`tanpi` and `sintau`/`costau`/`tantau` families for normalized
-  angular arguments, including their inverse variants;
+```text
+sqrt(-1)
+i
+```
+
+And normalized trigonometry preserves familiar exact results when possible:
+
+```text
+sin(pi/2)
+1
+```
+
+## The `uge` calculator
+
+`uge` is the main interactive face of the project. Its expression syntax and
+command-line feel are intentionally familiar to GNU `bc` users, but every
+calculator value is a `C`: a complex number whose real and imaginary components
+are exact rational `Q` values. If the imaginary component is zero, it is simply
+not printed, so ordinary real calculations still look ordinary.
+
+Highlights include:
+
+- exact rational and complex arithmetic;
+- a built-in imaginary unit `i`, with input such as `2i`, `1+2i`, and `1/2i`;
+- arbitrary input and output radices from base 2 through base 65536;
+- exact terminating and repeating positional notation;
+- independent `ibase` and `obase`, plus `base` to set both;
+- `fraction()`, `positional()`, `decimal()`, and `debug()` output forms;
+- arbitrary-precision `sqrt`, exponential, logarithmic, trigonometric, and
+  inverse-trigonometric functions, including complex principal values where
+  applicable;
+- built-in constants `i`, `e`, `pi`, and `tau`;
+- `sinpi`/`cospi`/`tanpi` and `sintau`/`costau`/`tantau` families, including
+  inverse variants;
 - `sindeg`/`cosdeg`/`tandeg` and corresponding inverse degree functions;
-- a default normalized trig evaluation mode that preserves exact results such
-  as `sin(pi/2) == 1` when possible, with `trigmode direct` available to call
-  the underlying complex/rational radian approximations directly;
-- configurable working `precision` for non-rational approximations and
-  `maxdigits` for positional output.
+- `real()`, `imag()`, `conj()`, `norm()`, `abs()`, and `arg()` for complex
+  values;
+- a default normalized trig mode that lets expressions such as `sin(pi/2)`
+  retain exact special-case results, with `trigmode direct` available for
+  direct radian evaluation;
+- configurable working `precision` for approximated transcendental results and
+  `maxdigits` for positional output;
+- editable command history and multiline expressions.
 
-Transcendental results are represented by rational approximations in the real
-and imaginary components without introducing a floating-point type. Ordinary
-complex arithmetic remains exact whenever its `Q` component operations are exact.
+Ordinary rational/complex arithmetic remains exact whenever the operation is
+rational. Transcendental results that cannot be represented exactly are stored
+as rational approximations in the real and imaginary components; Uge does not
+switch its underlying representation to floating point.
 
 See [UGE.md](UGE.md) for the calculator language, commands, functions, radix
-syntax, output formats, and differences from GNU `bc`.
+syntax, output formats, and GNU `bc` compatibility notes.
 
-## Library interface
+## The numeric classes
 
-`Z`, `Q`, and `C` provide progressively richer numeric layers.
+The calculator is backed by three progressively richer C++ numeric layers:
 
-`Z` supplies arbitrary-size integer magnitude arithmetic.
+### `Z` -- arbitrary-precision integers
 
-`Q` supplies exact signed rational arithmetic and operations such as `abs()`,
-`floor()`, `sgn()`, powers, roots, and transcendental functions. When a
-transcendental result is not rational, it is represented by a rational
-approximation at the requested working precision.
+`Z` stores an unsigned integer in a growable array of 16-bit limbs. It expands
+as needed rather than imposing a fixed machine-word limit.
 
-`C` is built from two `Q` values, one real and one imaginary. Ordinary complex
-addition, subtraction, multiplication, division, and integral powers therefore
-remain exact when their component arithmetic is exact. `C` also provides
-complex operations such as conjugation, norm, magnitude, argument, square root,
-exponential, logarithm, powers, and trigonometric functions. Functions with
-multiple complex values use the usual principal-value convention. Complex
-transcendental results remain pairs of rational approximations rather than
-introducing a floating-point representation.
+### `Q` -- exact rational numbers
 
-When the imaginary component of a `C` value is zero, its normal textual output
-omits the imaginary part, so real-valued complex results retain the familiar
-`Q` representation.
+`Q` represents a signed rational value using `Z` integers for its whole part,
+numerator, and denominator. Fractions therefore remain fractions through
+ordinary arithmetic instead of being rounded merely because their positional
+representation repeats.
 
-Several textual representations are available, including detailed internal
-output, exact fractions, and positional output with repeating digits. Values
-may also be converted to ordinary C++ numeric types when desired.
+`Q` also supplies roots and transcendental functions. Irrational results are
+represented by rational approximations computed at a requested working
+precision.
 
-Build the library tests and calculator with:
+### `C` -- rational complex numbers
 
-```
+`C` contains two `Q` values: one real component and one imaginary component.
+Addition, subtraction, multiplication, division, and other operations remain
+exact whenever their component arithmetic is exact.
+
+`C` also provides complex square root, exponential, logarithmic, power, and
+trigonometric operations. Multi-valued complex operations use conventional
+principal values where a single result is required.
+
+A `C` with a zero imaginary component prints exactly like its real `Q` value,
+which lets `C` serve as the calculator's universal numeric type without making
+real-only calculations noisy.
+
+For more detail about the representation and design rationale, see
+[THEORY.md](THEORY.md).
+
+## Building
+
+A C++ compiler and `make` are sufficient:
+
+```sh
 make
 ```
 
-The current top-level Makefile produces `ztest`, `qtest`, `ctest`, and `uge`.
+This builds:
+
+- `uge` -- the interactive calculator;
+- `ztest` -- interactive/test driver for `Z`;
+- `qtest` -- interactive/test driver for `Q`;
+- `ctest` -- interactive/test driver for `C`.
+
+Then run the calculator with:
+
+```sh
+./uge
+```
+
+The Makefile uses compiler-generated dependency files (`-MMD -MP`) rather than
+machine-specific `makedepend` output.
+
+## Source overview
+
+```text
+uge_z.hpp / uge_z.cpp       Z implementation
+uge_q.hpp / uge_q.cpp       Q implementation
+uge_c.hpp / uge_c.cpp       C implementation
+uge.cpp                     interactive calculator
+ztest.cpp                   Z test/interactive driver
+qtest.cpp                   Q test/interactive driver
+ctest.cpp                   C test/interactive driver
+UGE.md                      calculator reference
+THEORY.md                   representation and design rationale
+```
+
+Uge is open source; see [LICENSE](LICENSE).

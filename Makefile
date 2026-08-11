@@ -1,5 +1,5 @@
 CXX=g++
-CXXFLAGS ?= -O3 -g
+CXXFLAGS=-g
 DEPFLAGS=-MMD -MP
 
 OBJS=\
