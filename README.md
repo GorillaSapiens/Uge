@@ -97,29 +97,44 @@ syntax, output formats, and GNU `bc` compatibility notes.
 
 ## The numeric classes
 
-The calculator is backed by three progressively richer C++ numeric layers:
+The calculator is backed by three progressively richer C++ numeric layers.
+Their names echo the conventional mathematical number-set notation, with one
+important representation detail:
 
-### `Z` -- arbitrary-precision integers
+- `Z` -- **ℤ≥0**, not all of ℤ: arbitrary-precision nonnegative integers.
+  `Z` is the unsigned magnitude layer; it contains zero and positive integers
+  but no negative values.
+- `Q` -- **ℚ**: exact signed rational numbers. `Q` adds a sign and rational
+  structure on top of `Z`.
+- `C` -- inspired by **ℂ**: complex numbers represented by two `Q` components.
+  Values in ℚ + iℚ are represented exactly; irrational real or imaginary
+  components are represented by rational approximations at the requested
+  working precision.
+
+### `Z` -- arbitrary-precision nonnegative integers (ℤ≥0)
 
 `Z` stores an unsigned integer in a growable array of 16-bit limbs. It expands
-as needed rather than imposing a fixed machine-word limit.
+as needed rather than imposing a fixed machine-word limit. It is deliberately
+not a signed ℤ implementation: sign belongs to the `Q` layer.
 
-### `Q` -- exact rational numbers
+### `Q` -- exact rational numbers (ℚ)
 
 `Q` represents a signed rational value using `Z` integers for its whole part,
 numerator, and denominator. Fractions therefore remain fractions through
 ordinary arithmetic instead of being rounded merely because their positional
 representation repeats.
 
-`Q` also supplies roots and transcendental functions. Irrational results are
-represented by rational approximations computed at a requested working
-precision.
+`Q` represents every rational number exactly. It also supplies roots and
+transcendental functions; irrational results are represented by rational
+approximations computed at a requested working precision.
 
-### `C` -- rational complex numbers
+### `C` -- rational-component complex numbers
 
 `C` contains two `Q` values: one real component and one imaginary component.
 Addition, subtraction, multiplication, division, and other operations remain
-exact whenever their component arithmetic is exact.
+exact whenever their component arithmetic is exact. In particular, values in
+ℚ + iℚ are exact; general elements of ℂ with irrational components are
+approximated component by component.
 
 `C` also provides complex square root, exponential, logarithmic, power, and
 trigonometric operations. Multi-valued complex operations use conventional

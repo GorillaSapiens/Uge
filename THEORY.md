@@ -7,18 +7,29 @@ understand why a calculation that is mathematically exact can turn into a long
 nearby positional value, but it does not have to be this way for rational
 arithmetic.
 
-Uge introduces three classes: `Z`, `Q`, and `C`.
+Uge introduces three classes: `Z`, `Q`, and `C`. Their names are motivated by
+familiar mathematical number-set notation, but the correspondence is worth
+stating precisely:
 
-## `Z`: arbitrary-precision integers
+- `Z` represents **ℤ≥0**, the nonnegative integers, rather than all of ℤ. It is
+  the unsigned magnitude layer used by the higher-level types.
+- `Q` represents **ℚ**, the signed rational numbers, exactly.
+- `C` is the complex layer inspired by **ℂ**. Its real and imaginary components
+  are `Q` values, so ℚ + iℚ is exact and irrational components are represented
+  by rational approximations when required.
 
-`Z` is an unsigned integer that expands as needed to contain any number.
+## `Z`: arbitrary-precision nonnegative integers (ℤ≥0)
+
+`Z` is an unsigned integer that expands as needed to contain any nonnegative
+integer. It includes zero but does not represent negative values; sign is added
+by `Q` rather than stored in the magnitude layer.
 
 `Z` works by maintaining an array of `uint16_t` and expanding or shrinking that
 array as needed. Think of it like a school child's paper page: when a larger
 number is needed, she simply writes another digit. Instead of working in base
 10, `Z` works internally in base 65536. Child's play for a computer.
 
-## `Q`: exact rational numbers
+## `Q`: exact rational numbers (ℚ)
 
 `Q` represents numbers as four quantities: a sign (positive or negative), a
 whole number (an unsigned integer of type `Z`), and a fractional part expressed
@@ -52,9 +63,9 @@ an exceptionally long time to discover or print the full repeating pattern; in
 that case output stops and ends in `...`. No precision has been lost from the
 underlying `Q`; only the textual expansion was curtailed.
 
-## `C`: rational complex numbers
+## `C`: rational-component complex numbers
 
-`C` represents complex numbers. A complex number has the form
+`C` represents complex values. A complex number has the form
 
 ```text
 a + bi
@@ -62,7 +73,9 @@ a + bi
 
 where `a` is the real component, `b` is the imaginary component, and `i` is the
 square root of -1. `C` stores both `a` and `b` as `Q` values. A real number is
-therefore simply a `C` whose imaginary component is zero.
+therefore simply a `C` whose imaginary component is zero. Values in ℚ + iℚ are
+represented exactly. A general element of ℂ whose components are irrational
+requires rational approximation of those components.
 
 Because both components are rational values, ordinary complex addition,
 subtraction, multiplication, and division remain exact whenever the `Q`
