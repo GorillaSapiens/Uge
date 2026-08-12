@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#include "uge_z.hpp"
+#include "uge_n.hpp"
 
 namespace uge {
    /// A class to store and manipulate rational numbers.
@@ -22,16 +22,16 @@ namespace uge {
    class Q {
       private:
          bool pos;
-         Z whl;
-         Z num;
-         Z den;
+         N whl;
+         N num;
+         N den;
 
          void simplify(void);
 
       public:
          Q();
          Q(const Q &orig); // copy constructor
-         Q(bool p, Z w, Z n, Z d);
+         Q(bool p, N w, N n, N d);
          Q(const char *p, uint64_t radix = 10);
          Q(double d);
          Q(int64_t i);

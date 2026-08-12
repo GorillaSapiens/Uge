@@ -23,7 +23,7 @@ addition.  No conversion through decimal fixed-point takes place.
 make
 ```
 
-This builds `uge`, `ztest`, `qtest`, and `ctest`.
+This builds `uge`, `ntest`, `qtest`, and `ctest`.
 
 Run the calculator with:
 

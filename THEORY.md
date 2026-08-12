@@ -7,34 +7,35 @@ understand why a calculation that is mathematically exact can turn into a long
 nearby positional value, but it does not have to be this way for rational
 arithmetic.
 
-Uge introduces three classes: `Z`, `Q`, and `C`. Their names are motivated by
+Uge introduces three classes: `N`, `Q`, and `C`. Their names are motivated by
 familiar mathematical number-set notation, but the correspondence is worth
 stating precisely:
 
-- `Z` represents **ℤ≥0**, the nonnegative integers, rather than all of ℤ. It is
-  the unsigned magnitude layer used by the higher-level types.
+- `N` represents **ℕ₀**, the natural numbers including zero. Uge uses
+  ℕ₀ = {0, 1, 2, ...}; `N` is the unsigned magnitude layer used by the
+  higher-level types.
 - `Q` represents **ℚ**, the signed rational numbers, exactly.
 - `C` is the complex layer inspired by **ℂ**. Its real and imaginary components
   are `Q` values, so ℚ + iℚ is exact and irrational components are represented
   by rational approximations when required.
 
-## `Z`: arbitrary-precision nonnegative integers (ℤ≥0)
+## `N`: arbitrary-precision natural numbers (ℕ₀)
 
-`Z` is an unsigned integer that expands as needed to contain any nonnegative
-integer. It includes zero but does not represent negative values; sign is added
-by `Q` rather than stored in the magnitude layer.
+`N` is an unsigned integer that expands as needed to contain any element of
+ℕ₀ = {0, 1, 2, ...}. It includes zero but does not represent negative values;
+sign is added by `Q` rather than stored in the magnitude layer.
 
-`Z` works by maintaining an array of `uint16_t` and expanding or shrinking that
+`N` works by maintaining an array of `uint16_t` and expanding or shrinking that
 array as needed. Think of it like a school child's paper page: when a larger
 number is needed, she simply writes another digit. Instead of working in base
-10, `Z` works internally in base 65536. Child's play for a computer.
+10, `N` works internally in base 65536. Child's play for a computer.
 
 ## `Q`: exact rational numbers (ℚ)
 
 `Q` represents numbers as four quantities: a sign (positive or negative), a
-whole number (an unsigned integer of type `Z`), and a fractional part expressed
+whole number (an unsigned integer of type `N`), and a fractional part expressed
 as a whole-number numerator and whole-number denominator (both unsigned
-integers of type `Z`).
+integers of type `N`).
 
 This may seem odd compared with IEEE 754 and other standards, but it solves a
 critical problem: common fractions do not suffer rounding merely because their
@@ -123,5 +124,5 @@ representation repeats in the chosen radix.
 imaginary components are `Q` values, exact when rational and rational
 approximations when a transcendental operation requires approximation.
 
-This sums up `Z`, `Q`, and `C`. As with all things open source, the details can
+This sums up `N`, `Q`, and `C`. As with all things open source, the details can
 be found in the code.

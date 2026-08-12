@@ -10,7 +10,7 @@
 
 #include "gcstr.hpp"
 #include "uge_ramprintf.hpp"
-#include "uge_z.hpp"
+#include "uge_n.hpp"
 
 using namespace uge;
 
@@ -40,7 +40,7 @@ int main(int argc, char **argv) {
          return 0;
       }
       else if (1 == res) {
-         Z l(bufl, ibase);
+         N l(bufl, ibase);
 
          printf("== input ==\n");
          printf("print: %s\n", GCSTR l.print(ibase));
@@ -50,7 +50,7 @@ int main(int argc, char **argv) {
       }
       else if (2 == res) {
          if (!strcmp(bufl, "sqrt")) {
-            Z l(op, ibase);
+            N l(op, ibase);
 
             printf("== input ==\n");
             printf("print: sqrt %s\n", GCSTR l.print(ibase));
@@ -72,8 +72,8 @@ int main(int argc, char **argv) {
          }
       }
       else if (3 == res) {
-         Z l(bufl, ibase);
-         Z r(bufr, ibase);
+         N l(bufl, ibase);
+         N r(bufr, ibase);
 
          printf("== input ==\n");
          printf("print: %s %s %s\n", GCSTR l.print(ibase), op, GCSTR r.print(ibase));
@@ -82,51 +82,51 @@ int main(int argc, char **argv) {
 
          try {
             if (!strcmp(op, "+")) {
-               Z x = l + r;
+               N x = l + r;
                printf("prnt : %s\n", GCSTR x.print(obase));
             }
             else if (!strcmp(op, "-")) {
-               Z x = l - r;
+               N x = l - r;
                printf("prnt : %s\n", GCSTR x.print(obase));
             }
             else if (!strcmp(op, "*")) {
-               Z x = l * r;
+               N x = l * r;
                printf("prnt : %s\n", GCSTR x.print(obase));
             }
             else if (!strcmp(op, "/")) {
-               Z x = l / r;
+               N x = l / r;
                printf("prnt : %s\n", GCSTR x.print(obase));
             }
             else if (!strcmp(op, "%")) {
-               Z x = l % r;
+               N x = l % r;
                printf("prnt : %s\n", GCSTR x.print(obase));
             }
             else if (!strcmp(op, "&")) {
-               Z x = l & r;
+               N x = l & r;
                printf("prnt : %s\n", GCSTR x.print(obase));
             }
             else if (!strcmp(op, "|")) {
-               Z x = l | r;
+               N x = l | r;
                printf("prnt : %s\n", GCSTR x.print(obase));
             }
             else if (!strcmp(op, "^")) {
-               Z x = l ^ r;
+               N x = l ^ r;
                printf("prnt : %s\n", GCSTR x.print(obase));
             }
             else if (!strcmp(op, "<<")) {
-               Z x = l << (uint64_t) r;
+               N x = l << (uint64_t) r;
                printf("prnt : %s\n", GCSTR x.print(obase));
             }
             else if (!strcmp(op, ">>")) {
-               Z x = l >> (uint64_t) r;
+               N x = l >> (uint64_t) r;
                printf("prnt : %s\n", GCSTR x.print(obase));
             }
             else if (!strcmp(op, "**")) {
-               Z x = l.pow(r);
+               N x = l.pow(r);
                printf("prnt : %s\n", GCSTR x.print(obase));
             }
             else if (!strcmp(op, "root")) {
-               Z x = l.root(r);
+               N x = l.root(r);
                printf("prnt : %s\n", GCSTR x.print(obase));
             }
             else if (!strcmp(op, "==")) {

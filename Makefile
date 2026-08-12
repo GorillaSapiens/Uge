@@ -3,12 +3,12 @@ CXXFLAGS=-g
 DEPFLAGS=-MMD -MP
 
 OBJS=\
-   uge_z.o \
+   uge_n.o \
    uge_q.o \
    uge_c.o \
    uge_ramprintf.o
 
-PROGS=ztest qtest ctest uge
+PROGS=ntest qtest ctest uge
 PROG_OBJS=$(PROGS:%=%.o)
 DEPS=$(OBJS:.o=.d) $(PROG_OBJS:.o=.d)
 
@@ -18,7 +18,7 @@ tar:
 	rm -f ../`basename $$(git rev-parse --show-toplevel)`.*.tar.gz
 	git ls-files | tar -czv -T - -f /tmp/`basename $$(git rev-parse --show-toplevel)`.`date -u "+%Y%m%d_%H%M%S"`.tar.gz
 
-ztest: ztest.o $(OBJS)
+ntest: ntest.o $(OBJS)
 	$(CXX) $(CXXFLAGS) $^ -o $@
 
 qtest: qtest.o $(OBJS)

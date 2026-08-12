@@ -8,34 +8,34 @@
 #include "uge_err.hpp"
 #include "uge_ramprintf.hpp"
 #include "gcstr.hpp"
-#include "uge_z.hpp"
+#include "uge_n.hpp"
 
 using namespace uge;
 
-Z::Z() {
+N::N() {
    size = 0;
    data = NULL;
 }
 
-Z::~Z() {
+N::~N() {
    if (data) {
       free((void *) data);
       data = NULL;
    }
 }
 
-void Z::grow(void) {
+void N::grow(void) {
    // NB: caller responsible for changing the size field
    data = (uint16_t *) realloc(data, sizeof(uint16_t) * (size + 1));
    data[size] = 0;
    assert(data);
 }
 
-bool Z::isZero(void) const {
+bool N::isZero(void) const {
    return (size == 0);
 }
 
-void Z::fixZero(void) {
+void N::fixZero(void) {
    while (size && data[size - 1] == 0) {
       size--;
       if (size == 0 && data) {
@@ -45,7 +45,7 @@ void Z::fixZero(void) {
    }
 }
 
-Z::Z(const Z &orig) {
+N::N(const N &orig) {
    size = orig.size;
    if (size) {
       data = (uint16_t *) malloc(sizeof(uint16_t) * size);
@@ -56,7 +56,7 @@ Z::Z(const Z &orig) {
    }
 }
 
-Z& Z::operator=(const Z& other) {
+N& N::operator=(const N& other) {
    if (this == &other) {
       return *this;
    }
@@ -76,7 +76,7 @@ Z& Z::operator=(const Z& other) {
    return *this;
 }
 
-Z::Z(const char *orig, uint64_t radix) {
+N::N(const char *orig, uint64_t radix) {
 
    if (radix < 2 ||
        radix > (((uint64_t) 1) << (sizeof(data[0]) * 8))) {
@@ -174,7 +174,7 @@ Z::Z(const char *orig, uint64_t radix) {
    fixZero();
 }
 
-Z::Z(uint64_t i) {
+N::N(uint64_t i) {
    size = 0;
    data = NULL;
 
@@ -188,8 +188,8 @@ Z::Z(uint64_t i) {
    fixZero();
 }
 
-Z Z::operator + (Z const & obj) const {
-   Z res;
+N N::operator + (N const & obj) const {
+   N res;
 
    uint32_t carry = 0;
 
@@ -214,12 +214,12 @@ Z Z::operator + (Z const & obj) const {
    return res;
 }
 
-Z Z::operator - (Z const & obj) const {
+N N::operator - (N const & obj) const {
    if (*this < obj) {
       throw (UGE_ERR("subtraction underflow"));
    }
 
-   Z res;
+   N res;
 
    uint16_t borrow = 0;
 
@@ -252,8 +252,8 @@ Z Z::operator - (Z const & obj) const {
    return res;
 }
 
-Z Z::operator * (Z const & obj) const {
-   Z res;
+N N::operator * (N const & obj) const {
+   N res;
 
    for (uint64_t ai = 0; ai < size; ai++) {
       uint32_t a = data[ai];
@@ -291,11 +291,11 @@ Z Z::operator * (Z const & obj) const {
    return res;
 }
 
-void Z::divide(
-   const Z &num,
-   const Z &den,
-   Z &quot,
-   Z &rem) {
+void N::divide(
+   const N &num,
+   const N &den,
+   N &quot,
+   N &rem) {
 
    // can't divide by zero
    if (den.size == 0) {
@@ -344,7 +344,7 @@ void Z::divide(
    }
 
    // calculate 16 shifted versions of the denominator
-   Z pieces[16];
+   N pieces[16];
    pieces[0] = den;
    for (int i = 1; i < 16; i++) {
       // zero it out
@@ -398,12 +398,12 @@ void Z::divide(
 
       if (rem >= den) {
          uint16_t digit = 0;
-         Z accumulator;
+         N accumulator;
          accumulator.size = 0;
          accumulator.data = 0;
 
          for (int i = 15; i >= 0; i--) {
-            Z tmp = accumulator + pieces[i];
+            N tmp = accumulator + pieces[i];
             if (tmp <= rem) {
                accumulator = tmp;
                digit |= (1 << i);
@@ -426,22 +426,22 @@ void Z::divide(
    // that's it, we're done!
 }
 
-Z Z::operator / (Z const & obj) const {
-   Z quot;
-   Z rem;
+N N::operator / (N const & obj) const {
+   N quot;
+   N rem;
    divide(*this, obj, quot, rem);
    return quot;
 }
 
-Z Z::operator % (Z const & obj) const {
-   Z quot;
-   Z rem;
+N N::operator % (N const & obj) const {
+   N quot;
+   N rem;
    divide(*this, obj, quot, rem);
    return rem;
 }
 
-Z Z::operator & (Z const & obj) const {
-   Z res = *this;
+N N::operator & (N const & obj) const {
+   N res = *this;
 
    while (res.size < obj.size) {
       res.grow();
@@ -462,8 +462,8 @@ Z Z::operator & (Z const & obj) const {
    return res;
 }
 
-Z Z::operator | (Z const & obj) const {
-   Z res = *this;
+N N::operator | (N const & obj) const {
+   N res = *this;
 
    while (res.size < obj.size) {
       res.grow();
@@ -481,8 +481,8 @@ Z Z::operator | (Z const & obj) const {
    return res;
 }
 
-Z Z::operator ^ (Z const & obj) const {
-   Z res = *this;
+N N::operator ^ (N const & obj) const {
+   N res = *this;
 
    while (res.size < obj.size) {
       res.grow();
@@ -500,21 +500,21 @@ Z Z::operator ^ (Z const & obj) const {
    return res;
 }
 
-Z Z::operator >> (int64_t smallbits) const {
-   Z result = *this;
+N N::operator >> (int64_t smallbits) const {
+   N result = *this;
    return result >>= smallbits;
 }
 
-Z Z::operator << (int64_t smallbits) const {
-   Z result = *this;
+N N::operator << (int64_t smallbits) const {
+   N result = *this;
    return result <<= smallbits;
 }
 
-Z Z::sqrt(void) const {
+N N::sqrt(void) const {
    return root(2);
 }
 
-bool Z::operator == (const Z &other) const {
+bool N::operator == (const N &other) const {
    if (size != other.size) {
       return false;
    }
@@ -526,12 +526,12 @@ bool Z::operator == (const Z &other) const {
    return true;
 }
 
-bool Z::operator != (const Z &other) const {
+bool N::operator != (const N &other) const {
    return (!(*this == other));
 }
 
 
-bool Z::operator < (const Z &other) const {
+bool N::operator < (const N &other) const {
    if (size < other.size) {
       return true;
    }
@@ -549,12 +549,12 @@ bool Z::operator < (const Z &other) const {
    return false;
 }
 
-bool Z::operator > (const Z &other) const {
+bool N::operator > (const N &other) const {
    return !(*this <= other);
 }
 
 
-bool Z::operator <= (const Z &other) const {
+bool N::operator <= (const N &other) const {
    if (size < other.size) {
       return true;
    }
@@ -575,51 +575,51 @@ bool Z::operator <= (const Z &other) const {
    }
 }
 
-bool Z::operator >= (const Z &other) const {
+bool N::operator >= (const N &other) const {
    return !(*this < other);
 }
 
-Z& Z::operator+=(const Z& other) {
+N& N::operator+=(const N& other) {
    *this = *this + other;
    return *this;
 }
 
-Z& Z::operator-=(const Z& other) {
+N& N::operator-=(const N& other) {
    *this = *this - other;
    return *this;
 }
 
-Z& Z::operator*=(const Z& other) {
+N& N::operator*=(const N& other) {
    *this = *this * other;
    return *this;
 }
 
-Z& Z::operator/=(const Z& other) {
+N& N::operator/=(const N& other) {
    *this = *this / other;
    return *this;
 }
 
-Z& Z::operator%=(const Z& other) {
+N& N::operator%=(const N& other) {
    *this = *this % other;
    return *this;
 }
 
-Z& Z::operator&=(const Z& other) {
+N& N::operator&=(const N& other) {
    *this = *this & other;
    return *this;
 }
 
-Z& Z::operator|=(const Z& other) {
+N& N::operator|=(const N& other) {
    *this = *this | other;
    return *this;
 }
 
-Z& Z::operator^=(const Z& other) {
+N& N::operator^=(const N& other) {
    *this = *this ^ other;
    return *this;
 }
 
-Z& Z::operator >>= (int64_t bits) {
+N& N::operator >>= (int64_t bits) {
    if (bits < 0) {
       return *this <<= (-bits);
    }
@@ -655,7 +655,7 @@ Z& Z::operator >>= (int64_t bits) {
    return *this;
 }
 
-Z& Z::operator <<= (int64_t bits) {
+N& N::operator <<= (int64_t bits) {
    if (bits < 0) {
       return *this >>= (-bits);
    }
@@ -686,7 +686,7 @@ Z& Z::operator <<= (int64_t bits) {
    return *this;
 }
 
-Z::operator uint64_t() const {
+N::operator uint64_t() const {
    uint64_t ret = 0;
    for (uint64_t i = 0; i < 4; i++) {
       uint64_t place = 3LL - i;
@@ -698,22 +698,22 @@ Z::operator uint64_t() const {
    return ret;
 }
 
-Z Z::pow(const Z& other) const {
+N N::pow(const N& other) const {
    if (other.isZero()) {
       return 1;
    }
    if (other == 1) {
       return *this;
    }
-   Z halfpow = this->pow(other / 2);
-   Z ret = halfpow * halfpow;
+   N halfpow = this->pow(other / 2);
+   N ret = halfpow * halfpow;
    if (other.data[0] & 1) {
       ret = ret * (*this);
    }
    return ret;
 }
 
-Z Z::root(const Z& other) const {
+N N::root(const N& other) const {
 
    // error case
    if (other.isZero()) {
@@ -728,9 +728,9 @@ Z Z::root(const Z& other) const {
    }
 
    // and now the fun stuff...
-   Z low((uint64_t)0);
-   Z high(*this);
-   Z mid = (low + high) / 2;
+   N low((uint64_t)0);
+   N high(*this);
+   N mid = (low + high) / 2;
 
    do {
       if (mid.pow(other) > *this) {
@@ -746,14 +746,14 @@ Z Z::root(const Z& other) const {
    return low;
 }
 
-char *Z::print(uint64_t radix) const {
+char *N::print(uint64_t radix) const {
    if (isZero()) {
       return strdup("0");
    }
 
-   Z copy = *this;
-   Z quot;
-   Z rem;
+   N copy = *this;
+   N quot;
+   N rem;
 
    char *ret = NULL;
 
@@ -783,7 +783,7 @@ char *Z::print(uint64_t radix) const {
    return ret;
 }
 
-char *Z::dprint(void) const {
+char *N::dprint(void) const {
    char *ret = NULL;
 
    if (isZero()) {
@@ -801,10 +801,10 @@ char *Z::dprint(void) const {
    return ret;
 }
 
-Z Z::apply(const Z &b, bool inva, bool invb, enum boolop op, bool invo) const {
-   Z left = *this;
-   Z right = b;
-   Z ret;
+N N::apply(const N &b, bool inva, bool invb, enum boolop op, bool invo) const {
+   N left = *this;
+   N right = b;
+   N ret;
 
    if (inva) {
       left -= 1;
@@ -859,11 +859,11 @@ Z Z::apply(const Z &b, bool inva, bool invb, enum boolop op, bool invo) const {
 }
 
 // returns true is max has been exceeded
-bool Z::deci_lengths(Z &lead, Z &repeat, uint64_t max) const {
-   static const Z zero;
-   Z remainder = *this;
-   Z factor2;
-   Z factor5;
+bool N::deci_lengths(N &lead, N &repeat, uint64_t max) const {
+   static const N zero;
+   N remainder = *this;
+   N factor2;
+   N factor5;
    bool maxlead = false;
    bool maxrepeat = false;
 
@@ -922,7 +922,7 @@ bool Z::deci_lengths(Z &lead, Z &repeat, uint64_t max) const {
       repeat = zero;
    }
    else {
-      Z ten = 10;
+      N ten = 10;
       repeat = 1;
 
       while (ten.pow(repeat) % remainder != 1) {

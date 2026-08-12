@@ -101,25 +101,25 @@ The calculator is backed by three progressively richer C++ numeric layers.
 Their names echo the conventional mathematical number-set notation, with one
 important representation detail:
 
-- `Z` -- **ℤ≥0**, not all of ℤ: arbitrary-precision nonnegative integers.
-  `Z` is the unsigned magnitude layer; it contains zero and positive integers
-  but no negative values.
+- `N` -- **ℕ₀**: arbitrary-precision natural numbers including zero.
+  `N` is the unsigned magnitude layer; Uge uses the convention
+  ℕ₀ = {0, 1, 2, ...}, so zero is included and negative values are not.
 - `Q` -- **ℚ**: exact signed rational numbers. `Q` adds a sign and rational
-  structure on top of `Z`.
+  structure on top of `N`.
 - `C` -- inspired by **ℂ**: complex numbers represented by two `Q` components.
   Values in ℚ + iℚ are represented exactly; irrational real or imaginary
   components are represented by rational approximations at the requested
   working precision.
 
-### `Z` -- arbitrary-precision nonnegative integers (ℤ≥0)
+### `N` -- arbitrary-precision natural numbers (ℕ₀)
 
-`Z` stores an unsigned integer in a growable array of 16-bit limbs. It expands
-as needed rather than imposing a fixed machine-word limit. It is deliberately
-not a signed ℤ implementation: sign belongs to the `Q` layer.
+`N` stores an element of ℕ₀ = {0, 1, 2, ...} in a growable array of
+16-bit limbs. It expands as needed rather than imposing a fixed machine-word
+limit. `N` is deliberately unsigned; sign belongs to the `Q` layer.
 
 ### `Q` -- exact rational numbers (ℚ)
 
-`Q` represents a signed rational value using `Z` integers for its whole part,
+`Q` represents a signed rational value using `N` values for its whole part,
 numerator, and denominator. Fractions therefore remain fractions through
 ordinary arithmetic instead of being rounded merely because their positional
 representation repeats.
@@ -158,7 +158,7 @@ make
 This builds:
 
 - `uge` -- the interactive calculator;
-- `ztest` -- interactive/test driver for `Z`;
+- `ntest` -- interactive/test driver for `N`;
 - `qtest` -- interactive/test driver for `Q`;
 - `ctest` -- interactive/test driver for `C`.
 
@@ -174,11 +174,11 @@ machine-specific `makedepend` output.
 ## Source overview
 
 ```text
-uge_z.hpp / uge_z.cpp       Z implementation
+uge_n.hpp / uge_n.cpp       N implementation
 uge_q.hpp / uge_q.cpp       Q implementation
 uge_c.hpp / uge_c.cpp       C implementation
 uge.cpp                     interactive calculator
-ztest.cpp                   Z test/interactive driver
+ntest.cpp                   N test/interactive driver
 qtest.cpp                   Q test/interactive driver
 ctest.cpp                   C test/interactive driver
 UGE.md                      calculator reference

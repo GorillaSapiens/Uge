@@ -14,10 +14,10 @@ using namespace uge;
 // constant used for repeated fraction guess when parsing (double)
 #define BIGPOWEROF2 512
 
-static Z gcd(Z x, Z y) {
+static N gcd(N x, N y) {
    // euclid
-   Z a = x;
-   Z b = y;
+   N a = x;
+   N b = y;
    if (b.isZero()) {
       a = y;
       b = x;
@@ -25,7 +25,7 @@ static Z gcd(Z x, Z y) {
    if (b.isZero()) {
       throw (UGE_ERR("divide by zero in gcd"));
    }
-   Z c = a % b;
+   N c = a % b;
    while (!c.isZero()) {
       a = b;
       b = c;
@@ -43,7 +43,7 @@ void Q::simplify(void) {
       num %= den;
    }
 
-   Z g = gcd(num,den);
+   N g = gcd(num,den);
    num /= g;
    den /= g;
 
@@ -75,7 +75,7 @@ Q& Q::operator=(const Q& other) {
    return *this;
 }
 
-Q::Q(bool p, Z w, Z n, Z d) {
+Q::Q(bool p, N w, N n, N d) {
    assert(!d.isZero());
    pos = p;
    whl = w;
@@ -85,7 +85,7 @@ Q::Q(bool p, Z w, Z n, Z d) {
    simplify();
 }
 
-static Z llpow(Z base, Z n) {
+static N llpow(N base, N n) {
    if (n.isZero()) {
       return 1;
    }
@@ -93,8 +93,8 @@ static Z llpow(Z base, Z n) {
       return base;
    }
    else {
-      Z a = n / 2;
-      Z b = n - a;
+      N a = n / 2;
+      N b = n - a;
       return llpow(base, a) * llpow(base, b);
    }
 }
@@ -152,9 +152,9 @@ static uint64_t radix_digits(const char *p, uint64_t radix) {
 }
 
 Q::Q(const char *orig, uint64_t radix) {
-   // Let Z enforce the supported radix range.
-   Z radix_check("", radix);
-   Z base(radix);
+   // Let N enforce the supported radix range.
+   N radix_check("", radix);
+   N base(radix);
 
    char *tick = strchr((char *)orig, '\'');
    char *slash = strchr((char *)orig, '/');
@@ -178,17 +178,17 @@ Q::Q(const char *orig, uint64_t radix) {
 
       if (slash) {
          if (tick) {
-            whl = Z(p, radix);
-            num = Z(tick + 1, radix);
+            whl = N(p, radix);
+            num = N(tick + 1, radix);
          }
          else {
             whl = (int) 0;
-            num = Z(p, radix);
+            num = N(p, radix);
          }
-         den = Z(slash + 1, radix);
+         den = N(slash + 1, radix);
       }
       else {
-         whl = Z(p, radix);
+         whl = N(p, radix);
          num = (int) 0;
          den = 1;
       }
@@ -200,11 +200,11 @@ Q::Q(const char *orig, uint64_t radix) {
       char *p = freeme;
 
       bool negexp = false;
-      Z exp;
+      N exp;
       exp = (int) 0;
-      Z repetend_num;
+      N repetend_num;
       repetend_num = (int) 0;
-      Z repetend_den = 1;
+      N repetend_den = 1;
 
       pos = true;
       if (*p == '-') {
@@ -229,7 +229,7 @@ Q::Q(const char *orig, uint64_t radix) {
          else if (*q == '+') {
             q++;
          }
-         exp = Z(q, radix);
+         exp = N(q, radix);
       }
 
       if (strchr(p, '(')) {
@@ -242,8 +242,8 @@ Q::Q(const char *orig, uint64_t radix) {
          }
          *r = 0;
          uint64_t repeatlen = radix_digits(q, radix);
-         repetend_den = llpow(base, Z(repeatlen)) - 1;
-         repetend_num = Z(q, radix);
+         repetend_den = llpow(base, N(repeatlen)) - 1;
+         repetend_num = N(q, radix);
       }
 
       uint64_t fraclen = 0;
@@ -251,13 +251,13 @@ Q::Q(const char *orig, uint64_t radix) {
       if (strchr(p, '.')) {
          char *q = strchr(p, '.');
          *q++ = 0;
-         whl = Z(p, radix);
-         num = Z(q, radix);
+         whl = N(p, radix);
+         num = N(q, radix);
          fraclen = radix_digits(q, radix);
-         den = llpow(base, Z(fraclen));
+         den = llpow(base, N(fraclen));
       }
       else {
-         whl = Z(p, radix);
+         whl = N(p, radix);
          num = (int) 0;
          den = 1;
       }
@@ -275,7 +275,7 @@ Q::Q(const char *orig, uint64_t radix) {
       }
 
       if (negexp) {
-         Z x = llpow(base, exp);
+         N x = llpow(base, exp);
          Q r(1, (uint64_t)0, 1, x);
          *this = *this * r;
          simplify();
@@ -303,11 +303,11 @@ Q::Q(double d) {
    // and now the repeated fraction magic
    // https://en.wikipedia.org/wiki/Euler%27s_continued_fraction_formula
    double i = 1.0/d;
-   Z n = 1;
-   Z dens[1024];
+   N n = 1;
+   N dens[1024];
    int spot = 0;
    while(isfinite(i) && i != 0 && n > (uint64_t)0 && n < (BIGPOWEROF2 >> spot)) {
-      n = (Z) i;
+      n = (N) i;
       i = i - (double)((uint64_t)i);
       i = 1.0 / i;
       if (n > (uint64_t)0 && n < (BIGPOWEROF2 >> spot)) {
@@ -316,7 +316,7 @@ Q::Q(double d) {
    }
 
    // a + b / c
-   Z a, b, c, nb, nc;
+   N a, b, c, nb, nc;
    b = (int) 0;
    c = 1;
 
@@ -349,9 +349,9 @@ Q Q::operator + (Q const & obj) const { // addition operator
    // this could probably be done faster, at the cost 
    // of greater complexity
 
-   Z dd = den * obj.den;
-   Z l = whl * dd + num * obj.den;
-   Z r = obj.whl * dd + obj.num * den;
+   N dd = den * obj.den;
+   N l = whl * dd + num * obj.den;
+   N r = obj.whl * dd + obj.num * den;
 
    if (pos == obj.pos) {
       res = Q(pos, (int)0, l + r, dd);
@@ -432,18 +432,18 @@ Q Q::operator % (Q const & obj) const {
 Q Q::operator & (Q const & obj) const { // truncates to integer
    if (pos) {
       if (obj.pos) {
-         return Q(true, whl.apply(obj.whl, false, false, Z::BOOL_AND, false), (int)0, 1);
+         return Q(true, whl.apply(obj.whl, false, false, N::BOOL_AND, false), (int)0, 1);
       }
       else {
-         return Q(true, whl.apply(obj.whl, false, true, Z::BOOL_AND, false), (int)0, 1);
+         return Q(true, whl.apply(obj.whl, false, true, N::BOOL_AND, false), (int)0, 1);
       }
    }
    else {
       if (obj.pos) {
-         return Q(true, whl.apply(obj.whl, true, false, Z::BOOL_AND, false), (int)0, 1);
+         return Q(true, whl.apply(obj.whl, true, false, N::BOOL_AND, false), (int)0, 1);
       }
       else {
-         return Q(false, whl.apply(obj.whl, true, true, Z::BOOL_AND, true), (int)0, 1);
+         return Q(false, whl.apply(obj.whl, true, true, N::BOOL_AND, true), (int)0, 1);
       }
    }
 }
@@ -451,18 +451,18 @@ Q Q::operator & (Q const & obj) const { // truncates to integer
 Q Q::operator | (Q const & obj) const { // truncates to integer
    if (pos) {
       if (obj.pos) {
-         return Q(true, whl.apply(obj.whl, false, false, Z::BOOL_OR, false), (int)0, 1);
+         return Q(true, whl.apply(obj.whl, false, false, N::BOOL_OR, false), (int)0, 1);
       }
       else {
-         return Q(false, whl.apply(obj.whl, false, true, Z::BOOL_OR, true), (int)0, 1);
+         return Q(false, whl.apply(obj.whl, false, true, N::BOOL_OR, true), (int)0, 1);
       }
    }
    else {
       if (obj.pos) {
-         return Q(false, whl.apply(obj.whl, true, false, Z::BOOL_OR, true), (int)0, 1);
+         return Q(false, whl.apply(obj.whl, true, false, N::BOOL_OR, true), (int)0, 1);
       }
       else {
-         return Q(false, whl.apply(obj.whl, true, true, Z::BOOL_OR, true), (int)0, 1);
+         return Q(false, whl.apply(obj.whl, true, true, N::BOOL_OR, true), (int)0, 1);
       }
    }
 }
@@ -470,18 +470,18 @@ Q Q::operator | (Q const & obj) const { // truncates to integer
 Q Q::operator ^ (Q const & obj) const { // truncates to integer
    if (pos) {
       if (obj.pos) {
-         return Q(true, whl.apply(obj.whl, false, false, Z::BOOL_XOR, false), (int)0, 1);
+         return Q(true, whl.apply(obj.whl, false, false, N::BOOL_XOR, false), (int)0, 1);
       }
       else {
-         return Q(false, whl.apply(obj.whl, false, true, Z::BOOL_XOR, true), (int)0, 1);
+         return Q(false, whl.apply(obj.whl, false, true, N::BOOL_XOR, true), (int)0, 1);
       }
    }
    else {
       if (obj.pos) {
-         return Q(false, whl.apply(obj.whl, true, false, Z::BOOL_XOR, true), (int)0, 1);
+         return Q(false, whl.apply(obj.whl, true, false, N::BOOL_XOR, true), (int)0, 1);
       }
       else {
-         return Q(true, whl.apply(obj.whl, true, true, Z::BOOL_XOR, false), (int)0, 1);
+         return Q(true, whl.apply(obj.whl, true, true, N::BOOL_XOR, false), (int)0, 1);
       }
    }
 }
@@ -626,11 +626,11 @@ char *Q::frac_print(uint64_t radix) const {
 
 // Find the non-repeating prefix and repeating period lengths for 1/den
 // in the requested radix.  Returns true if max truncated either search.
-static bool radix_lengths(const Z &den, uint64_t radix,
-                          Z &lead, Z &repeat, uint64_t max) {
-   static const Z one(1);
-   Z remainder = den;
-   Z base(radix);
+static bool radix_lengths(const N &den, uint64_t radix,
+                          N &lead, N &repeat, uint64_t max) {
+   static const N one(1);
+   N remainder = den;
+   N base(radix);
    bool maxlead = false;
    bool maxrepeat = false;
 
@@ -638,7 +638,7 @@ static bool radix_lengths(const Z &den, uint64_t radix,
    // Each radix digit can cancel one gcd(remainder, radix).  When the
    // remainder becomes coprime to the radix, what remains must repeat.
    while (remainder != one) {
-      Z g = gcd(remainder, base);
+      N g = gcd(remainder, base);
       if (g == one) {
          break;
       }
@@ -658,7 +658,7 @@ static bool radix_lengths(const Z &den, uint64_t radix,
 
    // remainder is now coprime to radix.  The repeat length is the
    // multiplicative order of radix modulo remainder.
-   Z power = base % remainder;
+   N power = base % remainder;
    repeat = 1;
 
    while (power != one) {
@@ -681,8 +681,8 @@ char *Q::print(uint64_t radix, uint64_t max) const {
       return strdup("0");
    }
 
-   // Let Z enforce the supported radix range for nonzero Q values.
-   Z radix_check("", radix);
+   // Let N enforce the supported radix range for nonzero Q values.
+   N radix_check("", radix);
 
    if (!pos) {
       raprintf(ret, "-");
@@ -696,15 +696,15 @@ char *Q::print(uint64_t radix, uint64_t max) const {
 
    raprintf(ret, ".");
 
-   Z lead;
-   Z repeat;
+   N lead;
+   N repeat;
 
    bool bad = radix_lengths(den, radix, lead, repeat, max);
 
-   Z remainder = num * radix;
-   Z digit;
+   N remainder = num * radix;
+   N digit;
 
-   for (Z i; i < lead; i += 1) {
+   for (N i; i < lead; i += 1) {
       digit = remainder / den;
       remainder %= den;
       raprintf(ret, "%s", GCSTR digit.print(radix));
@@ -715,7 +715,7 @@ char *Q::print(uint64_t radix, uint64_t max) const {
    }
    else if (!repeat.isZero()) {
       raprintf(ret, "(");
-      for (Z i; i < repeat; i += 1) {
+      for (N i; i < repeat; i += 1) {
          digit = remainder / den;
          remainder %= den;
          raprintf(ret, "%s", GCSTR digit.print(radix));
@@ -783,9 +783,9 @@ static Q precision_epsilon(uint64_t precision) {
       throw(UGE_ERR("precision too large"));
    }
 
-   Z d = 1;
+   N d = 1;
    d <<= (int64_t)precision;
-   return Q(true, Z((uint64_t)0), Z((uint64_t)1), d);
+   return Q(true, N((uint64_t)0), N((uint64_t)1), d);
 }
 
 // Truncate a rational to a binary fixed-point grid.  Approximation routines
@@ -801,7 +801,7 @@ static Q binary_trunc(const Q &q, uint64_t precision) {
    return q.sgn() < 0 ? -mag : mag;
 }
 
-static uint64_t z_bit_length(Z z) {
+static uint64_t n_bit_length(N z) {
    uint64_t ret = 0;
    while (!z.isZero()) {
       z >>= 1;
@@ -991,7 +991,7 @@ Q Q::sin(uint64_t precision) const {
    // number of turns.  Keep enough extra bits for the integer magnitude
    // of the argument, plus a fixed cushion for the series arithmetic.
    uint64_t work = guarded_precision(
-      precision, guarded_precision(z_bit_length(whl), 32));
+      precision, guarded_precision(n_bit_length(whl), 32));
    return sin_series(reduce_angle(*this, work), work);
 }
 
@@ -1001,7 +1001,7 @@ Q Q::cos(uint64_t precision) const {
    }
 
    uint64_t work = guarded_precision(
-      precision, guarded_precision(z_bit_length(whl), 32));
+      precision, guarded_precision(n_bit_length(whl), 32));
    return cos_series(reduce_angle(*this, work), work);
 }
 
@@ -1011,7 +1011,7 @@ Q Q::tan(uint64_t precision) const {
    }
 
    uint64_t work = guarded_precision(
-      precision, guarded_precision(z_bit_length(whl), 40));
+      precision, guarded_precision(n_bit_length(whl), 40));
    Q r = reduce_angle(*this, work);
    Q c = cos_series(r, work);
    if (c.sgn() == 0) {
@@ -1322,9 +1322,9 @@ Q Q::sqrt(uint64_t precision) const {
       throw(UGE_ERR("square root of negative number."));
    }
 
-   Z n = num + den * whl;
-   Z d = den;
-   Z m = 1;
+   N n = num + den * whl;
+   N d = den;
+   N m = 1;
    m <<= precision;
 
    n *= m;
@@ -1337,11 +1337,11 @@ Q Q::sqrt(uint64_t precision) const {
 }
 
 Q Q::pow(const Q &power, uint64_t precision) const {
-   Z pn = power.num + power.den * power.whl;
-   Z pd = power.den;
+   N pn = power.num + power.den * power.whl;
+   N pd = power.den;
 
-   Z n = (num + den * whl).pow(pn);
-   Z d = den.pow(pn);
+   N n = (num + den * whl).pow(pn);
+   N d = den.pow(pn);
 
    bool retpos = true;
    if (!pos) {
@@ -1354,11 +1354,11 @@ Q Q::pow(const Q &power, uint64_t precision) const {
       throw (UGE_ERR("even root of negative number"));
    }
 
-   Z nr = n.root(pd);
-   Z dr = d.root(pd);
+   N nr = n.root(pd);
+   N dr = d.root(pd);
 
    if (nr.pow(pd) != n || dr.pow(pd) != d) {
-      Z m = 1;
+      N m = 1;
       m <<= precision;
 
       nr = (n * m).root(pd);

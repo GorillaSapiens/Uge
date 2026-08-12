@@ -1,7 +1,7 @@
 *.o
 *.d
 qtest
-ztest
+ntest
 ctest
 uge
 Makefile.bak

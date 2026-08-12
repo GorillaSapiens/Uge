@@ -952,7 +952,7 @@ static bool execute_statement(Context &ctx, std::string stmt) {
       }
    }
 
-   // Friendly command forms inherited from ztest/qtest.  The Parser's
+   // Friendly command forms inherited from ntest/qtest.  The Parser's
    // special-variable assignment path deliberately parses their RHS in base 10.
    static const char *commands[] = { "ibase", "obase", "base", "maxdigits", "precision" };
    for (size_t i = 0; i < sizeof(commands) / sizeof(commands[0]); i++) {
