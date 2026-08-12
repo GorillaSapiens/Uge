@@ -33,6 +33,7 @@ Uge keeps the fractions exact:
 $ ./uge
 uge exact rational/complex calculator
 Copyright (C) GorillaSapiens; type 'help' for help.
+using positional format; enter 'format fraction' for fraction format
 base 12
 .49+.03
 0.5
@@ -67,7 +68,9 @@ Highlights include:
 - arbitrary input and output radices from base 2 through base 65536;
 - exact terminating and repeating positional notation;
 - independent `ibase` and `obase`, plus `base` to set both;
-- `fraction()`, `positional()`, `decimal()`, and `debug()` output forms;
+- persistent `format positional` / `format fraction` output selection, with
+  `-positional` / `-fraction` startup options and `fraction()`, `positional()`,
+  `decimal()`, and `debug()` one-shot forms;
 - arbitrary-precision `sqrt`, exponential, logarithmic, trigonometric, and
   inverse-trigonometric functions, including complex principal values where
   applicable;

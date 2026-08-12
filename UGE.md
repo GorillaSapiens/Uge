@@ -31,10 +31,20 @@ Run the calculator with:
 ./uge
 ```
 
-`uge -q` suppresses the interactive banner.  `uge -l` is accepted for GNU
-`bc` command-line compatibility; there is no separate math library to load.
-One or more file names may also be given.  They are evaluated in order before
-interactive input is read.
+Command-line options include:
+
+```
+-q, --quiet   suppress the interactive banner
+-l            accepted for GNU bc compatibility; no separate math library is needed
+-positional   start with positional output format (default)
+-fraction     start with fraction output format
+-h, --help    show command-line help
+```
+
+If both `-positional` and `-fraction` are given, the last one wins.  The selected
+format is in effect while command files are evaluated as well as during
+interactive input.  One or more file names may be given; they are evaluated in
+order before interactive input is read.
 
 ## Interactive editing and history
 
@@ -436,11 +446,58 @@ denominators from growing without useful bound.
 
 ## Output forms
 
-The ordinary output of `uge` is **positional notation** in `obase`.  "Decimal
-notation" is the special case where the radix is 10; it is not the right name
-for the same notation in another radix.
+Ordinary output can be rendered in either **positional** or **fraction** form.
+Positional form is the default.  The persistent setting is selected with:
 
-Several top-level output forms are provided:
+```
+format positional
+format fraction
+```
+
+Entering `format` by itself reports the current setting and how to switch to the
+other form.  Changing the setting prints the same status message.  At interactive
+startup Uge reports the selected format, for example:
+
+```text
+using positional format; enter 'format fraction' for fraction format
+```
+
+The startup selection can also be made from the command line:
+
+```
+./uge -positional
+./uge -fraction
+```
+
+`-positional` is the default.  If both options are supplied, the last one wins.
+The `-q` option suppresses the interactive startup banner and format message.
+
+`format pos` and `format frac` are accepted as abbreviations.  The format setting
+does not change `obase`: it only chooses whether ordinary results are rendered
+as positional digits or as exact fractions.  For example:
+
+```text
+base 12
+.49 + .03
+0.5
+foo = last
+obase 10
+foo
+0.41(6)
+format fraction
+using fraction format; enter 'format positional' for positional format
+foo
+5/12
+format positional
+using positional format; enter 'format fraction' for fraction format
+foo
+0.41(6)
+```
+
+"Decimal notation" is the special case of positional notation where the radix is
+10; it is not the right name for the same notation in another radix.
+
+Several explicit top-level output forms are also provided:
 
 ```
 positional(expression)
@@ -452,13 +509,14 @@ debug(expression)
 print expression
 ```
 
-`positional()` and `pos()` print in `obase`, just like ordinary expression
-output.  `fraction()` and `frac()` print the exact value as an integer, fraction,
-or mixed fraction, with the numerator and denominator themselves written in
-`obase`.  For complex values each component is formatted in that radix and a
-zero imaginary component is omitted.  `decimal()` always prints positional
-notation in radix 10 regardless of `obase`.  `debug()` exposes the internal
-`C` representation and its two `Q` components.
+`positional()` and `pos()` always print positional notation in `obase`, regardless
+of the current `format`.  `fraction()` and `frac()` always print the exact value
+as an integer, fraction, or mixed fraction, with the numerator and denominator
+themselves written in `obase`.  For complex values each component is formatted
+in that radix and a zero imaginary component is omitted.  `decimal()` always
+prints positional notation in radix 10 regardless of `obase` or `format`.
+`debug()` exposes the internal `C` representation and its two `Q` components.
+`print expression` uses the current persistent `format`.
 
 ### Base 10 examples
 

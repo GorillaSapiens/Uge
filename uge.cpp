@@ -44,12 +44,18 @@ enum TrigMode {
    TRIG_DIRECT
 };
 
+enum OutputFormat {
+   FORMAT_POSITIONAL,
+   FORMAT_FRACTION
+};
+
 struct Context {
    uint64_t ibase;
    uint64_t obase;
    uint64_t print_max;
    uint64_t precision;
    TrigMode trigmode;
+   OutputFormat output_format;
    std::map<std::string, C> vars;
    C last;
    C pi_cache;
@@ -57,12 +63,22 @@ struct Context {
 
    Context()
       : ibase(10), obase(10), print_max(DEFAULT_PRINT_MAX),
-        precision(DEFAULT_PRECISION), trigmode(TRIG_NORMALIZED), last((int64_t)0),
+        precision(DEFAULT_PRECISION), trigmode(TRIG_NORMALIZED),
+        output_format(FORMAT_POSITIONAL), last((int64_t)0),
         pi_cache((int64_t)0), e_cache((int64_t)0) {}
 };
 
 static const char *trigmode_name(TrigMode mode) {
    return mode == TRIG_DIRECT ? "direct" : "normalized";
+}
+
+static void print_format_status(const Context &ctx) {
+   if (ctx.output_format == FORMAT_FRACTION) {
+      printf("using fraction format; enter 'format positional' for positional format\n");
+   }
+   else {
+      printf("using positional format; enter 'format fraction' for fraction format\n");
+   }
 }
 
 static void set_precision(Context &ctx, uint64_t precision) {
@@ -843,6 +859,15 @@ static void output_positional(Context &ctx, const C &c, uint64_t radix) {
    printf("%s\n", GCSTR c.print(radix, ctx.print_max));
 }
 
+static void output_default(Context &ctx, const C &c) {
+   if (ctx.output_format == FORMAT_FRACTION) {
+      printf("%s\n", GCSTR c.frac_print(ctx.obase));
+   }
+   else {
+      output_positional(ctx, c, ctx.obase);
+   }
+}
+
 static bool starts_assignment_statement(const std::string &s) {
    size_t p = 0;
    while (p < s.size() && isspace((unsigned char)s[p])) p++;
@@ -875,13 +900,36 @@ static bool execute_statement(Context &ctx, std::string stmt) {
       printf("Values are complex rationals; i is the imaginary unit (for example 1+2i).\n");
       printf("ibase/obase/base assignments are always interpreted in decimal.\n");
       printf("trigmode normalized (default) or trigmode direct selects ordinary trig evaluation.\n");
-      printf("Output: positional(x), fraction(x), decimal(x).\n");
+      printf("format positional (default) or format fraction selects ordinary output.\n");
+      printf("Output overrides: positional(x), fraction(x), decimal(x).\n");
       printf("maxdigits controls rendering; precision controls approximations.\n");
       return true;
    }
    if (stmt == "warranty") {
       printf("Uge is free software; see LICENSE for copying and warranty terms.\n");
       return true;
+   }
+
+   {
+      std::string rest;
+      if (starts_word(stmt, "format", rest)) {
+         if (rest.empty()) {
+            print_format_status(ctx);
+            return true;
+         }
+         if (rest[0] == '=') rest = trim(rest.substr(1));
+         if (rest == "positional" || rest == "pos") {
+            ctx.output_format = FORMAT_POSITIONAL;
+            print_format_status(ctx);
+            return true;
+         }
+         if (rest == "fraction" || rest == "frac") {
+            ctx.output_format = FORMAT_FRACTION;
+            print_format_status(ctx);
+            return true;
+         }
+         throw std::string("format must be 'positional' or 'fraction'");
+      }
    }
 
    {
@@ -947,7 +995,7 @@ static bool execute_statement(Context &ctx, std::string stmt) {
    else {
       std::string rest;
       if (starts_word(stmt, "print", rest) && !rest.empty()) {
-         mode = POSITIONAL;
+         mode = NORMAL;
          stmt = rest;
       }
    }
@@ -972,7 +1020,7 @@ static bool execute_statement(Context &ctx, std::string stmt) {
       ctx.last = v.c;
    }
    else if (!assignment_statement) {
-      output_positional(ctx, v.c, ctx.obase);
+      output_default(ctx, v.c);
       ctx.last = v.c;
    }
 
@@ -1243,9 +1291,11 @@ static bool process_stream(Context &ctx, std::istream &in) {
 }
 
 static void usage(const char *argv0) {
-   printf("usage: %s [-q] [-l] [file ...]\n", argv0);
+   printf("usage: %s [-q] [-l] [-positional|-fraction] [file ...]\n", argv0);
    printf("  -q, --quiet   suppress interactive banner\n");
    printf("  -l            accepted for bc compatibility; Uge functions are built in\n");
+   printf("  -positional   start with positional output format (default)\n");
+   printf("  -fraction     start with fraction output format\n");
    printf("  -h, --help    show this help\n");
 }
 
@@ -1253,12 +1303,15 @@ static void usage(const char *argv0) {
 
 int main(int argc, char **argv) {
    bool quiet = false;
+   OutputFormat startup_format = FORMAT_POSITIONAL;
    std::vector<std::string> files;
 
    for (int i = 1; i < argc; i++) {
       std::string a = argv[i];
       if (a == "-q" || a == "--quiet") quiet = true;
       else if (a == "-l") { /* compatibility no-op */ }
+      else if (a == "-positional") startup_format = FORMAT_POSITIONAL;
+      else if (a == "-fraction") startup_format = FORMAT_FRACTION;
       else if (a == "-h" || a == "--help") { usage(argv[0]); return 0; }
       else if (!a.empty() && a[0] == '-') {
          fprintf(stderr, "uge: unknown option '%s'\n", a.c_str());
@@ -1269,6 +1322,7 @@ int main(int argc, char **argv) {
    }
 
    Context ctx;
+   ctx.output_format = startup_format;
    set_precision(ctx, DEFAULT_PRECISION);
 
    for (size_t i = 0; i < files.size(); i++) {
@@ -1289,6 +1343,7 @@ int main(int argc, char **argv) {
    if (!quiet) {
       printf("uge exact rational/complex calculator\n");
       printf("Copyright (C) GorillaSapiens; type 'help' for help.\n");
+      print_format_status(ctx);
    }
 
    std::vector<std::string> history;
