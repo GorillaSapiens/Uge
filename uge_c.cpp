@@ -19,9 +19,26 @@ static uint64_t guarded_precision(uint64_t precision, uint64_t guard) {
    return precision + guard;
 }
 
+static Q binary_trunc(const Q &q, uint64_t precision) {
+   if (q.sgn() == 0) {
+      return Q((int64_t)0);
+   }
+
+   N den((uint64_t)1);
+   den <<= (int64_t)precision;
+   Q eps(true, N((uint64_t)0), N((uint64_t)1), den);
+   Q mag = (q.abs() / eps).floor() * eps;
+   return q.sgn() < 0 ? -mag : mag;
+}
+
 static void hyperbolic(const Q &x, uint64_t precision, Q &s, Q &c) {
-   Q ep = x.e(precision);
-   Q en = (-x).e(precision);
+   // Compute only the exponential with magnitude >= 1, then obtain the
+   // other by reciprocal.  This avoids both a second expensive exponential
+   // and division by zero if exp(-|x|) rounds to zero at finite precision.
+   Q big = x.abs().e(precision);
+   Q small = binary_trunc(Q((int64_t)1) / big, precision);
+   Q ep = x.sgn() < 0 ? small : big;
+   Q en = x.sgn() < 0 ? big : small;
    Q two((int64_t)2);
    s = (ep - en) / two;
    c = (ep + en) / two;
