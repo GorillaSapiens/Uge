@@ -222,8 +222,9 @@ Logical AND and OR are also supported:
 ```
 
 Parentheses follow the normal rules of precedence.  Statements may be separated
-with semicolons.  An expression may continue on another line while parentheses
-remain open, or when the line ends with `\`.
+with semicolons or newlines.  Expressions may continue on another line while
+parentheses remain open, or when the line ends with `\`.  Braced statement
+blocks are multiline as well.
 
 Comments may use any of:
 
@@ -258,7 +259,103 @@ Prefix and postfix `++` and `--` are supported as well.
 The special variable `last` contains the last value printed by an expression or
 an explicit output command.
 
-## Functions
+## Statements and control flow
+
+`uge` supports `bc`-style conditional and loop statements.  Conditions use the
+same truth rule as logical expressions: `0+0i` is false and every other value
+is true.  A body may be a single statement or a braced block.
+
+```
+if (x > 0)
+    y = x
+else
+    y = -x
+
+if (z) {
+    real_part = real(z)
+    imag_part = imag(z)
+}
+else {
+    real_part = 0
+    imag_part = 0
+}
+```
+
+The `else` belongs to the nearest unmatched `if`.  With a braced top-level
+`if`, the closing `}` and `else` may be entered on separate lines.
+
+Loops use the familiar forms:
+
+```
+count = 0
+while (count < 10) {
+    count += 1
+}
+
+sum = 0
+for (k = 0; k < 10; k++) {
+    sum += k
+}
+```
+
+The three expressions in a `for` header are control expressions and are not
+printed.  Any of them may be empty; an empty condition is true.  `break` exits
+the nearest loop and `continue` starts its next iteration.
+
+Because `i` is the built-in imaginary unit, it is not available as a loop
+variable; names such as `j`, `k`, or `n` are convenient alternatives.
+
+## User-defined functions
+
+Scalar user-defined functions use `bc`-like `define` syntax.  Every
+argument, local, and return value is an ordinary `C` calculator value; arrays
+are deliberately not implemented.
+
+```
+define gcd(a, b) {
+    local t
+    while (b != 0) {
+        t = a % b
+        a = b
+        b = t
+    }
+    return(a)
+}
+
+gcd(123456, 7890)
+6
+```
+
+Parameters are local to the call.  Variables named by a `local` declaration
+are also local and begin at zero.  Other variable references are global, which
+matches the traditional `bc` model.  Multiple local names may be declared at
+once:
+
+```
+local x, y, t
+```
+
+Functions may call other user functions and may recurse:
+
+```
+define fact(n) {
+    if (n <= 1)
+        return(1)
+    return(n * fact(n - 1))
+}
+
+fact(10)
+3628800
+```
+
+`return(expr)` or `return expr` returns a value immediately.  A bare `return`
+and a function that reaches the end without a `return` both return zero.
+Function definitions are global and may be replaced by a later `define`.
+Built-in function names and the reserved constants `i`, `e`, `pi`, and `tau`
+cannot be reused as function, parameter, or `local` names.  Function call depth
+is limited to 256 calls.
+
+## Built-in functions
 
 Functions implemented by the current `C` type are exposed directly:
 
@@ -590,9 +687,11 @@ implementation.
 - Division is exact whenever the underlying rational component arithmetic is
   exact; there is no fixed-point `scale` setting.
 - `maxdigits` affects positional rendering only; it does not change arithmetic.
-- General user-defined functions, arrays, control-flow statements, and the GNU
-  math library are not implemented.
-- Only mathematical functions already supported by Uge are exposed.
+- Scalar user-defined functions and `if`/`while`/`for` control flow are
+  supported, including recursion and variables declared with `local`.  Arrays
+  are deliberately not implemented.
+- Only mathematical functions already supported by Uge are exposed; `-l` is a
+  compatibility no-op rather than a separate GNU math library load.
 - Base-setting values are always interpreted in decimal, deliberately avoiding
   the confusing self-referential `ibase` behavior of traditional calculators.
 

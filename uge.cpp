@@ -49,6 +49,30 @@ enum OutputFormat {
    FORMAT_FRACTION
 };
 
+struct Statement {
+   enum Kind {
+      SIMPLE, BLOCK, IF, WHILE, FOR, BREAK, CONTINUE, RETURN, DEFINE, LOCAL
+   } kind;
+   std::string text;
+   std::string text2;
+   std::string text3;
+   std::string name;
+   std::vector<std::string> names;
+   std::vector<Statement> body;
+   std::vector<Statement> else_body;
+
+   Statement(Kind k = SIMPLE) : kind(k) {}
+};
+
+struct UserFunction {
+   std::vector<std::string> params;
+   std::vector<Statement> body;
+};
+
+struct Frame {
+   std::map<std::string, C> vars;
+};
+
 struct Context {
    uint64_t ibase;
    uint64_t obase;
@@ -57,6 +81,8 @@ struct Context {
    TrigMode trigmode;
    OutputFormat output_format;
    std::map<std::string, C> vars;
+   std::map<std::string, UserFunction> functions;
+   std::vector<Frame> frames;
    C last;
    C pi_cache;
    C e_cache;
@@ -168,6 +194,10 @@ static C config_value(Context &ctx, const std::string &name) {
    if (name == "maxdigits") return C((int64_t)ctx.print_max);
    if (name == "precision") return C((int64_t)ctx.precision);
    if (name == "last") return ctx.last;
+   if (!ctx.frames.empty()) {
+      std::map<std::string, C>::iterator local = ctx.frames.back().vars.find(name);
+      if (local != ctx.frames.back().vars.end()) return local->second;
+   }
    std::map<std::string, C>::iterator i = ctx.vars.find(name);
    if (i == ctx.vars.end()) return C((int64_t)0);
    return i->second;
@@ -179,6 +209,13 @@ static void set_named_value(Context &ctx, const std::string &name, const C &valu
       return;
    }
    if (!is_config_name(name)) {
+      if (!ctx.frames.empty()) {
+         std::map<std::string, C>::iterator local = ctx.frames.back().vars.find(name);
+         if (local != ctx.frames.back().vars.end()) {
+            local->second = value;
+            return;
+         }
+      }
       ctx.vars[name] = value;
       return;
    }
@@ -392,6 +429,9 @@ struct Value {
    Value(const C &v = C((int64_t)0), const std::string &l = "", bool a = false)
       : c(v), lvalue(l), assignment(a) {}
 };
+
+static C call_user_function(Context &ctx, const std::string &name,
+                            const std::vector<C> &args);
 
 class Parser {
    Context &ctx;
@@ -779,7 +819,7 @@ class Parser {
          if (a.size() != 2) throw std::string("xor() takes two arguments");
          return Value(a[0] ^ a[1]);
       }
-      throw std::string("unknown function '") + name + "'";
+      return Value(call_user_function(ctx, name, a));
    }
 
    Value parse_primary() {
@@ -890,7 +930,7 @@ static bool starts_assignment_statement(const std::string &s) {
    return false;
 }
 
-static bool execute_statement(Context &ctx, std::string stmt) {
+static bool execute_simple_statement(Context &ctx, std::string stmt) {
    stmt = trim(stmt);
    if (stmt.empty()) return true;
 
@@ -898,6 +938,8 @@ static bool execute_statement(Context &ctx, std::string stmt) {
    if (stmt == "help") {
       printf("Type expressions using bc-like syntax.  See UGE.md for full help.\n");
       printf("Values are complex rationals; i is the imaginary unit (for example 1+2i).\n");
+      printf("Control flow: if/else, while, for, break, continue, and { ... } blocks.\n");
+      printf("Functions: define f(a,b) { local t; ... return(expr); } (scalar values only).\n");
       printf("ibase/obase/base assignments are always interpreted in decimal.\n");
       printf("trigmode normalized (default) or trigmode direct selects ordinary trig evaluation.\n");
       printf("format positional (default) or format fraction selects ordinary output.\n");
@@ -1027,6 +1069,455 @@ static bool execute_statement(Context &ctx, std::string stmt) {
    return true;
 }
 
+struct IncompleteInput {};
+struct QuitSignal {};
+
+static bool ident_start(char c) {
+   return (c >= 'a' && c <= 'z') || c == '_';
+}
+
+static bool ident_char(char c) {
+   return ident_start(c) || (c >= '0' && c <= '9');
+}
+
+static bool is_reserved_local_name(const std::string &name) {
+   return name == "i" || name == "e" || name == "pi" || name == "tau" ||
+          name == "last" || is_config_name(name) || name == "if" ||
+          name == "else" || name == "while" || name == "for" ||
+          name == "break" || name == "continue" || name == "return" ||
+          name == "define" || name == "local" || name == "quit" ||
+          name == "halt";
+}
+
+static bool is_builtin_function_name(const std::string &name) {
+   static const char *names[] = {
+      "sqrt", "sin", "cos", "tan", "atan", "atan2",
+      "sinpi", "cospi", "tanpi", "atanpi", "atan2pi",
+      "sintau", "costau", "tantau", "atantau", "atan2tau",
+      "sindeg", "cosdeg", "tandeg", "atandeg", "atan2deg",
+      "ln", "pi", "tau", "e", "abs", "real", "imag", "conj",
+      "norm", "arg", "floor", "sgn", "pow", "xor",
+      "fraction", "frac", "positional", "pos", "decimal", "debug"
+   };
+   for (size_t i = 0; i < sizeof(names) / sizeof(names[0]); i++) {
+      if (name == names[i]) return true;
+   }
+   return false;
+}
+
+static bool valid_identifier(const std::string &name) {
+   if (name.empty() || !ident_start(name[0])) return false;
+   for (size_t i = 1; i < name.size(); i++) {
+      if (!ident_char(name[i])) return false;
+   }
+   return true;
+}
+
+static std::vector<std::string> split_top_level(const std::string &s, char sep) {
+   std::vector<std::string> out;
+   size_t start = 0;
+   int paren = 0;
+   for (size_t i = 0; i < s.size(); i++) {
+      if (s[i] == '(') paren++;
+      else if (s[i] == ')' && paren > 0) paren--;
+      else if (s[i] == sep && paren == 0) {
+         out.push_back(trim(s.substr(start, i - start)));
+         start = i + 1;
+      }
+   }
+   out.push_back(trim(s.substr(start)));
+   return out;
+}
+
+class StatementParser {
+   const std::string &src;
+   size_t pos;
+
+   bool eof() const { return pos >= src.size(); }
+
+   void skip_inline() {
+      while (!eof() && (src[pos] == ' ' || src[pos] == '\t' || src[pos] == '\r')) pos++;
+   }
+
+   void skip_ws() {
+      while (!eof() && isspace((unsigned char)src[pos])) pos++;
+   }
+
+   void skip_separators() {
+      for (;;) {
+         skip_ws();
+         if (!eof() && src[pos] == ';') {
+            pos++;
+            continue;
+         }
+         break;
+      }
+   }
+
+   bool word_at(const char *word) const {
+      size_t n = strlen(word);
+      if (src.compare(pos, n, word) != 0) return false;
+      if (pos > 0 && ident_char(src[pos - 1])) return false;
+      if (pos + n < src.size() && ident_char(src[pos + n])) return false;
+      return true;
+   }
+
+   void take_word(const char *word) {
+      if (!word_at(word)) throw std::string("expected '") + word + "'";
+      pos += strlen(word);
+   }
+
+   std::string parse_identifier(const char *what) {
+      skip_ws();
+      if (eof()) throw IncompleteInput();
+      if (!ident_start(src[pos])) throw std::string("expected ") + what;
+      size_t start = pos++;
+      while (!eof() && ident_char(src[pos])) pos++;
+      return src.substr(start, pos - start);
+   }
+
+   std::string parenthesized() {
+      skip_ws();
+      if (eof()) throw IncompleteInput();
+      if (src[pos] != '(') throw std::string("expected '('");
+      size_t start = ++pos;
+      int depth = 1;
+      while (!eof()) {
+         char c = src[pos++];
+         if (c == '(') depth++;
+         else if (c == ')') {
+            depth--;
+            if (depth == 0) return src.substr(start, pos - start - 1);
+         }
+      }
+      throw IncompleteInput();
+   }
+
+   std::string simple_text() {
+      skip_inline();
+      size_t start = pos;
+      int paren = 0;
+      while (!eof()) {
+         char c = src[pos];
+         if (c == '(') {
+            paren++;
+            pos++;
+         }
+         else if (c == ')') {
+            if (paren == 0) throw std::string("unexpected ')'");
+            paren--;
+            pos++;
+         }
+         else if (paren == 0 && (c == ';' || c == '\n' || c == '}')) {
+            break;
+         }
+         else {
+            pos++;
+         }
+      }
+      if (paren > 0) throw IncompleteInput();
+      return trim(src.substr(start, pos - start));
+   }
+
+   std::vector<std::string> parse_name_list(const std::string &s,
+                                             const char *what) {
+      std::vector<std::string> names = split_top_level(s, ',');
+      if (names.size() == 1 && names[0].empty()) {
+         names.clear();
+         return names;
+      }
+      for (size_t i = 0; i < names.size(); i++) {
+         if (!valid_identifier(names[i])) {
+            throw std::string("invalid ") + what + " name '" + names[i] + "'";
+         }
+         if (is_reserved_local_name(names[i])) {
+            throw std::string(what) + " name '" + names[i] + "' is reserved";
+         }
+         for (size_t j = 0; j < i; j++) {
+            if (names[j] == names[i]) {
+               throw std::string("duplicate ") + what + " name '" + names[i] + "'";
+            }
+         }
+      }
+      return names;
+   }
+
+   Statement parse_block() {
+      Statement s(Statement::BLOCK);
+      if (eof() || src[pos] != '{') throw std::string("expected '{'");
+      pos++;
+      for (;;) {
+         skip_separators();
+         if (eof()) throw IncompleteInput();
+         if (src[pos] == '}') {
+            pos++;
+            return s;
+         }
+         s.body.push_back(parse_statement());
+      }
+   }
+
+   Statement parse_if() {
+      Statement s(Statement::IF);
+      take_word("if");
+      s.text = trim(parenthesized());
+      if (s.text.empty()) throw std::string("if condition must not be empty");
+      skip_ws();
+      if (eof()) throw IncompleteInput();
+      s.body.push_back(parse_statement());
+
+      size_t after_then = pos;
+      skip_separators();
+      if (!eof() && word_at("else")) {
+         take_word("else");
+         skip_ws();
+         if (eof()) throw IncompleteInput();
+         s.else_body.push_back(parse_statement());
+      }
+      else {
+         pos = after_then;
+      }
+      return s;
+   }
+
+   Statement parse_while() {
+      Statement s(Statement::WHILE);
+      take_word("while");
+      s.text = trim(parenthesized());
+      if (s.text.empty()) throw std::string("while condition must not be empty");
+      skip_ws();
+      if (eof()) throw IncompleteInput();
+      s.body.push_back(parse_statement());
+      return s;
+   }
+
+   Statement parse_for() {
+      Statement s(Statement::FOR);
+      take_word("for");
+      std::vector<std::string> fields = split_top_level(parenthesized(), ';');
+      if (fields.size() != 3) {
+         throw std::string("for() requires init; condition; update");
+      }
+      s.text = fields[0];
+      s.text2 = fields[1];
+      s.text3 = fields[2];
+      skip_ws();
+      if (eof()) throw IncompleteInput();
+      s.body.push_back(parse_statement());
+      return s;
+   }
+
+   Statement parse_define() {
+      Statement s(Statement::DEFINE);
+      take_word("define");
+      s.name = parse_identifier("function name");
+      if (is_builtin_function_name(s.name) || is_reserved_local_name(s.name)) {
+         throw std::string("function name '") + s.name + "' is reserved";
+      }
+      s.names = parse_name_list(parenthesized(), "parameter");
+      skip_ws();
+      if (eof()) throw IncompleteInput();
+      if (src[pos] != '{') throw std::string("function body must be a '{ ... }' block");
+      Statement block = parse_block();
+      s.body = block.body;
+      return s;
+   }
+
+   Statement parse_local() {
+      Statement s(Statement::LOCAL);
+      take_word("local");
+      std::string rest = simple_text();
+      if (rest.empty()) throw std::string("local requires at least one variable");
+      s.names = parse_name_list(rest, "local");
+      return s;
+   }
+
+   Statement parse_return() {
+      Statement s(Statement::RETURN);
+      take_word("return");
+      s.text = simple_text();
+      if (s.text == "()") s.text.clear();
+      return s;
+   }
+
+   Statement keyword_only(Statement::Kind kind, const char *word) {
+      Statement s(kind);
+      take_word(word);
+      skip_inline();
+      if (!eof() && src[pos] != ';' && src[pos] != '\n' && src[pos] != '}') {
+         throw std::string("unexpected text after '") + word + "'";
+      }
+      return s;
+   }
+
+public:
+   StatementParser(const std::string &s) : src(s), pos(0) {}
+
+   Statement parse_statement() {
+      skip_separators();
+      if (eof()) throw IncompleteInput();
+      if (src[pos] == '{') return parse_block();
+      if (src[pos] == '}') throw std::string("unexpected '}'");
+      if (word_at("if")) return parse_if();
+      if (word_at("while")) return parse_while();
+      if (word_at("for")) return parse_for();
+      if (word_at("define")) return parse_define();
+      if (word_at("local")) return parse_local();
+      if (word_at("return")) return parse_return();
+      if (word_at("break")) return keyword_only(Statement::BREAK, "break");
+      if (word_at("continue")) return keyword_only(Statement::CONTINUE, "continue");
+      if (word_at("else")) throw std::string("else without matching if");
+
+      Statement s(Statement::SIMPLE);
+      s.text = simple_text();
+      if (s.text.empty()) throw IncompleteInput();
+      return s;
+   }
+
+   std::vector<Statement> parse_program() {
+      std::vector<Statement> out;
+      for (;;) {
+         skip_separators();
+         if (eof()) return out;
+         if (src[pos] == '}') throw std::string("unexpected '}'");
+         out.push_back(parse_statement());
+      }
+   }
+};
+
+struct Flow {
+   enum Type { NORMAL, BREAK, CONTINUE, RETURN, QUIT } type;
+   C value;
+   Flow(Type t = NORMAL, const C &v = C((int64_t)0)) : type(t), value(v) {}
+};
+
+static C eval_expression(Context &ctx, const std::string &expr) {
+   Parser p(ctx, expr, ctx.ibase);
+   return p.parse().c;
+}
+
+static Flow execute_statements(Context &ctx, const std::vector<Statement> &stmts,
+                               int loop_depth);
+
+static Flow execute_statement_node(Context &ctx, const Statement &s, int loop_depth) {
+   switch (s.kind) {
+      case Statement::SIMPLE:
+         if (!execute_simple_statement(ctx, s.text)) return Flow(Flow::QUIT);
+         return Flow();
+
+      case Statement::BLOCK:
+         return execute_statements(ctx, s.body, loop_depth);
+
+      case Statement::IF:
+         if (!c_is_zero(eval_expression(ctx, s.text))) {
+            return execute_statements(ctx, s.body, loop_depth);
+         }
+         return execute_statements(ctx, s.else_body, loop_depth);
+
+      case Statement::WHILE:
+         while (!c_is_zero(eval_expression(ctx, s.text))) {
+            Flow f = execute_statements(ctx, s.body, loop_depth + 1);
+            if (f.type == Flow::BREAK) break;
+            if (f.type == Flow::CONTINUE) continue;
+            if (f.type != Flow::NORMAL) return f;
+         }
+         return Flow();
+
+      case Statement::FOR:
+         if (!s.text.empty()) (void)eval_expression(ctx, s.text);
+         for (;;) {
+            if (!s.text2.empty() && c_is_zero(eval_expression(ctx, s.text2))) break;
+            Flow f = execute_statements(ctx, s.body, loop_depth + 1);
+            if (f.type == Flow::BREAK) break;
+            if (f.type != Flow::NORMAL && f.type != Flow::CONTINUE) return f;
+            if (!s.text3.empty()) (void)eval_expression(ctx, s.text3);
+         }
+         return Flow();
+
+      case Statement::BREAK:
+         if (loop_depth == 0) throw std::string("break used outside a loop");
+         return Flow(Flow::BREAK);
+
+      case Statement::CONTINUE:
+         if (loop_depth == 0) throw std::string("continue used outside a loop");
+         return Flow(Flow::CONTINUE);
+
+      case Statement::RETURN:
+         if (ctx.frames.empty()) throw std::string("return used outside a function");
+         return Flow(Flow::RETURN, s.text.empty() ? C((int64_t)0) : eval_expression(ctx, s.text));
+
+      case Statement::DEFINE: {
+         if (!ctx.frames.empty()) {
+            throw std::string("function definitions are only allowed at top level");
+         }
+         UserFunction fn;
+         fn.params = s.names;
+         fn.body = s.body;
+         ctx.functions[s.name] = fn;
+         return Flow();
+      }
+
+      case Statement::LOCAL: {
+         if (ctx.frames.empty()) throw std::string("local used outside a function");
+         Frame &frame = ctx.frames.back();
+         for (size_t i = 0; i < s.names.size(); i++) {
+            if (frame.vars.find(s.names[i]) != frame.vars.end()) {
+               throw std::string("local variable '") + s.names[i] + "' already declared";
+            }
+            frame.vars[s.names[i]] = C((int64_t)0);
+         }
+         return Flow();
+      }
+   }
+   throw std::string("internal statement error");
+}
+
+static Flow execute_statements(Context &ctx, const std::vector<Statement> &stmts,
+                               int loop_depth) {
+   for (size_t i = 0; i < stmts.size(); i++) {
+      Flow f = execute_statement_node(ctx, stmts[i], loop_depth);
+      if (f.type != Flow::NORMAL) return f;
+   }
+   return Flow();
+}
+
+static C call_user_function(Context &ctx, const std::string &name,
+                            const std::vector<C> &args) {
+   std::map<std::string, UserFunction>::iterator it = ctx.functions.find(name);
+   if (it == ctx.functions.end()) {
+      throw std::string("unknown function '") + name + "'";
+   }
+   const UserFunction &fn = it->second;
+   if (args.size() != fn.params.size()) {
+      std::ostringstream os;
+      os << name << "() takes " << fn.params.size() << " argument";
+      if (fn.params.size() != 1) os << 's';
+      throw os.str();
+   }
+   if (ctx.frames.size() >= 256) throw std::string("function call depth exceeds 256");
+
+   Frame frame;
+   for (size_t i = 0; i < fn.params.size(); i++) frame.vars[fn.params[i]] = args[i];
+   ctx.frames.push_back(frame);
+
+   Flow f;
+   try {
+      f = execute_statements(ctx, fn.body, 0);
+   }
+   catch (...) {
+      ctx.frames.pop_back();
+      throw;
+   }
+   ctx.frames.pop_back();
+
+   if (f.type == Flow::RETURN) return f.value;
+   if (f.type == Flow::QUIT) throw QuitSignal();
+   if (f.type == Flow::BREAK || f.type == Flow::CONTINUE) {
+      throw std::string("internal loop-flow error escaped function");
+   }
+   return C((int64_t)0);
+}
+
 class CommentStripper {
    bool block;
 public:
@@ -1054,31 +1545,6 @@ public:
       return out;
    }
 };
-
-static std::vector<std::string> split_statements(const std::string &line) {
-   std::vector<std::string> out;
-   size_t start = 0;
-   int paren = 0;
-   for (size_t i = 0; i < line.size(); i++) {
-      if (line[i] == '(') paren++;
-      else if (line[i] == ')' && paren > 0) paren--;
-      else if (line[i] == ';' && paren == 0) {
-         out.push_back(line.substr(start, i - start));
-         start = i + 1;
-      }
-   }
-   out.push_back(line.substr(start));
-   return out;
-}
-
-static int paren_balance(const std::string &s) {
-   int n = 0;
-   for (size_t i = 0; i < s.size(); i++) {
-      if (s[i] == '(') n++;
-      else if (s[i] == ')') n--;
-   }
-   return n;
-}
 
 static void redraw_line(const std::string &prompt, const std::string &line, size_t cursor) {
    std::string out = "\r" + prompt + line + "\x1b[K";
@@ -1241,6 +1707,16 @@ static void save_history(const std::vector<std::string> &h) {
    for (size_t i = start; i < h.size(); i++) f << h[i] << '\n';
 }
 
+static bool execute_program(Context &ctx, const std::vector<Statement> &stmts) {
+   try {
+      Flow f = execute_statements(ctx, stmts, 0);
+      return f.type != Flow::QUIT;
+   }
+   catch (const QuitSignal &) {
+      return false;
+   }
+}
+
 static bool process_line(Context &ctx, CommentStripper &comments,
                          std::string &pending, const std::string &raw) {
    std::string line = comments.strip(raw);
@@ -1252,23 +1728,58 @@ static bool process_line(Context &ctx, CommentStripper &comments,
       continuation = true;
    }
 
-   if (!pending.empty()) pending += " ";
+   if (!pending.empty()) pending += "\n";
    pending += line;
+   if (continuation) return true;
 
-   if (continuation || paren_balance(pending) > 0) return true;
+   std::vector<Statement> stmts;
+   try {
+      StatementParser parser(pending);
+      stmts = parser.parse_program();
+   }
+   catch (const IncompleteInput &) {
+      return true;
+   }
+   catch (const std::string &e) {
+      fprintf(stderr, "uge: %s\n", e.c_str());
+      pending.clear();
+      return true;
+   }
+   catch (const std::exception &e) {
+      fprintf(stderr, "uge: %s\n", e.what());
+      pending.clear();
+      return true;
+   }
 
-   std::vector<std::string> stmts = split_statements(pending);
+   // A block-form if may be followed by an else on the next input line.
+   // Keep it pending for one line so the natural
+   //
+   //     if (...) {
+   //        ...
+   //     }
+   //     else {
+   //        ...
+   //     }
+   //
+   // spelling works interactively as well as in command files.  A blank line
+   // or any non-else statement commits the pending if.
+   std::string trimmed_line = trim(line);
+   if (stmts.size() == 1 && stmts[0].kind == Statement::IF &&
+       stmts[0].else_body.empty() && stmts[0].body.size() == 1 &&
+       stmts[0].body[0].kind == Statement::BLOCK &&
+       !trimmed_line.empty() && trimmed_line[trimmed_line.size() - 1] == '}') {
+      return true;
+   }
+
    pending.clear();
-   for (size_t i = 0; i < stmts.size(); i++) {
-      try {
-         if (!execute_statement(ctx, stmts[i])) return false;
-      }
-      catch (const std::string &e) {
-         fprintf(stderr, "uge: %s\n", e.c_str());
-      }
-      catch (const std::exception &e) {
-         fprintf(stderr, "uge: %s\n", e.what());
-      }
+   try {
+      return execute_program(ctx, stmts);
+   }
+   catch (const std::string &e) {
+      fprintf(stderr, "uge: %s\n", e.c_str());
+   }
+   catch (const std::exception &e) {
+      fprintf(stderr, "uge: %s\n", e.what());
    }
    return true;
 }
@@ -1281,10 +1792,18 @@ static bool process_stream(Context &ctx, std::istream &in) {
    }
    if (!trim(pending).empty()) {
       try {
-         if (!execute_statement(ctx, pending)) return false;
+         StatementParser parser(pending);
+         std::vector<Statement> stmts = parser.parse_program();
+         return execute_program(ctx, stmts);
+      }
+      catch (const IncompleteInput &) {
+         fprintf(stderr, "uge: incomplete statement at end of input\n");
       }
       catch (const std::string &e) {
          fprintf(stderr, "uge: %s\n", e.c_str());
+      }
+      catch (const std::exception &e) {
+         fprintf(stderr, "uge: %s\n", e.what());
       }
    }
    return true;
@@ -1361,6 +1880,12 @@ int main(int argc, char **argv) {
          if (history.size() > MAX_HISTORY) history.erase(history.begin());
       }
       running = process_line(ctx, comments, pending, line);
+   }
+
+   // A block-form if is held for one line so an else may follow.  Commit it
+   // when interactive input ends if no else arrived.
+   if (running && !trim(pending).empty()) {
+      (void)process_line(ctx, comments, pending, "");
    }
 
    save_history(history);

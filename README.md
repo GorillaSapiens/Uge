@@ -85,7 +85,10 @@ Highlights include:
   direct radian evaluation;
 - configurable working `precision` for approximated transcendental results and
   `maxdigits` for positional output;
-- editable command history and multiline expressions.
+- `if`/`else`, `while`, and `for` control flow with braced multiline blocks;
+- scalar `bc`-like `define` functions with parameters, `local` variables,
+  `return`, and recursion (arrays are deliberately omitted);
+- editable command history and multiline expressions/statements.
 
 Ordinary rational/complex arithmetic remains exact whenever the operation is
 rational. Transcendental results that cannot be represented exactly are stored
