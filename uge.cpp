@@ -98,6 +98,36 @@ static const char *trigmode_name(TrigMode mode) {
    return mode == TRIG_DIRECT ? "direct" : "normalized";
 }
 
+static void print_warranty(void) {
+   puts("Uge Copyright (C) 2026 GorillaSapiens.");
+   puts("GNU General Public License version 3 -- sections 15 and 16:");
+   puts("");
+   puts("15. Disclaimer of Warranty.");
+   puts("");
+   puts("THERE IS NO WARRANTY FOR THE PROGRAM, TO THE EXTENT PERMITTED BY");
+   puts("APPLICABLE LAW.  EXCEPT WHEN OTHERWISE STATED IN WRITING THE COPYRIGHT");
+   puts("HOLDERS AND/OR OTHER PARTIES PROVIDE THE PROGRAM \"AS IS\" WITHOUT WARRANTY");
+   puts("OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING, BUT NOT LIMITED TO,");
+   puts("THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR");
+   puts("PURPOSE.  THE ENTIRE RISK AS TO THE QUALITY AND PERFORMANCE OF THE PROGRAM");
+   puts("IS WITH YOU.  SHOULD THE PROGRAM PROVE DEFECTIVE, YOU ASSUME THE COST OF");
+   puts("ALL NECESSARY SERVICING, REPAIR OR CORRECTION.");
+   puts("");
+   puts("16. Limitation of Liability.");
+   puts("");
+   puts("IN NO EVENT UNLESS REQUIRED BY APPLICABLE LAW OR AGREED TO IN WRITING");
+   puts("WILL ANY COPYRIGHT HOLDER, OR ANY OTHER PARTY WHO MODIFIES AND/OR CONVEYS");
+   puts("THE PROGRAM AS PERMITTED ABOVE, BE LIABLE TO YOU FOR DAMAGES, INCLUDING ANY");
+   puts("GENERAL, SPECIAL, INCIDENTAL OR CONSEQUENTIAL DAMAGES ARISING OUT OF THE");
+   puts("USE OR INABILITY TO USE THE PROGRAM (INCLUDING BUT NOT LIMITED TO LOSS OF");
+   puts("DATA OR DATA BEING RENDERED INACCURATE OR LOSSES SUSTAINED BY YOU OR THIRD");
+   puts("PARTIES OR A FAILURE OF THE PROGRAM TO OPERATE WITH ANY OTHER PROGRAMS),");
+   puts("EVEN IF SUCH HOLDER OR OTHER PARTY HAS BEEN ADVISED OF THE POSSIBILITY OF");
+   puts("SUCH DAMAGES.");
+   puts("");
+   puts("See LICENSE for the complete GNU General Public License version 3.");
+}
+
 static void print_format_status(const Context &ctx) {
    if (ctx.output_format == FORMAT_FRACTION) {
       printf("using fraction format; enter 'format positional' for positional format\n");
@@ -945,10 +975,11 @@ static bool execute_simple_statement(Context &ctx, std::string stmt) {
       printf("format positional (default) or format fraction selects ordinary output.\n");
       printf("Output overrides: positional(x), fraction(x), decimal(x).\n");
       printf("maxdigits controls rendering; precision controls approximations.\n");
+      printf("Type 'warranty' for warranty and liability terms.\n");
       return true;
    }
    if (stmt == "warranty") {
-      printf("Uge is free software; see LICENSE for copying and warranty terms.\n");
+      print_warranty();
       return true;
    }
 
@@ -1861,7 +1892,9 @@ int main(int argc, char **argv) {
 
    if (!quiet) {
       printf("uge exact rational/complex calculator\n");
-      printf("Copyright (C) GorillaSapiens; type 'help' for help.\n");
+      printf("Copyright (C) 2026 GorillaSapiens.\n");
+      printf("This program comes with ABSOLUTELY NO WARRANTY; type 'warranty' for details.\n");
+      printf("This is free software; see LICENSE for copying conditions. Type 'help' for help.\n");
       print_format_status(ctx);
    }
 

@@ -1,0 +1,138 @@
+name: Release binaries
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+jobs:
+  linux-x86_64:
+    name: Linux x86-64
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out tagged source
+        uses: actions/checkout@v6
+
+      - name: Install build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y g++ make
+
+      - name: Build static Linux executable
+        run: |
+          set -euxo pipefail
+          make clean
+          make uge CXX=g++ CXXFLAGS='-O3 -DNDEBUG -static'
+          file uge
+          file uge | grep -q 'statically linked'
+          printf 'sin(pi/6)\nquit\n' | ./uge -q | grep -Fx '0.5'
+          strip uge
+
+      - name: Package Linux release
+        run: |
+          set -euxo pipefail
+          VERSION="${GITHUB_REF_NAME#v}"
+          rm -rf package dist
+          mkdir -p package/bin package/src dist
+          cp uge package/bin/uge
+          git archive --format=tar "$GITHUB_SHA" | tar -xf - -C package/src
+          tar -C package -czf "dist/uge-${VERSION}-linux-x86_64.tar.gz" bin src
+
+      - name: Upload Linux package
+        uses: actions/upload-artifact@v4
+        with:
+          name: uge-release-linux-x86_64
+          path: dist/uge-*-linux-x86_64.tar.gz
+          if-no-files-found: error
+
+  windows-x86_64:
+    name: Windows x86-64
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out tagged source
+        uses: actions/checkout@v6
+
+      - name: Install MinGW-w64 cross compiler
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y g++-mingw-w64-x86-64 make zip
+
+      - name: Build self-contained Windows executable
+        run: |
+          set -euxo pipefail
+          make clean
+          make uge \
+            CXX=x86_64-w64-mingw32-g++ \
+            CXXFLAGS='-O3 -DNDEBUG -static -static-libgcc -static-libstdc++'
+          file uge
+          x86_64-w64-mingw32-objdump -p uge > uge.pe.txt
+          if grep -Eiq 'DLL Name:.*(libgcc|libstdc\+\+|libwinpthread)' uge.pe.txt; then
+            echo 'Windows executable still depends on a MinGW runtime DLL' >&2
+            grep -Ei 'DLL Name:' uge.pe.txt >&2
+            exit 1
+          fi
+          x86_64-w64-mingw32-strip uge
+
+      - name: Package Windows release
+        run: |
+          set -euxo pipefail
+          VERSION="${GITHUB_REF_NAME#v}"
+          rm -rf package dist
+          mkdir -p package/bin package/src dist
+          cp uge package/bin/uge.exe
+          git archive --format=tar "$GITHUB_SHA" | tar -xf - -C package/src
+          (
+            cd package
+            zip -qr "../dist/uge-${VERSION}-windows-x86_64.zip" bin src
+          )
+
+      - name: Upload Windows package
+        uses: actions/upload-artifact@v4
+        with:
+          name: uge-release-windows-x86_64
+          path: dist/uge-*-windows-x86_64.zip
+          if-no-files-found: error
+
+  publish:
+    name: Publish GitHub Release
+    needs:
+      - linux-x86_64
+      - windows-x86_64
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download release packages
+        uses: actions/download-artifact@v5
+        with:
+          pattern: uge-release-*
+          path: dist
+          merge-multiple: true
+
+      - name: Generate SHA-256 checksums
+        run: |
+          set -euxo pipefail
+          cd dist
+          sha256sum uge-* > SHA256SUMS
+          cat SHA256SUMS
+
+      - name: Create or update GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euxo pipefail
+          TAG="$GITHUB_REF_NAME"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" dist/* --clobber
+          else
+            gh release create "$TAG" dist/* \
+              --verify-tag \
+              --generate-notes \
+              --title "$TAG"
+          fi

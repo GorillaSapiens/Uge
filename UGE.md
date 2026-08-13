@@ -31,6 +31,21 @@ Run the calculator with:
 ./uge
 ```
 
+An interactive session starts with a copyright and GPL warranty notice:
+
+```text
+uge exact rational/complex calculator
+Copyright (C) 2026 GorillaSapiens.
+This program comes with ABSOLUTELY NO WARRANTY; type 'warranty' for details.
+This is free software; see LICENSE for copying conditions. Type 'help' for help.
+using positional format; enter 'format fraction' for fraction format
+```
+
+The `warranty` command prints sections 15 and 16 of GPLv3: the disclaimer of
+warranty and limitation of liability.  The complete license remains in
+`LICENSE`.  `-q`/`--quiet` suppresses the startup banner, but does not disable
+the `warranty` command.
+
 Command-line options include:
 
 ```
@@ -695,4 +710,5 @@ implementation.
 - Base-setting values are always interpreted in decimal, deliberately avoiding
   the confusing self-referential `ibase` behavior of traditional calculators.
 
-Use `quit` or `halt` to exit.  `help` prints a short reminder.
+Use `quit` or `halt` to exit.  `help` prints a short reminder.  `warranty`
+prints the GPLv3 warranty disclaimer and limitation of liability.

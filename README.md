@@ -32,7 +32,9 @@ Uge keeps the fractions exact:
 ```text
 $ ./uge
 uge exact rational/complex calculator
-Copyright (C) GorillaSapiens; type 'help' for help.
+Copyright (C) 2026 GorillaSapiens.
+This program comes with ABSOLUTELY NO WARRANTY; type 'warranty' for details.
+This is free software; see LICENSE for copying conditions. Type 'help' for help.
 using positional format; enter 'format fraction' for fraction format
 base 12
 .49+.03
@@ -88,7 +90,9 @@ Highlights include:
 - `if`/`else`, `while`, and `for` control flow with braced multiline blocks;
 - scalar `bc`-like `define` functions with parameters, `local` variables,
   `return`, and recursion (arrays are deliberately omitted);
-- editable command history and multiline expressions/statements.
+- editable command history and multiline expressions/statements;
+- an interactive GPL warranty notice, with `warranty` printing the GPLv3
+  warranty disclaimer and limitation of liability.
 
 Ordinary rational/complex arithmetic remains exact whenever the operation is
 rational. Transcendental results that cannot be represented exactly are stored
@@ -174,6 +178,36 @@ Then run the calculator with:
 The Makefile uses compiler-generated dependency files (`-MMD -MP`) rather than
 machine-specific `makedepend` output.
 
+## Releases
+
+Pushing a tag whose name starts with `v` runs
+[`.github/workflows/release.yml`](.github/workflows/release.yml). For example:
+
+```sh
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+The workflow cross-compiles a self-contained Windows x86-64 executable with
+MinGW-w64, builds a statically linked Linux x86-64 executable, and publishes a
+GitHub Release containing:
+
+```text
+uge-0.1.0-linux-x86_64.tar.gz
+uge-0.1.0-windows-x86_64.zip
+SHA256SUMS
+```
+
+Both platform archives have the same layout at their root:
+
+```text
+bin/    precompiled executable (`uge` or `uge.exe`)
+src/    complete tracked source tree from the release tag
+```
+
+The `src/` directory is produced with `git archive` from the exact tagged
+commit, so it does not contain object files or other working-tree build output.
+
 ## Source overview
 
 ```text
@@ -186,6 +220,7 @@ qtest.cpp                   Q test/interactive driver
 ctest.cpp                   C test/interactive driver
 UGE.md                      calculator reference
 THEORY.md                   representation and design rationale
+.github/workflows/release.yml  tagged-release build/package workflow
 ```
 
 Uge is open source; see [LICENSE](LICENSE).
