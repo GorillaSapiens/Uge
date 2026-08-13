@@ -2,6 +2,7 @@
 *.d
 qtest
 ntest
+ztest
 ctest
 uge
 Makefile.bak

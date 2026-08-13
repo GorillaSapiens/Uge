@@ -7,14 +7,18 @@ understand why a calculation that is mathematically exact can turn into a long
 nearby positional value, but it does not have to be this way for rational
 arithmetic.
 
-Uge introduces three classes: `N`, `Q`, and `C`. Their names are motivated by
-familiar mathematical number-set notation, but the correspondence is worth
-stating precisely:
+Uge provides four numeric classes: `N`, `Z`, `Q`, and `C`. Their names are
+motivated by familiar mathematical number-set notation, but the relationships
+are worth stating precisely:
 
 - `N` represents **ℕ₀**, the natural numbers including zero. Uge uses
   ℕ₀ = {0, 1, 2, ...}; `N` is the unsigned magnitude layer used by the
   higher-level types.
-- `Q` represents **ℚ**, the signed rational numbers, exactly.
+- `Z` represents **ℤ**, the signed integers, exactly. It is an `N` magnitude
+  plus a sign boolean. `Z` is provided as a standalone library type and is not
+  used by the calculator.
+- `Q` represents **ℚ**, the signed rational numbers, exactly. `Q` uses `N`
+  directly rather than being layered on `Z`.
 - `C` is the complex layer inspired by **ℂ**. Its real and imaginary components
   are `Q` values, so ℚ + iℚ is exact and irrational components are represented
   by rational approximations when required.
@@ -22,13 +26,33 @@ stating precisely:
 ## `N`: arbitrary-precision natural numbers (ℕ₀)
 
 `N` is an unsigned integer that expands as needed to contain any element of
-ℕ₀ = {0, 1, 2, ...}. It includes zero but does not represent negative values;
-sign is added by `Q` rather than stored in the magnitude layer.
+ℕ₀ = {0, 1, 2, ...}. It includes zero but does not represent negative values.
+It is the magnitude building block used by both `Z` and `Q`.
 
 `N` works by maintaining an array of `uint16_t` and expanding or shrinking that
 array as needed. Think of it like a school child's paper page: when a larger
 number is needed, she simply writes another digit. Instead of working in base
 10, `N` works internally in base 65536. Child's play for a computer.
+
+## `Z`: arbitrary-precision signed integers (ℤ)
+
+`Z` adds exactly one piece of information to `N`: a sign boolean. Its magnitude
+is an `N`, so every value in ℤ can be represented without a fixed machine-word
+limit. Zero is always canonicalized as nonnegative; there is no distinct
+negative-zero value.
+
+Addition and subtraction compare magnitudes when signs differ. Multiplication
+and division operate on the `N` magnitudes and combine the signs. Signed
+division truncates toward zero, and the remainder has the dividend's sign.
+Bitwise `~`, `&`, `|`, and `^` use infinite-width two's-complement semantics;
+right shift is an arithmetic shift. Integer powers accept a nonnegative `N`
+exponent, and odd roots of negative values retain the negative sign while even
+roots of negative values are rejected.
+
+`Z` exists for completeness as the natural signed-integer partner to `N`. The
+calculator does not use it. `Q` already stores its own sign, whole part,
+numerator, and denominator, so `Q` continues to use `N` directly rather than
+wrapping those components in `Z`.
 
 ## `Q`: exact rational numbers (ℚ)
 
@@ -124,5 +148,5 @@ representation repeats in the chosen radix.
 imaginary components are `Q` values, exact when rational and rational
 approximations when a transcendental operation requires approximation.
 
-This sums up `N`, `Q`, and `C`. As with all things open source, the details can
+This sums up `N`, `Z`, `Q`, and `C`. As with all things open source, the details can
 be found in the code.

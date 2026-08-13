@@ -104,15 +104,18 @@ syntax, output formats, and GNU `bc` compatibility notes.
 
 ## The numeric classes
 
-The calculator is backed by three progressively richer C++ numeric layers.
-Their names echo the conventional mathematical number-set notation, with one
-important representation detail:
+The numeric library provides four C++ classes whose names echo familiar
+mathematical number-set notation. The calculator itself continues to use the
+`N` -> `Q` -> `C` path; `Z` is a standalone signed-integer wrapper provided for
+completeness and is not used by the calculator.
 
 - `N` -- **ℕ₀**: arbitrary-precision natural numbers including zero.
   `N` is the unsigned magnitude layer; Uge uses the convention
   ℕ₀ = {0, 1, 2, ...}, so zero is included and negative values are not.
-- `Q` -- **ℚ**: exact signed rational numbers. `Q` adds a sign and rational
-  structure on top of `N`.
+- `Z` -- **ℤ**: arbitrary-precision signed integers. `Z` is represented as an
+  `N` magnitude plus a sign boolean; zero is canonicalized as nonnegative.
+- `Q` -- **ℚ**: exact signed rational numbers. `Q` keeps its own sign and
+  rational structure directly on top of `N`; it does not depend on `Z`.
 - `C` -- inspired by **ℂ**: complex numbers represented by two `Q` components.
   Values in ℚ + iℚ are represented exactly; irrational real or imaginary
   components are represented by rational approximations at the requested
@@ -122,7 +125,21 @@ important representation detail:
 
 `N` stores an element of ℕ₀ = {0, 1, 2, ...} in a growable array of
 16-bit limbs. It expands as needed rather than imposing a fixed machine-word
-limit. `N` is deliberately unsigned; sign belongs to the `Q` layer.
+limit. `N` is deliberately unsigned and serves as the magnitude building block
+for both `Z` and `Q`.
+
+### `Z` -- arbitrary-precision signed integers (ℤ)
+
+`Z` stores exactly two pieces of state: an `N` magnitude and a boolean sign.
+Negative zero is not permitted; any zero magnitude is canonicalized as
+nonnegative. Ordinary integer arithmetic is exact. Division truncates toward
+zero and the remainder carries the dividend's sign, matching the usual
+truncating signed-integer identity. Bitwise operations use infinite-width
+two's-complement semantics, and right shift is arithmetic.
+
+`Z` is intentionally independent of the calculator. `Q` already has a sign
+and several `N` components, so routing `Q` through `Z` would add representation
+without adding information.
 
 ### `Q` -- exact rational numbers (ℚ)
 
@@ -166,6 +183,7 @@ This builds:
 
 - `uge` -- the interactive calculator;
 - `ntest` -- interactive/test driver for `N`;
+- `ztest` -- interactive/test driver for `Z`;
 - `qtest` -- interactive/test driver for `Q`;
 - `ctest` -- interactive/test driver for `C`.
 
@@ -212,10 +230,12 @@ commit, so it does not contain object files or other working-tree build output.
 
 ```text
 uge_n.hpp / uge_n.cpp       N implementation
+uge_z.hpp / uge_z.cpp       Z implementation
 uge_q.hpp / uge_q.cpp       Q implementation
 uge_c.hpp / uge_c.cpp       C implementation
 uge.cpp                     interactive calculator
 ntest.cpp                   N test/interactive driver
+ztest.cpp                   Z test/interactive driver
 qtest.cpp                   Q test/interactive driver
 ctest.cpp                   C test/interactive driver
 UGE.md                      calculator reference

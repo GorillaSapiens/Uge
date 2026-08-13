@@ -8,9 +8,9 @@ OBJS=\
    uge_c.o \
    uge_ramprintf.o
 
-PROGS=ntest qtest ctest uge
+PROGS=ntest ztest qtest ctest uge
 PROG_OBJS=$(PROGS:%=%.o)
-DEPS=$(OBJS:.o=.d) $(PROG_OBJS:.o=.d)
+DEPS=$(OBJS:.o=.d) uge_z.d $(PROG_OBJS:.o=.d)
 
 all: $(PROGS)
 
@@ -19,6 +19,9 @@ tar:
 	git ls-files | tar -czv -T - -f /tmp/`basename $$(git rev-parse --show-toplevel)`.`date -u "+%Y%m%d_%H%M%S"`.tar.gz
 
 ntest: ntest.o $(OBJS)
+	$(CXX) $(CXXFLAGS) $^ -o $@
+
+ztest: ztest.o uge_z.o uge_n.o uge_ramprintf.o
 	$(CXX) $(CXXFLAGS) $^ -o $@
 
 qtest: qtest.o $(OBJS)
