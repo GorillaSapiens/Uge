@@ -196,6 +196,32 @@ Then run the calculator with:
 The Makefile uses compiler-generated dependency files (`-MMD -MP`) rather than
 machine-specific `makedepend` output.
 
+## Regression tests
+
+Run the complete noninteractive regression suite with:
+
+```sh
+make test
+```
+
+The suite has two layers:
+
+- `tests/regression.cpp` exercises the `N`, `Z`, `Q`, and `C` APIs directly,
+  including exact arithmetic, comparisons, signed integer behavior, radix
+  round-trips, normalized trigonometric special values, complex arithmetic,
+  and expected domain errors;
+- `tests/uge_regression.sh` drives the `uge` executable as a user would and
+  checks calculator syntax and output, arbitrary radices, positional/fraction
+  formats, exact trigonometric cases, complex values, variables, control flow,
+  functions and `local` scope, recursion, diagnostics, help, and warranty text.
+
+`.github/workflows/test.yml` runs `make test` automatically on branch pushes
+and pull requests. Tagged releases run the same suite before either platform
+binary is built, so a failing regression test prevents publication.
+
+The older `ntest`, `ztest`, `qtest`, and `ctest` programs remain useful as
+interactive low-level probes; they are not the automated regression suite.
+
 ## Releases
 
 Pushing a tag whose name starts with `v` runs
@@ -206,9 +232,10 @@ git tag v0.1.0
 git push origin v0.1.0
 ```
 
-The workflow cross-compiles a self-contained Windows x86-64 executable with
-MinGW-w64, builds a statically linked Linux x86-64 executable, and publishes a
-GitHub Release containing:
+The workflow first runs the full regression suite. If it passes, it
+cross-compiles a self-contained Windows x86-64 executable with MinGW-w64,
+builds a statically linked Linux x86-64 executable, and publishes a GitHub
+Release containing:
 
 ```text
 uge-0.1.0-linux-x86_64.tar.gz
@@ -238,8 +265,11 @@ ntest.cpp                   N test/interactive driver
 ztest.cpp                   Z test/interactive driver
 qtest.cpp                   Q test/interactive driver
 ctest.cpp                   C test/interactive driver
+tests/regression.cpp        automated N/Z/Q/C API regression suite
+tests/uge_regression.sh     automated calculator regression suite
 UGE.md                      calculator reference
 THEORY.md                   representation and design rationale
+.github/workflows/test.yml     push/pull-request regression workflow
 .github/workflows/release.yml  tagged-release build/package workflow
 ```
 

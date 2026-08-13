@@ -1166,6 +1166,19 @@ class StatementParser {
 
    bool eof() const { return pos >= src.size(); }
 
+   // Numeric literals in radices above 36 use {decimal} for one digit.
+   // Statement blocks also use braces, so recognize the compact numeric
+   // spelling before treating a leading '{' or an internal '}' as syntax.
+   bool braced_digit_at(size_t at, size_t *after = NULL) const {
+      if (at >= src.size() || src[at] != '{') return false;
+      size_t i = at + 1;
+      if (i >= src.size() || src[i] < '0' || src[i] > '9') return false;
+      while (i < src.size() && src[i] >= '0' && src[i] <= '9') i++;
+      if (i >= src.size() || src[i] != '}') return false;
+      if (after) *after = i + 1;
+      return true;
+   }
+
    void skip_inline() {
       while (!eof() && (src[pos] == ' ' || src[pos] == '\t' || src[pos] == '\r')) pos++;
    }
@@ -1238,6 +1251,15 @@ class StatementParser {
             if (paren == 0) throw std::string("unexpected ')'");
             paren--;
             pos++;
+         }
+         else if (c == '{') {
+            size_t after = 0;
+            if (braced_digit_at(pos, &after)) {
+               pos = after;
+            }
+            else {
+               pos++;
+            }
          }
          else if (paren == 0 && (c == ';' || c == '\n' || c == '}')) {
             break;
@@ -1387,7 +1409,7 @@ public:
    Statement parse_statement() {
       skip_separators();
       if (eof()) throw IncompleteInput();
-      if (src[pos] == '{') return parse_block();
+      if (src[pos] == '{' && !braced_digit_at(pos)) return parse_block();
       if (src[pos] == '}') throw std::string("unexpected '}'");
       if (word_at("if")) return parse_if();
       if (word_at("while")) return parse_while();

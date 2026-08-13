@@ -734,11 +734,51 @@ char *Q::deci_print(uint64_t max) const {
    return print(10, max);
 }
 
+static void n_double_parts(const N &value, double &mantissa, int64_t &exponent) {
+   // Keep the most-significant 53 bits, which is all a binary64 can use.
+   // Reducing N before converting avoids uint64_t truncation of large values.
+   N v(value);
+   const N limit(UINT64_C(0x1fffffffffffff));
+   const N chunk_limit = limit << 16;
+   exponent = 0;
+
+   while (v > chunk_limit) {
+      v >>= 16;
+      exponent += 16;
+   }
+   while (v > limit) {
+      v >>= 1;
+      exponent++;
+   }
+
+   mantissa = (double)((uint64_t)v);
+}
+
+static double n_as_double(const N &value) {
+   double mantissa;
+   int64_t exponent;
+   n_double_parts(value, mantissa, exponent);
+   if (mantissa == 0.0) return 0.0;
+   if (exponent > 2048) return HUGE_VAL;
+   return ldexp(mantissa, (int)exponent);
+}
+
+static double n_ratio_as_double(const N &num, const N &den) {
+   if (num.isZero()) return 0.0;
+
+   double nm, dm;
+   int64_t ne, de;
+   n_double_parts(num, nm, ne);
+   n_double_parts(den, dm, de);
+   int64_t exponent = ne - de;
+   if (exponent > 2048) return HUGE_VAL;
+   if (exponent < -2048) return 0.0;
+   return ldexp(nm / dm, (int)exponent);
+}
+
 Q::operator double() const {
-   return ((double)(pos ? 1 : -1) *
-      ((double)((uint64_t)whl) +
-      ((double)((uint64_t)num) /
-       (double)((uint64_t)den))));
+   double magnitude = n_as_double(whl) + n_ratio_as_double(num, den);
+   return pos ? magnitude : -magnitude;
 }
 
 Q::operator int64_t() const {

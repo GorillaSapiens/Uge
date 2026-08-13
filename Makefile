@@ -9,6 +9,7 @@ OBJS=\
    uge_ramprintf.o
 
 PROGS=ntest ztest qtest ctest uge
+TEST_PROGS=regression
 PROG_OBJS=$(PROGS:%=%.o)
 DEPS=$(OBJS:.o=.d) uge_z.d $(PROG_OBJS:.o=.d)
 
@@ -33,11 +34,18 @@ uge: uge.o $(OBJS)
 ctest: ctest.o $(OBJS)
 	$(CXX) $(CXXFLAGS) $^ -o $@
 
+regression: tests/regression.cpp $(OBJS) uge_z.o
+	$(CXX) $(CXXFLAGS) -I. $^ -o $@
+
+test: regression uge
+	./regression
+	UGE=./uge ./tests/uge_regression.sh
+
 %.o: %.cpp
 	$(CXX) $(CXXFLAGS) $(DEPFLAGS) -c $< -o $@
 
 -include $(DEPS)
 
-.PHONY: clean
+.PHONY: all test clean
 clean:
-	rm -f *.o *.d $(PROGS)
+	rm -f *.o *.d $(PROGS) $(TEST_PROGS)
