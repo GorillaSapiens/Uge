@@ -1,12 +1,18 @@
 #include <ctype.h>
 #include <errno.h>
-#include <fcntl.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef _WIN32
+#include <conio.h>
+#include <io.h>
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#else
 #include <termios.h>
 #include <unistd.h>
+#endif
 
 #include <fstream>
 #include <iostream>
@@ -1605,6 +1611,37 @@ public:
    }
 };
 
+static bool stdin_is_tty() {
+#ifdef _WIN32
+   return _isatty(_fileno(stdin)) != 0;
+#else
+   return isatty(STDIN_FILENO) != 0;
+#endif
+}
+
+static void terminal_write(const char *data, size_t size) {
+   while (size) {
+#ifdef _WIN32
+      HANDLE hout = GetStdHandle(STD_OUTPUT_HANDLE);
+      if (hout == INVALID_HANDLE_VALUE || hout == NULL) break;
+      DWORD chunk = size > 0x7fffffffU ? 0x7fffffffU : (DWORD)size;
+      DWORD written = 0;
+      if (!WriteFile(hout, data, chunk, &written, NULL) || written == 0) break;
+      data += written;
+      size -= (size_t)written;
+#else
+      ssize_t n = write(STDOUT_FILENO, data, size);
+      if (n > 0) {
+         data += n;
+         size -= (size_t)n;
+         continue;
+      }
+      if (n < 0 && errno == EINTR) continue;
+      break;
+#endif
+   }
+}
+
 static void redraw_line(const std::string &prompt, const std::string &line, size_t cursor) {
    std::string out = "\r" + prompt + line + "\x1b[K";
    size_t back = line.size() - cursor;
@@ -1613,15 +1650,42 @@ static void redraw_line(const std::string &prompt, const std::string &line, size
       snprintf(buf, sizeof(buf), "\x1b[%zuD", back);
       out += buf;
    }
-   (void)!write(STDOUT_FILENO, out.data(), out.size());
+   terminal_write(out.data(), out.size());
 }
 
 class RawTerminal {
    bool active;
+#ifdef _WIN32
+   HANDLE hout;
+   DWORD old_output_mode;
+   bool restore_output_mode;
+#else
    struct termios oldt;
+#endif
 public:
+#ifdef _WIN32
+   RawTerminal()
+      : active(false), hout(INVALID_HANDLE_VALUE), old_output_mode(0),
+        restore_output_mode(false) {
+      if (!stdin_is_tty()) return;
+      hout = GetStdHandle(STD_OUTPUT_HANDLE);
+      if (hout == INVALID_HANDLE_VALUE || hout == NULL) return;
+      DWORD mode;
+      if (!GetConsoleMode(hout, &mode)) return;
+#ifndef ENABLE_VIRTUAL_TERMINAL_PROCESSING
+#define ENABLE_VIRTUAL_TERMINAL_PROCESSING 0x0004
+#endif
+      old_output_mode = mode;
+      if (!SetConsoleMode(hout, mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING)) return;
+      restore_output_mode = true;
+      active = true;
+   }
+   ~RawTerminal() {
+      if (restore_output_mode) SetConsoleMode(hout, old_output_mode);
+   }
+#else
    RawTerminal() : active(false) {
-      if (!isatty(STDIN_FILENO)) return;
+      if (!stdin_is_tty()) return;
       if (tcgetattr(STDIN_FILENO, &oldt) != 0) return;
       struct termios t = oldt;
       t.c_lflag &= ~(ICANON | ECHO | ISIG);
@@ -1633,16 +1697,48 @@ public:
    ~RawTerminal() {
       if (active) tcsetattr(STDIN_FILENO, TCSAFLUSH, &oldt);
    }
+#endif
    bool ok() const { return active; }
 };
 
 static bool read_byte(char &c) {
+#ifdef _WIN32
+   static std::string pending;
+   if (!pending.empty()) {
+      c = pending[0];
+      pending.erase(0, 1);
+      return true;
+   }
+
+   for (;;) {
+      int ch = _getch();
+      if (ch == EOF) return false;
+      if (ch != 0 && ch != 0xe0) {
+         c = (char)ch;
+         return true;
+      }
+
+      int key = _getch();
+      if (key == EOF) return false;
+      switch (key) {
+         case 72: pending = "[A"; c = 27; return true; // up
+         case 80: pending = "[B"; c = 27; return true; // down
+         case 77: pending = "[C"; c = 27; return true; // right
+         case 75: pending = "[D"; c = 27; return true; // left
+         case 71: pending = "[H"; c = 27; return true; // home
+         case 79: pending = "[F"; c = 27; return true; // end
+         case 83: pending = "[3~"; c = 27; return true; // delete
+         default: break;
+      }
+   }
+#else
    for (;;) {
       ssize_t n = read(STDIN_FILENO, &c, 1);
       if (n == 1) return true;
       if (n == 0) return false;
       if (errno != EINTR) return false;
    }
+#endif
 }
 
 static bool read_interactive_line(const std::string &prompt,
@@ -1655,29 +1751,29 @@ static bool read_interactive_line(const std::string &prompt,
    std::string saved;
    size_t cursor = 0;
    size_t hist = history.size();
-   (void)!write(STDOUT_FILENO, prompt.data(), prompt.size());
+   terminal_write(prompt.data(), prompt.size());
 
    for (;;) {
       char c;
       if (!read_byte(c)) {
-         (void)!write(STDOUT_FILENO, "\n", 1);
+         terminal_write("\n", 1);
          return false;
       }
 
       if (c == '\r' || c == '\n') {
-         (void)!write(STDOUT_FILENO, "\r\n", 2);
+         terminal_write("\r\n", 2);
          result = line;
          return true;
       }
       if (c == 4) { // Ctrl-D
          if (line.empty()) {
-            (void)!write(STDOUT_FILENO, "\r\n", 2);
+            terminal_write("\r\n", 2);
             return false;
          }
          continue;
       }
       if (c == 3) { // Ctrl-C: cancel current line without killing the shell's tty state
-         (void)!write(STDOUT_FILENO, "^C\r\n", 4);
+         terminal_write("^C\r\n", 4);
          result.clear();
          return true;
       }
@@ -1687,7 +1783,7 @@ static bool read_interactive_line(const std::string &prompt,
       if (c == 21) { line.erase(0, cursor); cursor = 0; redraw_line(prompt, line, cursor); continue; } // Ctrl-U
       if (c == 12) { // Ctrl-L
          const char *clear = "\x1b[2J\x1b[H";
-         (void)!write(STDOUT_FILENO, clear, strlen(clear));
+         terminal_write(clear, strlen(clear));
          redraw_line(prompt, line, cursor);
          continue;
       }
@@ -1743,6 +1839,9 @@ static bool read_interactive_line(const std::string &prompt,
 
 static std::string history_path() {
    const char *home = getenv("HOME");
+#ifdef _WIN32
+   if (!home || !*home) home = getenv("USERPROFILE");
+#endif
    if (!home || !*home) return "";
    return std::string(home) + "/.uge_history";
 }
@@ -1919,7 +2018,7 @@ int main(int argc, char **argv) {
       if (!process_stream(ctx, f)) return 0;
    }
 
-   bool interactive = isatty(STDIN_FILENO);
+   bool interactive = stdin_is_tty();
    if (!interactive) {
       process_stream(ctx, std::cin);
       return 0;
