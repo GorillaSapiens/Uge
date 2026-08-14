@@ -105,6 +105,18 @@ quit
 0.5
 '
 
+run_exact "normalized trig companion identity" \
+'precision=64
+sinpi(1/3)/sqrt(3)
+cospi(1/6)/sqrt(3)
+sintau(2/3)/sqrt(3)
+quit
+' \
+'0.5
+0.5
+-0.5
+'
+
 run_exact "constant identities" \
 'tau==2*pi
 e==e(1)

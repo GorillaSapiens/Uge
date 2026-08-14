@@ -1075,58 +1075,124 @@ static Q qratio(int64_t n, int64_t d) {
    return Q(n) / Q(d);
 }
 
-Q Q::sintau(uint64_t precision) const {
-   Q r = turn_fraction(*this);
+static void raw_sincostau(const Q &x, uint64_t precision,
+                           bool need_s, bool need_c, Q &s, Q &c,
+                           bool &s_exact, bool &c_exact) {
+   Q r = turn_fraction(x);
    Q zero((int64_t)0);
    Q one((int64_t)1);
    Q half = qratio(1, 2);
    Q quarter = qratio(1, 4);
+   Q three_quarters = qratio(3, 4);
+   s_exact = false;
+   c_exact = false;
 
-   // Exact rational values for rational turns.  These are mathematical
-   // identities, not results of the approximation machinery.
-   if (r == zero || r == half) return zero;
-   if (r == quarter) return one;
-   if (r == qratio(3, 4)) return -one;
-   if (r == qratio(1, 12) || r == qratio(5, 12)) return half;
-   if (r == qratio(7, 12) || r == qratio(11, 12)) return -half;
+   // Preserve every exact rational special value known by the normalized
+   // trig core before introducing an approximation to tau.
+   if (r == zero || r == half) {
+      s = zero;
+      s_exact = true;
+   } else if (r == quarter) {
+      s = one;
+      s_exact = true;
+   } else if (r == three_quarters) {
+      s = -one;
+      s_exact = true;
+   } else if (r == qratio(1, 12) || r == qratio(5, 12)) {
+      s = half;
+      s_exact = true;
+   } else if (r == qratio(7, 12) || r == qratio(11, 12)) {
+      s = -half;
+      s_exact = true;
+   }
 
-   // Use the symmetric interval (-1/2,1/2], then reflect exactly into
-   // [-1/4,1/4].  Only after that do we introduce an approximation to tau.
-   if (r > half) r -= one;
-   if (r > quarter) r = half - r;
-   else if (r < -quarter) r = -half - r;
+   if (r == zero) {
+      c = one;
+      c_exact = true;
+   } else if (r == half) {
+      c = -one;
+      c_exact = true;
+   } else if (r == quarter || r == three_quarters) {
+      c = zero;
+      c_exact = true;
+   } else if (r == qratio(1, 6) || r == qratio(5, 6)) {
+      c = half;
+      c_exact = true;
+   } else if (r == qratio(1, 3) || r == qratio(2, 3)) {
+      c = -half;
+      c_exact = true;
+   }
 
-   uint64_t work = guarded_precision(precision, 32);
-   Q angle = binary_trunc(r * Q::tau(work), work);
-   return sin_series(angle, work);
-}
+   if ((s_exact || !need_s) && (c_exact || !need_c)) {
+      return;
+   }
 
-Q Q::costau(uint64_t precision) const {
-   Q r = turn_fraction(*this);
-   Q zero((int64_t)0);
-   Q one((int64_t)1);
-   Q half = qratio(1, 2);
-   Q quarter = qratio(1, 4);
-
-   if (r == zero) return one;
-   if (r == half) return -one;
-   if (r == quarter || r == qratio(3, 4)) return zero;
-   if (r == qratio(1, 6) || r == qratio(5, 6)) return half;
-   if (r == qratio(1, 3) || r == qratio(2, 3)) return -half;
-
-   if (r > half) r -= one;
-
-   int sign = 1;
-   if (r < zero) r = -r;       // cosine is even
-   if (r > quarter) {
-      r = half - r;
-      sign = -1;
+   // Reflect the turn exactly into [0,1/4].  Keep the sine and cosine
+   // signs separately so both series can share the same reduced angle.
+   Q t;
+   int ssign = 1;
+   int csign = 1;
+   if (r <= quarter) {
+      t = r;
+   } else if (r <= half) {
+      t = half - r;
+      csign = -1;
+   } else if (r <= three_quarters) {
+      t = r - half;
+      ssign = -1;
+      csign = -1;
+   } else {
+      t = one - r;
+      ssign = -1;
    }
 
    uint64_t work = guarded_precision(precision, 32);
-   Q angle = binary_trunc(r * Q::tau(work), work);
-   Q ret = cos_series(angle, work);
-   return sign < 0 ? -ret : ret;
+   Q angle = binary_trunc(t * Q::tau(work), work);
+
+   if (need_s && !s_exact) {
+      s = sin_series(angle, work);
+      if (ssign < 0) s = -s;
+   }
+   if (need_c && !c_exact) {
+      c = cos_series(angle, work);
+      if (csign < 0) c = -c;
+   }
+}
+
+Q Q::sintau(uint64_t precision) const {
+   Q s, c;
+   bool s_exact, c_exact;
+   raw_sincostau(*this, precision, true, false, s, c, s_exact, c_exact);
+
+   // If the companion is one of the exact rational values already known by
+   // the normalized core and has the simpler denominator, preserve that exact
+   // information through sin^2 + cos^2 = 1.  Do not let incidental denominator
+   // cancellation in two approximate series results choose the algorithm.
+   if (!s_exact && c_exact && c.den < s.den && s.abs() >= c.abs()) {
+      Q radicand = Q((int64_t)1) - c * c;
+      if (radicand.sgn() >= 0) {
+         Q ret = radicand.sqrt(precision);
+         return s.sgn() < 0 ? -ret : ret;
+      }
+   }
+   return s;
+}
+
+Q Q::costau(uint64_t precision) const {
+   Q s, c;
+   bool s_exact, c_exact;
+   raw_sincostau(*this, precision, false, true, s, c, s_exact, c_exact);
+
+   // Symmetric rule for cosine.  Avoid deriving the small member of the pair
+   // from a value near +/-1, where 1-x*x would magnify approximation error.
+   if (!c_exact && s_exact && s.den < c.den && c.abs() >= s.abs()) {
+      Q radicand = Q((int64_t)1) - s * s;
+      if (radicand.sgn() >= 0) {
+         Q ret = radicand.sqrt(precision);
+         return c.sgn() < 0 ? -ret : ret;
+      }
+   }
+   return c;
 }
 
 Q Q::tantau(uint64_t precision) const {
@@ -1369,8 +1435,14 @@ Q Q::sqrt(uint64_t precision) const {
 
    N n = num + den * whl;
    N d = den;
+   if (precision > (uint64_t)INT64_MAX / 2) {
+      throw(UGE_ERR("precision too large"));
+   }
+
+   // sqrt(2^(2p) * x) carries p fractional binary bits.  Scaling by only
+   // 2^p would provide roughly p/2 bits after taking the square root.
    N m = 1;
-   m <<= precision;
+   m <<= (int64_t)(2 * precision);
 
    n *= m;
    d *= m;

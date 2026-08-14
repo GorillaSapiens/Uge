@@ -148,5 +148,17 @@ representation repeats in the chosen radix.
 imaginary components are `Q` values, exact when rational and rational
 approximations when a transcendental operation requires approximation.
 
+The normalized real sine/cosine core carries exact rational information across
+the Pythagorean identity when doing so is numerically safe.  For example,
+`costau(1/6)` is exactly `1/2`, so `sintau(1/6)` can be formed as the rational
+approximation `sqrt(1 - (1/2)^2)`.  Because `Q::sqrt()` is deterministic at a
+given precision, this is the same approximation relationship used by
+`sqrt(3)`, and subsequent exact rational arithmetic can cancel it.  This is
+numeric reuse, not symbolic algebra: no unevaluated radical is stored.
+
+`Q::sqrt(precision)` scales its integer root calculation by `2^(2*precision)`
+so that taking the square root retains approximately the requested number of
+fractional binary bits.
+
 This sums up `N`, `Z`, `Q`, and `C`. As with all things open source, the details can
 be found in the code.

@@ -263,6 +263,15 @@ static void test_q(void) {
    expect_string("Q sindeg exact", take(Q("30").sindeg(128).frac_print()), "1/2");
    expect_string("Q tandeg exact", take(Q("45").tandeg(128).frac_print()), "1");
    expect_string("Q sqrt exact rational", take(Q("9/16").sqrt(128).frac_print()), "3/4");
+   expect_true("Q sqrt requested precision",
+               std::fabs((double)Q("3").sqrt(64) - std::sqrt(3.0)) < 1e-15);
+   Q sqrt3 = Q("3").sqrt(128);
+   expect_string("Q sintau exact-companion identity",
+                 take((Q("1/6").sintau(128) / sqrt3).frac_print()), "1/2");
+   expect_string("Q costau exact-companion identity",
+                 take((Q("1/12").costau(128) / sqrt3).frac_print()), "1/2");
+   expect_string("Q sinpi inherits exact-companion identity",
+                 take((Q("1/3").sinpi(128) / sqrt3).frac_print()), "1/2");
 
    Q p = Q::pi(96);
    expect_true("Q double conversion for 1/3", std::fabs((double)Q("1/3") - (1.0 / 3.0)) < 1e-15);

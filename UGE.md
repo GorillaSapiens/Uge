@@ -518,6 +518,19 @@ atandeg(x)      -> atantau(x)*360
 atan2deg(y,x)   -> atan2tau(y,x)*360
 ```
 
+For normalized real sine and cosine, Uge also preserves useful exact information
+from the companion function.  If one member of the sine/cosine pair is an exact
+rational result with a simpler denominator, and using the Pythagorean identity is
+numerically well conditioned, the other member is derived from
+`sin(x)^2 + cos(x)^2 = 1`.  The square root is still a rational approximation;
+no symbolic radical is introduced.  This lets independently written expressions
+share the same numerical square-root approximation, for example:
+
+```
+sinpi(1/3)/sqrt(3)  -> 0.5
+cospi(1/6)/sqrt(3)  -> 0.5
+```
+
 For real inputs this preserves exact degree results whenever the underlying
 turn-normalized function has an exact rational result:
 
