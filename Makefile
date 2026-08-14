@@ -5,6 +5,8 @@ DEPFLAGS=-MMD -MP
 PREFIX ?= /usr/local
 BINDIR ?= $(PREFIX)/bin
 DESTDIR ?=
+EXEEXT ?= $(if $(findstring mingw,$(CXX)),.exe,)
+UGE_EXE=uge$(EXEEXT)
 
 VERSION_H=version.h
 VERSION_SCRIPT=gen_version_h.pl
@@ -16,12 +18,12 @@ OBJS=\
    uge_c.o \
    uge_ramprintf.o
 
-PROGS=ntest ztest qtest ctest uge
+PROGS=ntest ztest qtest ctest
 TEST_PROGS=regression
-PROG_OBJS=$(PROGS:%=%.o)
+PROG_OBJS=ntest.o ztest.o qtest.o ctest.o uge.o
 DEPS=$(OBJS:.o=.d) uge_z.d $(PROG_OBJS:.o=.d)
 
-all: $(PROGS)
+all: $(PROGS) $(UGE_EXE)
 
 $(VERSION_H): $(VERSION_SCRIPT) $(GIT_VERSION_DEPS)
 	./$(VERSION_SCRIPT) $(VERSION_H)
@@ -49,7 +51,7 @@ ztest: ztest.o uge_z.o uge_n.o uge_ramprintf.o
 qtest: qtest.o $(OBJS)
 	$(CXX) $(CXXFLAGS) $^ -o $@
 
-uge: uge.o $(OBJS)
+$(UGE_EXE): uge.o $(OBJS)
 	$(CXX) $(CXXFLAGS) $^ -o $@
 
 ctest: ctest.o $(OBJS)
@@ -58,9 +60,9 @@ ctest: ctest.o $(OBJS)
 regression: tests/regression.cpp $(OBJS) uge_z.o
 	$(CXX) $(CXXFLAGS) -I. $^ -o $@
 
-test: regression uge
+test: regression $(UGE_EXE)
 	./regression
-	UGE=./uge ./tests/uge_regression.sh
+	UGE=./$(UGE_EXE) ./tests/uge_regression.sh
 	./tests/version_regression.sh
 	./tests/install_regression.sh
 
@@ -71,12 +73,12 @@ sanitize:
 	$(MAKE) clean; \
 	exit $$status
 
-install: uge
+install: $(UGE_EXE)
 	install -d '$(DESTDIR)$(BINDIR)'
-	install -m 0755 uge '$(DESTDIR)$(BINDIR)/uge'
+	install -m 0755 $(UGE_EXE) '$(DESTDIR)$(BINDIR)/uge$(EXEEXT)'
 
 uninstall:
-	rm -f '$(DESTDIR)$(BINDIR)/uge'
+	rm -f '$(DESTDIR)$(BINDIR)/uge$(EXEEXT)'
 
 %.o: %.cpp
 	$(CXX) $(CXXFLAGS) $(DEPFLAGS) -c $< -o $@
@@ -85,4 +87,4 @@ uninstall:
 
 .PHONY: all version test sanitize install uninstall clean
 clean:
-	rm -f *.o *.d $(PROGS) $(TEST_PROGS) $(VERSION_H)
+	rm -f *.o *.d $(PROGS) uge uge.exe $(TEST_PROGS) $(VERSION_H)

@@ -331,6 +331,19 @@ The workflow first runs both the normal and sanitizer regression suites. If they
 pass, it cross-compiles a self-contained Windows x86-64 executable with
 MinGW-w64 and builds a statically linked Linux x86-64 executable. The exact
 packaged Windows executable is then run on a Windows runner before publication.
+
+The Windows build can be reproduced locally on a system with MinGW-w64 installed:
+
+```sh
+make clean
+make uge.exe \
+    CXX=x86_64-w64-mingw32-g++ \
+    CXXFLAGS='-O3 -DNDEBUG -static -static-libgcc -static-libstdc++'
+x86_64-w64-mingw32-objdump -p uge.exe
+```
+
+The Makefile automatically selects `.exe` when the compiler name contains
+`mingw`; the CI workflow also supplies `EXEEXT=.exe` explicitly.
 Only after all of those gates pass does the workflow publish a GitHub Release
 containing:
 

@@ -60,7 +60,7 @@ jobs:
         run: |
           set -euxo pipefail
           make clean
-          make uge \
+          make uge.exe EXEEXT=.exe \
             CXX=x86_64-w64-mingw32-g++ \
             CXXFLAGS='-O3 -DNDEBUG -static -static-libgcc -static-libstdc++'
           x86_64-w64-mingw32-objdump -p uge.exe > uge.pe.txt
@@ -69,7 +69,6 @@ jobs:
             grep -Ei 'DLL Name:' uge.pe.txt >&2
             exit 1
           fi
-          mv uge uge.exe
 
       - name: Upload Windows executable
         uses: actions/upload-artifact@v7
