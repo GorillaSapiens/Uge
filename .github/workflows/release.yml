@@ -108,7 +108,7 @@ jobs:
           make uge \
             CXX=x86_64-w64-mingw32-g++ \
             CXXFLAGS='-O3 -DNDEBUG -static -static-libgcc -static-libstdc++'
-          x86_64-w64-mingw32-objdump -p uge > uge.pe.txt
+          x86_64-w64-mingw32-objdump -p uge.exe > uge.pe.txt
           if grep -Eiq 'DLL Name:.*(libgcc|libstdc\+\+|libwinpthread)' uge.pe.txt; then
             echo 'Windows executable still depends on a MinGW runtime DLL' >&2
             grep -Ei 'DLL Name:' uge.pe.txt >&2
