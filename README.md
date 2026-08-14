@@ -28,6 +28,39 @@ Uge's default normalized trigonometry knows that `pi/6` is exactly one sixth
 of its cached pi value, so the special angle reduces exactly to `1/2` rather
 than preserving approximation noise.
 
+The same distinction shows up in ordinary fractions. GNU `bc` converts `1/3`
+to its finite working-scale decimal approximation, so multiplying that result
+back by 3 does not recover exactly 1:
+
+```text
+$ bc
+bc 1.08.2
+Copyright 1991-1994, 1997, 1998, 2000, 2004, 2006, 2008, 2012-2018, 2024 Free Software Foundation, Inc.
+This is free software with ABSOLUTELY NO WARRANTY.
+For details type `warranty'.
+1/3
+.33333333333333333333
+last * 3
+.99999999999999999999
+```
+
+Uge retains `1/3` as an exact rational value. Its repeating positional output
+is only a representation of that exact value, so multiplying `last` by 3
+returns exactly 1:
+
+```text
+$ ./uge
+uge g565f8bc14d05 exact rational/complex calculator
+Copyright (C) 2026 GorillaSapiens.
+This program comes with ABSOLUTELY NO WARRANTY; type 'warranty' for details.
+This is free software; see LICENSE for copying conditions. Type 'help' for help.
+using positional format; enter 'format fraction' for fraction format
+1/3
+0.(3)
+last * 3
+1
+```
+
 Arbitrary bases give another compact example. In base 12, `.49 + .03` is
 exactly `.50` (the same value as `.5`):
 
