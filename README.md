@@ -6,10 +6,29 @@ A `bc`-like arbitrary-precision rational/complex calculator, backed by reusable 
 
 ## Why Uge?
 
-Uge keeps rational arithmetic exact instead of first forcing values into a
-floating-point or fixed-decimal representation.
+Uge keeps exact information exact for as long as the mathematics allows it.
+A familiar trigonometric identity makes the difference visible immediately:
 
-A small base-12 example shows the difference. In base 12, `.49 + .03` is
+```text
+$ ./uge -q
+sin(pi/6)
+0.5
+```
+
+GNU `bc`'s math library numerically approximates both pi and the sine:
+
+```text
+$ bc -l
+pi=a(1)*4
+s(pi/6)
+.49999999999999999999
+```
+
+Uge's default normalized trigonometry knows that `pi/6` is exactly one sixth
+of its cached pi value, so the special angle reduces exactly to `1/2` rather
+than preserving approximation noise.
+
+Arbitrary bases give another compact example. In base 12, `.49 + .03` is
 exactly `.50` (the same value as `.5`):
 
 ```text
@@ -30,29 +49,17 @@ ibase=obase=12
 Uge keeps the fractions exact:
 
 ```text
-$ ./uge
-uge exact rational/complex calculator
-Copyright (C) 2026 GorillaSapiens.
-This program comes with ABSOLUTELY NO WARRANTY; type 'warranty' for details.
-This is free software; see LICENSE for copying conditions. Type 'help' for help.
-using positional format; enter 'format fraction' for fraction format
+$ ./uge -q
 base 12
 .49+.03
 0.5
 ```
 
-Complex arithmetic is built in:
+Complex arithmetic is built in too:
 
 ```text
 sqrt(-1)
 i
-```
-
-And normalized trigonometry preserves familiar exact results when possible:
-
-```text
-sin(pi/2)
-1
 ```
 
 ## The `uge` calculator
@@ -173,7 +180,7 @@ For more detail about the representation and design rationale, see
 
 ## Building
 
-A C++ compiler and `make` are sufficient:
+A C++ compiler, `make`, and Perl are sufficient:
 
 ```sh
 make
@@ -187,37 +194,92 @@ This builds:
 - `qtest` -- interactive/test driver for `Q`;
 - `ctest` -- interactive/test driver for `C`.
 
-Then run the calculator with:
+Then run:
 
 ```sh
 ./uge
 ```
 
-The Makefile uses compiler-generated dependency files (`-MMD -MP`) rather than
-machine-specific `makedepend` output.
+The Makefile uses compiler-generated dependency files (`-MMD -MP`).
+
+### Version identification
+
+`gen_version_h.pl` generates `version.h` as part of building `uge`. The version
+identifier is chosen in this order:
+
+1. the GitHub Actions tag when building a tagged GitHub ref;
+2. an exact local Git tag on `HEAD`;
+3. `g` followed by the first 12 hexadecimal digits of the Git commit;
+4. `d` followed by a UTC ISO-8601 timestamp when Git metadata is unavailable.
+
+Thus normal release tags can use names such as `v0.1.0`, while untagged Git
+builds look like `g0123456789ab` and unpacked source trees without Git metadata
+look like `d2026-08-14T00:00:00Z`. The fallback prefixes deliberately do not
+begin with `v` and are distinguishable from each other.
+
+Show the compiled identifier with:
+
+```sh
+./uge -V
+./uge --version
+```
+
+`version.h` is generated build output and is removed by `make clean`.
+
+### Installation
+
+The usual prefix and staging variables are supported:
+
+```sh
+make install
+make install PREFIX="$HOME/.local"
+make install DESTDIR=/tmp/package-root PREFIX=/usr
+```
+
+The executable is installed as `$(PREFIX)/bin/uge`. For staged package builds,
+`DESTDIR` is prepended without becoming part of the installed prefix.
+
+To remove it using the same prefix/staging values:
+
+```sh
+make uninstall
+```
 
 ## Regression tests
 
-Run the complete noninteractive regression suite with:
+Run the complete noninteractive suite with:
 
 ```sh
 make test
 ```
 
-The suite has two layers:
+The suite has separate layers:
 
-- `tests/regression.cpp` exercises the `N`, `Z`, `Q`, and `C` APIs directly,
-  including exact arithmetic, comparisons, signed integer behavior, radix
-  round-trips, normalized trigonometric special values, complex arithmetic,
-  and expected domain errors;
-- `tests/uge_regression.sh` drives the `uge` executable as a user would and
-  checks calculator syntax and output, arbitrary radices, positional/fraction
-  formats, exact trigonometric cases, complex values, variables, control flow,
-  functions and `local` scope, recursion, diagnostics, help, and warranty text.
+- `tests/regression.cpp` directly exercises `N`, `Z`, `Q`, and `C`, including
+  deterministic randomized algebraic/property tests and radix round-trips over
+  bases 2, 3, 10, 12, 16, 36, 37, 256, and 65536;
+- `tests/uge_regression.sh` drives the calculator as a user would, covering
+  exact arithmetic and trig, complex values, output reparsing, arbitrary
+  radices, formats, variables, control flow, functions, `local` scope,
+  recursion, CLI behavior, and expected-error paths;
+- `tests/version_regression.sh` verifies the `v` tag, `g` commit, and `d` date
+  version-selection paths plus `uge -V`;
+- `tests/install_regression.sh` verifies `PREFIX`/`DESTDIR` installation and
+  uninstallation using the built executable.
 
-`.github/workflows/test.yml` runs `make test` automatically on branch pushes
-and pull requests. Tagged releases run the same suite before either platform
-binary is built, so a failing regression test prevents publication.
+For memory/undefined-behavior instrumentation, run:
+
+```sh
+make sanitize
+```
+
+That rebuilds and runs the same suite with AddressSanitizer and
+UndefinedBehaviorSanitizer enabled.
+
+`.github/workflows/test.yml` runs the ordinary suite and the sanitizer suite on
+GitHub, cross-compiles the Windows x86-64 executable with MinGW-w64, and then
+runs that cross-built executable on a Windows runner. Tagged releases are gated
+by the ordinary and sanitized suites as well.
 
 The older `ntest`, `ztest`, `qtest`, and `ctest` programs remain useful as
 interactive low-level probes; they are not the automated regression suite.
@@ -232,10 +294,12 @@ git tag v0.1.0
 git push origin v0.1.0
 ```
 
-The workflow first runs the full regression suite. If it passes, it
-cross-compiles a self-contained Windows x86-64 executable with MinGW-w64,
-builds a statically linked Linux x86-64 executable, and publishes a GitHub
-Release containing:
+The workflow first runs both the normal and sanitizer regression suites. If they
+pass, it cross-compiles a self-contained Windows x86-64 executable with
+MinGW-w64 and builds a statically linked Linux x86-64 executable. The exact
+packaged Windows executable is then run on a Windows runner before publication.
+Only after all of those gates pass does the workflow publish a GitHub Release
+containing:
 
 ```text
 uge-0.1.0-linux-x86_64.tar.gz
@@ -251,7 +315,10 @@ src/    complete tracked source tree from the release tag
 ```
 
 The `src/` directory is produced with `git archive` from the exact tagged
-commit, so it does not contain object files or other working-tree build output.
+commit, so it does not contain object files, generated `version.h`, or other
+working-tree build output. Building that source regenerates the same tag-based
+version when Git metadata is present; without Git metadata it uses the `d...`
+date fallback described above.
 
 ## Source overview
 
@@ -261,12 +328,15 @@ uge_z.hpp / uge_z.cpp       Z implementation
 uge_q.hpp / uge_q.cpp       Q implementation
 uge_c.hpp / uge_c.cpp       C implementation
 uge.cpp                     interactive calculator
+gen_version_h.pl             build-time version.h generator
 ntest.cpp                   N test/interactive driver
 ztest.cpp                   Z test/interactive driver
 qtest.cpp                   Q test/interactive driver
 ctest.cpp                   C test/interactive driver
 tests/regression.cpp        automated N/Z/Q/C API regression suite
 tests/uge_regression.sh     automated calculator regression suite
+tests/version_regression.sh automated version-selection regression
+tests/install_regression.sh automated install/uninstall regression
 UGE.md                      calculator reference
 THEORY.md                   representation and design rationale
 .github/workflows/test.yml     push/pull-request regression workflow

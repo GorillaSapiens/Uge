@@ -663,7 +663,7 @@ N& N::operator <<= (int64_t bits) {
    uint64_t wordshift = bits / 16;
    int smallbits = bits % 16;
 
-   for (int i = 0; i < wordshift; i++) {
+   for (uint64_t i = 0; i < wordshift; i++) {
       grow();
       memmove(data + 1, data, sizeof(uint16_t) * size);
       data[0] = 0;

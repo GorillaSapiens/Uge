@@ -14,11 +14,11 @@
 
 using namespace uge;
 
-int main(int argc, char **argv) {
+int main(void) {
    int ibase = 10, obase = 10;
    char *p;
 
-   while (p = /*assign*/ mgets()) {
+   while ((p = /*assign*/ mgets())) {
       char *bufl, *op, *bufr;
       int res = 0;
 

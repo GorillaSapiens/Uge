@@ -21,11 +21,11 @@ static void print_q(const char *label, const Q &q, uint64_t radix) {
    printf("%sprnt : %s\n", label, GCSTR q.print(radix));
 }
 
-int main(int argc, char **argv) {
+int main(void) {
    int ibase = 10, obase = 10;
    char *p;
 
-   while (p = /*assign*/ mgets()) {
+   while ((p = /*assign*/ mgets())) {
       char *bufl, *op, *bufr;
       int res = 0;
 

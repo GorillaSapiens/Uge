@@ -47,6 +47,36 @@ run_error() {
    }
 }
 
+run_cli_error() {
+   name=$1
+   expected_status=$2
+   needle=$3
+   shift 3
+   checks=$((checks + 1))
+   set +e
+   "$UGE" "$@" >"$WORK/out" 2>"$WORK/err"
+   status=$?
+   set -e
+   [ "$status" -eq "$expected_status" ] || fail "$name: exit $status, expected $expected_status"
+   grep -F "$needle" "$WORK/err" >/dev/null || {
+      echo "--- stderr ---" >&2
+      cat "$WORK/err" >&2
+      fail "$name: expected error containing '$needle'"
+   }
+}
+
+run_complex_roundtrip() {
+   name=$1
+   setup=$2
+   expression=$3
+   checks=$((checks + 1))
+   first=$(printf '%s\n%s\nquit\n' "$setup" "$expression" | "$UGE" -q 2>"$WORK/err") || fail "$name: first parse exited nonzero"
+   [ ! -s "$WORK/err" ] || fail "$name: first parse wrote stderr"
+   second=$(printf '%s\n%s\nquit\n' "$setup" "$first" | "$UGE" -q 2>"$WORK/err") || fail "$name: round-trip parse exited nonzero"
+   [ ! -s "$WORK/err" ] || fail "$name: round-trip parse wrote stderr"
+   [ "$second" = "$first" ] || fail "$name: '$first' round-tripped as '$second'"
+}
+
 run_exact "basic arithmetic" \
 '1+2
 1/3+1/6
@@ -102,6 +132,9 @@ quit
 3
 4
 '
+
+run_complex_roundtrip "complex repeating positional round-trip" "base 10" "-1/3+2/7i"
+run_complex_roundtrip "complex braced-digit round-trip" "base 65536" "{65535}+{65534}i"
 
 run_exact "fraction and positional formats" \
 'format fraction
@@ -265,6 +298,57 @@ run_error "old auto declaration rejected" 'define f() {
 f()
 quit
 ' "unexpected 't'"
+
+run_error "division by zero" '1/0
+quit
+' 'divide by zero'
+run_error "modulo by zero" '1%0
+quit
+' 'divide by zero'
+run_error "radix too small" 'base 1
+quit
+' 'base must be between 2 and 65536'
+run_error "radix too large" 'base 65537
+quit
+' 'base must be between 2 and 65536'
+run_error "digit outside radix" 'base 37
+{37}
+quit
+' 'digit {37} is not valid in base 37'
+run_error "digit exceeds maximum" 'base 65536
+{65536}
+quit
+' 'digit value exceeds 65535'
+run_error "malformed repeating fraction" '0.(3
+' 'incomplete statement at end of input'
+run_error "malformed complex literal" '1+2ii
+quit
+' "unexpected 'ii'"
+run_error "negative shift" '1 << -1
+quit
+' 'shift count must not be negative'
+run_error "wrong function argument count" 'define f(a) { return(a) }
+f()
+quit
+' 'f() takes 1 argument'
+run_error "recursion depth guard" 'define r() { return(r()) }
+r()
+quit
+' 'function call depth exceeds 64'
+run_error "reserved pi assignment" 'pi=5
+quit
+' 'left side of assignment is not a variable'
+run_error "reserved e assignment" 'e=5
+quit
+' 'left side of assignment is not a variable'
+run_error "reserved tau assignment" 'tau=5
+quit
+' 'left side of assignment is not a variable'
+run_error "unmatched block" 'if (1) {
+1
+' 'incomplete statement at end of input'
+run_cli_error "unknown option" 2 "unknown option '--definitely-not-an-option'" --definitely-not-an-option
+run_cli_error "missing input file" 1 "cannot open" "$WORK/no-such-file.uge"
 
 checks=$((checks + 1))
 printf 'warranty\nquit\n' | "$UGE" -q >"$WORK/out" 2>"$WORK/err"

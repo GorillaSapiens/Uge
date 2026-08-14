@@ -11,7 +11,7 @@ permissions:
   contents: read
 
 jobs:
-  test:
+  linux:
     name: Linux x86-64
     runs-on: ubuntu-latest
 
@@ -22,7 +22,87 @@ jobs:
       - name: Install build tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y g++ make
+          sudo apt-get install -y g++ make perl
 
       - name: Run regression suite
         run: make test
+
+  sanitizers:
+    name: ASan + UBSan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v6
+
+      - name: Install build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y g++ make perl
+
+      - name: Run sanitized regression suite
+        run: make sanitize
+
+  windows-cross:
+    name: Cross-build Windows x86-64
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v6
+
+      - name: Install MinGW-w64 cross compiler
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y g++-mingw-w64-x86-64 make perl
+
+      - name: Build self-contained Windows executable
+        run: |
+          set -euxo pipefail
+          make clean
+          make uge \
+            CXX=x86_64-w64-mingw32-g++ \
+            CXXFLAGS='-O3 -DNDEBUG -static -static-libgcc -static-libstdc++'
+          x86_64-w64-mingw32-objdump -p uge > uge.pe.txt
+          if grep -Eiq 'DLL Name:.*(libgcc|libstdc\+\+|libwinpthread)' uge.pe.txt; then
+            echo 'Windows executable still depends on a MinGW runtime DLL' >&2
+            grep -Ei 'DLL Name:' uge.pe.txt >&2
+            exit 1
+          fi
+          mv uge uge.exe
+
+      - name: Upload Windows executable
+        uses: actions/upload-artifact@v7
+        with:
+          name: uge-test-windows-x86_64
+          path: uge.exe
+          if-no-files-found: error
+
+  windows-runtime:
+    name: Run cross-built executable on Windows
+    needs: windows-cross
+    runs-on: windows-latest
+
+    steps:
+      - name: Download Windows executable
+        uses: actions/download-artifact@v8
+        with:
+          name: uge-test-windows-x86_64
+          path: bin
+
+      - name: Run smoke tests
+        shell: pwsh
+        run: |
+          $exe = Join-Path $PWD 'bin\uge.exe'
+          $expectedVersion = 'uge g' + $env:GITHUB_SHA.Substring(0, 12).ToLowerInvariant()
+          $version = & $exe -V
+          if ($LASTEXITCODE -ne 0) { throw "uge.exe -V exited $LASTEXITCODE" }
+          if ($version[0] -ne $expectedVersion) {
+            throw "version mismatch: '$($version[0])', expected '$expectedVersion'"
+          }
+
+          $output = "sin(pi/6)`nquit`n" | & $exe -q
+          if ($LASTEXITCODE -ne 0) { throw "uge.exe exited $LASTEXITCODE" }
+          if (($output -join "`n").Trim() -ne '0.5') {
+            throw "unexpected calculator output: '$($output -join "`n")'"
+          }

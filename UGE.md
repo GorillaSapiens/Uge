@@ -23,7 +23,7 @@ addition.  No conversion through decimal fixed-point takes place.
 make
 ```
 
-This builds `uge`, `ntest`, `qtest`, and `ctest`.
+This builds `uge`, `ntest`, `ztest`, `qtest`, and `ctest`.
 
 Run the calculator with:
 
@@ -34,7 +34,7 @@ Run the calculator with:
 An interactive session starts with a copyright and GPL warranty notice:
 
 ```text
-uge exact rational/complex calculator
+uge <version> exact rational/complex calculator
 Copyright (C) 2026 GorillaSapiens.
 This program comes with ABSOLUTELY NO WARRANTY; type 'warranty' for details.
 This is free software; see LICENSE for copying conditions. Type 'help' for help.
@@ -53,6 +53,7 @@ Command-line options include:
 -l            accepted for GNU bc compatibility; no separate math library is needed
 -positional   start with positional output format (default)
 -fraction     start with fraction output format
+-V, --version show compiled version information
 -h, --help    show command-line help
 ```
 
@@ -60,6 +61,11 @@ If both `-positional` and `-fraction` are given, the last one wins.  The selecte
 format is in effect while command files are evaluated as well as during
 interactive input.  One or more file names may be given; they are evaluated in
 order before interactive input is read.
+
+The compiled version is generated into `version.h` by `gen_version_h.pl` at build
+time. Tagged builds report the tag (normally `v...`); untagged Git builds use a
+`g`-prefixed commit hash; builds without Git metadata use a `d`-prefixed UTC
+ISO-8601 date.
 
 ## Interactive editing and history
 
@@ -368,7 +374,7 @@ and a function that reaches the end without a `return` both return zero.
 Function definitions are global and may be replaced by a later `define`.
 Built-in function names and the reserved constants `i`, `e`, `pi`, and `tau`
 cannot be reused as function, parameter, or `local` names.  Function call depth
-is limited to 256 calls.
+is limited to 64 calls.
 
 ## Built-in functions
 

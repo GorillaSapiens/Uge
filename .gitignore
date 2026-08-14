@@ -7,3 +7,4 @@ ctest
 uge
 Makefile.bak
 regression
+version.h

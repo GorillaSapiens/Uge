@@ -4,6 +4,7 @@
 #include <cmath>
 #include <functional>
 #include <iostream>
+#include <random>
 #include <string>
 #include <vector>
 
@@ -62,6 +63,87 @@ static void expect_throw(const std::string &name,
    catch (const std::string &e) {
       if (e.find(needle) == std::string::npos) {
          fail(name, "exception did not contain '" + needle + "': " + e);
+      }
+   }
+}
+
+
+static Q make_q(int64_t num, int64_t den) {
+   return Q((std::to_string(num) + "/" + std::to_string(den)).c_str());
+}
+
+static void test_random_properties(void) {
+   // Deterministic seed: failures are reproducible in CI.
+   std::mt19937_64 rng(UINT64_C(0x5547455245475245));
+   const uint64_t radices[] = {2, 3, 10, 12, 16, 36, 37, 256, 65536};
+
+   for (unsigned iter = 0; iter < 1000; ++iter) {
+      uint64_t a = rng() % UINT64_C(1000000000);
+      uint64_t b = rng() % UINT64_C(1000000000);
+      N na(a), nb(b);
+      expect_true("N random add", (uint64_t)(na + nb) == a + b);
+      expect_true("N random multiply", (uint64_t)(na * nb) == a * b);
+      expect_true("N random compare", (na < nb) == (a < b));
+      if (a >= b) expect_true("N random subtract", (uint64_t)(na - nb) == a - b);
+      if (b != 0) {
+         expect_true("N random divide", (uint64_t)(na / nb) == a / b);
+         expect_true("N random remainder", (uint64_t)(na % nb) == a % b);
+      }
+
+      int64_t za0 = (int64_t)(rng() % 2000001) - 1000000;
+      int64_t zb0 = (int64_t)(rng() % 2000001) - 1000000;
+      Z za(za0), zb(zb0);
+      expect_i64("Z random add", (int64_t)(za + zb), za0 + zb0);
+      expect_i64("Z random subtract", (int64_t)(za - zb), za0 - zb0);
+      expect_i64("Z random multiply", (int64_t)(za * zb), za0 * zb0);
+      expect_true("Z random compare", (za < zb) == (za0 < zb0));
+      expect_i64("Z random and", (int64_t)(za & zb), za0 & zb0);
+      expect_i64("Z random or", (int64_t)(za | zb), za0 | zb0);
+      expect_i64("Z random xor", (int64_t)(za ^ zb), za0 ^ zb0);
+      if (zb0 != 0) {
+         expect_i64("Z random divide", (int64_t)(za / zb), za0 / zb0);
+         expect_i64("Z random remainder", (int64_t)(za % zb), za0 % zb0);
+      }
+
+      int64_t an = (int64_t)(rng() % 2001) - 1000;
+      int64_t ad = (int64_t)(rng() % 97) + 1;
+      int64_t bn = (int64_t)(rng() % 2001) - 1000;
+      int64_t bd = (int64_t)(rng() % 97) + 1;
+      Q qa = make_q(an, ad);
+      Q qb = make_q(bn, bd);
+      expect_true("Q random add/sub identity", (qa + qb) - qb == qa);
+      expect_true("Q random distributive identity", qa * (qb + Q((int64_t)1)) == qa * qb + qa);
+      if (qa.sgn() != 0) expect_true("Q random reciprocal identity", qa / qa == Q((int64_t)1));
+   }
+
+   // Round-trip randomly generated values through representative radices,
+   // including the multi-character {digit} notation above base 36.
+   for (unsigned iter = 0; iter < 100; ++iter) {
+      uint64_t nv = rng();
+      int64_t zv = (int64_t)(rng() % UINT64_C(2000000001)) - INT64_C(1000000000);
+      int64_t qn = (int64_t)(rng() % 2001) - 1000;
+      int64_t qd = (int64_t)(rng() % 97) + 1;
+      Q q = make_q(qn, qd);
+      C c(q, make_q((int64_t)(rng() % 401) - 200,
+                    (int64_t)(rng() % 31) + 1));
+
+      for (uint64_t radix : radices) {
+         std::string ns = take(N(nv).print(radix));
+         expect_true("N random radix round-trip", N(ns.c_str(), radix) == N(nv));
+
+         std::string zs = take(Z(zv).print(radix));
+         expect_true("Z random radix round-trip", Z(zs.c_str(), radix) == Z(zv));
+
+         std::string qfs = take(q.frac_print(radix));
+         expect_true("Q random fraction radix round-trip", Q(qfs.c_str(), radix) == q);
+
+         std::string qps = take(q.print(radix, 4096));
+         expect_true("Q random positional radix round-trip", Q(qps.c_str(), radix) == q);
+
+         std::string crs = take(c.real().frac_print(radix));
+         std::string cis = take(c.imag().frac_print(radix));
+         C cdecoded(Q(crs.c_str(), radix), Q(cis.c_str(), radix));
+         expect_true("C random component radix round-trip", cdecoded == c);
       }
    }
 }
@@ -161,6 +243,7 @@ static void test_q(void) {
    expect_string("Q exact multiply", take((Q("14/15") * Q("25/21")).frac_print()), "1'1/9");
    expect_string("Q exact divide", take((Q("7/9") / Q("14/15")).frac_print()), "5/6");
    expect_string("Q repeating parse", take(Q("0.8(3)").frac_print()), "5/6");
+   expect_string("Q negative repeating parse", take(Q("-0.(3)").frac_print()), "-1/3");
    expect_string("Q repeating print", take(Q("1/7").print()), "0.(142857)");
    expect_string("Q base-12 positional", take(Q("0.5", 12).frac_print(10)), "5/12");
    expect_string("Q negative floor", take(Q("-7/3").floor().frac_print()), "-3");
@@ -249,6 +332,7 @@ int main(void) {
       test_z();
       test_q();
       test_c();
+      test_random_properties();
    }
    catch (const std::string &e) {
       fail("uncaught library exception", e);

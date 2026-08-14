@@ -18,6 +18,7 @@
 
 #include "gcstr.hpp"
 #include "uge_c.hpp"
+#include "version.h"
 
 using namespace uge;
 
@@ -27,6 +28,7 @@ static const uint64_t DEFAULT_PRINT_MAX = 1024;
 static const uint64_t DEFAULT_PRECISION = 256;
 static const uint64_t MAX_RADIX = 65536;
 static const size_t MAX_HISTORY = 1000;
+static const size_t MAX_CALL_DEPTH = 64;
 
 // Exact Q values produced by the current transcendental algorithms at the
 // default working precision.  Baking them avoids recomputing pi and e every
@@ -1547,7 +1549,11 @@ static C call_user_function(Context &ctx, const std::string &name,
       if (fn.params.size() != 1) os << 's';
       throw os.str();
    }
-   if (ctx.frames.size() >= 256) throw std::string("function call depth exceeds 256");
+   if (ctx.frames.size() >= MAX_CALL_DEPTH) {
+      std::ostringstream os;
+      os << "function call depth exceeds " << MAX_CALL_DEPTH;
+      throw os.str();
+   }
 
    Frame frame;
    for (size_t i = 0; i < fn.params.size(); i++) frame.vars[fn.params[i]] = args[i];
@@ -1862,12 +1868,18 @@ static bool process_stream(Context &ctx, std::istream &in) {
    return true;
 }
 
+static void print_version(void) {
+   printf("uge %s\n", UGE_VERSION);
+   printf("Copyright (C) 2026 GorillaSapiens.\n");
+}
+
 static void usage(const char *argv0) {
    printf("usage: %s [-q] [-l] [-positional|-fraction] [file ...]\n", argv0);
    printf("  -q, --quiet   suppress interactive banner\n");
    printf("  -l            accepted for bc compatibility; Uge functions are built in\n");
    printf("  -positional   start with positional output format (default)\n");
    printf("  -fraction     start with fraction output format\n");
+   printf("  -V, --version show version information\n");
    printf("  -h, --help    show this help\n");
 }
 
@@ -1884,6 +1896,7 @@ int main(int argc, char **argv) {
       else if (a == "-l") { /* compatibility no-op */ }
       else if (a == "-positional") startup_format = FORMAT_POSITIONAL;
       else if (a == "-fraction") startup_format = FORMAT_FRACTION;
+      else if (a == "-V" || a == "--version") { print_version(); return 0; }
       else if (a == "-h" || a == "--help") { usage(argv[0]); return 0; }
       else if (!a.empty() && a[0] == '-') {
          fprintf(stderr, "uge: unknown option '%s'\n", a.c_str());
@@ -1913,7 +1926,7 @@ int main(int argc, char **argv) {
    }
 
    if (!quiet) {
-      printf("uge exact rational/complex calculator\n");
+      printf("uge %s exact rational/complex calculator\n", UGE_VERSION);
       printf("Copyright (C) 2026 GorillaSapiens.\n");
       printf("This program comes with ABSOLUTELY NO WARRANTY; type 'warranty' for details.\n");
       printf("This is free software; see LICENSE for copying conditions. Type 'help' for help.\n");

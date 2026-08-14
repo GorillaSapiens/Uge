@@ -266,10 +266,15 @@ Q::Q(const char *orig, uint64_t radix) {
 
       repetend_den *= den;
 
+      // Preserve the sign from the input while assembling a repetend.  A
+      // value such as -0.(3) has a zero nonrepeating part; simplify() quite
+      // correctly canonicalizes that temporary zero as positive, but the
+      // repetend still belongs to the originally negative number.
+      bool parsed_pos = pos;
       simplify();
 
       if (!repetend_num.isZero()) {
-         Q r(pos, (uint64_t) 0, repetend_num, repetend_den);
+         Q r(parsed_pos, (uint64_t) 0, repetend_num, repetend_den);
          *this = *this + r;
          simplify();
       }
