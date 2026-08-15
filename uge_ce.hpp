@@ -60,8 +60,14 @@ namespace uge {
          bool contains(const C &candidate) const;
 
          // Move the center without shrinking the represented enclosure.
-         // This is intended for future rational reconstruction/simplification.
+         // This is useful for rational reconstruction/simplification.
          Ce recenter(const C &new_value) const;
+
+         // Recenter approximate components on a much simpler rational when a
+         // continued-fraction convergent with a small denominator lies inside
+         // the known componentwise error bound.  Error bounds are widened by
+         // the center displacement; reconstruction never makes a Ce exact.
+         Ce reconstruct(uint64_t max_denominator = 1000000) const;
 
          Ce operator + () const;
          Ce operator - () const;

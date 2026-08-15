@@ -815,6 +815,53 @@ int Q::sgn(void) const {
    return pos ? 1 : -1;
 }
 
+Q Q::reconstruct(const Q &radius, uint64_t max_denominator) const {
+   if (radius.sgn() < 0) {
+      throw(UGE_ERR("reconstruction radius must be nonnegative"));
+   }
+   if (radius.sgn() == 0 || max_denominator == 0 ||
+       den <= N(max_denominator)) {
+      return *this;
+   }
+
+   // Work with the magnitude as an improper fraction.  Continued-fraction
+   // convergents provide progressively better rational approximations with
+   // increasing denominators.  The first convergent that lies inside the
+   // known error interval is therefore the simple reconstruction we want.
+   N n = whl * den + num;
+   N d = den;
+   N hm2((uint64_t)0), hm1((uint64_t)1);
+   N km2((uint64_t)1), km1((uint64_t)0);
+   const N maxd(max_denominator);
+
+   while (!d.isZero()) {
+      N a = n / d;
+      N rem = n % d;
+      N h = a * hm1 + hm2;
+      N k = a * km1 + km2;
+
+      if (k > maxd) {
+         break;
+      }
+
+      N cw = h / k;
+      N cn = h % k;
+      Q candidate(pos, cw, cn, k);
+      if ((candidate - *this).abs() <= radius) {
+         return candidate;
+      }
+
+      hm2 = hm1;
+      hm1 = h;
+      km2 = km1;
+      km1 = k;
+      n = d;
+      d = rem;
+   }
+
+   return *this;
+}
+
 static uint64_t guarded_precision(uint64_t precision, uint64_t guard) {
    if (precision > (uint64_t)INT64_MAX ||
        guard > (uint64_t)INT64_MAX - precision) {

@@ -87,11 +87,17 @@ The distinction is useful for values such as `sqrt(-2)`: its real center and
 real error are exactly zero, while the imaginary component contains the
 rational approximation to `sqrt(2)` and `ierror` records its uncertainty.
 Likewise, multiplying two `Ce` approximations to `sqrt(3)` produces an interval
-that contains exact `3`, without claiming that the rational center itself was
-exactly `sqrt(3)`. `recenter()` can move an enclosure to a simpler center while
-widening the error bounds, which is intended to support later rational
-reconstruction experiments without turning an approximation into a false exact
-result.
+that contains exact `3`. `Ce` now performs conservative rational reconstruction
+on approximate results: when a component center has a denominator above the
+reconstruction limit, `Q::reconstruct()` walks its continued-fraction
+convergents looking for a much simpler rational inside the component's known
+error radius. By default only candidates with denominator at most 1,000,000 are
+considered. Thus the center of `sqrt(3)*sqrt(3)` is reconstructed to `3`, and
+the center of `sinpi(1/3)*sqrt(3)` to `3/2`. `recenter()` widens the stored error
+by the center displacement, so reconstruction never turns an approximate `Ce`
+into a falsely exact value. Exact `Ce` values have zero error and are never
+reconstructed; an exact user-supplied rational arbitrarily close to an integer
+therefore remains unchanged.
 
 `Ce` exposes the same arithmetic, complex helpers, powers, and ordinary/π/τ/
 degree trigonometric families as `C`. Discontinuous integer-like operations

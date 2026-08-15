@@ -93,6 +93,15 @@ namespace uge {
          Q floor(void) const;
          int sgn(void) const;
 
+         // Return a simpler rational center, when one can be found inside
+         // +/- radius using a continued-fraction convergent whose denominator
+         // does not exceed max_denominator.  If no such simpler value exists,
+         // return *this unchanged.  This is intended for approximate-value
+         // reconstruction; exact arithmetic should not call it with a
+         // nonzero radius.
+         Q reconstruct(const Q &radius,
+                       uint64_t max_denominator = 1000000) const;
+
          // These return rational approximations to the given precision.
          Q sqrt(uint64_t precision) const;
          Q pow(const Q &power, uint64_t precision) const;

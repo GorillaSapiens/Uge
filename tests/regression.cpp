@@ -359,6 +359,8 @@ static void test_ce(void) {
    expect_true("Ce irrational sqrt approximate", !root3.exact());
    expect_true("Ce sqrt3 real error positive", root3.error().sgn() > 0);
    expect_true("Ce sqrt3 imag error zero", root3.ierror().sgn() == 0);
+   expect_true("Ce sqrt3 not spuriously reconstructed",
+               root3.value() == C((int64_t)3).sqrt(p));
    expect_true("Ce sqrt3 encloses guarded value",
                root3.contains(C(Q((int64_t)3).sqrt(128))));
 
@@ -378,13 +380,30 @@ static void test_ce(void) {
 
    Ce squared = root3 * root3;
    expect_true("Ce sqrt3 squared encloses 3", squared.contains(C((int64_t)3)));
-   Ce snapped = squared.recenter(C((int64_t)3));
-   expect_string("Ce recenter sqrt3 squared", take(snapped.frac_print()), "3");
-   expect_true("Ce recenter remains approximate", !snapped.exact());
+   expect_string("Ce sqrt3 squared reconstructs center", take(squared.frac_print()), "3");
+   expect_true("Ce sqrt3 squared remains approximate", !squared.exact());
 
    Ce product = spi3 * root3;
    expect_true("Ce sinpi sqrt3 product encloses 3/2",
                product.contains(C(Q("3/2"))));
+   expect_string("Ce sinpi sqrt3 product reconstructs center",
+                 take(product.frac_print()), "1'1/2");
+   expect_true("Ce reconstructed trig product remains approximate",
+               !product.exact());
+
+   Ce exact_near_one(Q("10000000000000000000000000000000001/10000000000000000000000000000000000"));
+   expect_true("Ce exact nearby rational stays exact", exact_near_one.exact());
+   expect_true("Ce exact nearby rational is not reconstructed",
+               exact_near_one.reconstruct().value() == exact_near_one.value());
+
+   Q recon_source("299999999999999999999999999999999999999999/100000000000000000000000000000000000000000");
+   Q recon_radius("1/100000000000000000000000000000000000000000");
+   expect_string("Q continued-fraction reconstruction",
+                 take(recon_source.reconstruct(recon_radius).frac_print()), "3");
+   expect_string("Q negative continued-fraction reconstruction",
+                 take((-recon_source).reconstruct(recon_radius).frac_print()), "-3");
+   expect_true("Q zero-radius reconstruction leaves exact center",
+               recon_source.reconstruct(Q((int64_t)0)) == recon_source);
 
    Ce ci = i.cos(p);
    Ce si = i.sin(p);

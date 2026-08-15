@@ -148,7 +148,7 @@ namespace {
 
       return Ce(center,
                 padded_error(re_error, precision),
-                padded_error(im_error, precision));
+                padded_error(im_error, precision)).reconstruct();
    }
 
    template <typename Eval>
@@ -180,7 +180,7 @@ namespace {
 
       return Ce(center,
                 padded_error(re_error, precision),
-                padded_error(im_error, precision));
+                padded_error(im_error, precision)).reconstruct();
    }
 
    static Ce constant_estimate(uint64_t precision,
@@ -195,7 +195,7 @@ namespace {
       }
       return Ce(center,
                 padded_error(re_error, precision),
-                padded_error(im_error, precision));
+                padded_error(im_error, precision)).reconstruct();
    }
 
    static bool spans_zero(const Q &center, const Q &error) {
@@ -326,6 +326,19 @@ Ce Ce::recenter(const C &new_value) const {
    return Ce(new_value, new_error, new_ierror);
 }
 
+Ce Ce::reconstruct(uint64_t max_denominator) const {
+   if (exact()) {
+      return *this;
+   }
+
+   Q new_real = real().reconstruct(err, max_denominator);
+   Q new_imag = imag().reconstruct(ierr, max_denominator);
+   if (new_real == real() && new_imag == imag()) {
+      return *this;
+   }
+   return recenter(C(new_real, new_imag));
+}
+
 Ce Ce::operator + () const {
    return *this;
 }
@@ -340,11 +353,11 @@ Ce Ce::operator ~ () const {
 }
 
 Ce Ce::operator + (Ce const &obj) const {
-   return Ce(val + obj.val, err + obj.err, ierr + obj.ierr);
+   return Ce(val + obj.val, err + obj.err, ierr + obj.ierr).reconstruct();
 }
 
 Ce Ce::operator - (Ce const &obj) const {
-   return Ce(val - obj.val, err + obj.err, ierr + obj.ierr);
+   return Ce(val - obj.val, err + obj.err, ierr + obj.ierr).reconstruct();
 }
 
 Ce Ce::operator * (Ce const &obj) const {
@@ -358,7 +371,7 @@ Ce Ce::operator * (Ce const &obj) const {
    Q im_error = product_error(a, err, d, obj.ierr) +
                 product_error(b, ierr, c, obj.err);
 
-   return Ce(val * obj.val, re_error, im_error);
+   return Ce(val * obj.val, re_error, im_error).reconstruct();
 }
 
 Ce Ce::operator / (Ce const &obj) const {
@@ -532,7 +545,7 @@ Ce Ce::conj(void) const {
 Ce Ce::norm(void) const {
    Q re_error = product_error(real(), err, real(), err) +
                 product_error(imag(), ierr, imag(), ierr);
-   return Ce(C(val.norm()), re_error, Q((int64_t)0));
+   return Ce(C(val.norm()), re_error, Q((int64_t)0)).reconstruct();
 }
 
 Ce Ce::abs(uint64_t precision) const {
