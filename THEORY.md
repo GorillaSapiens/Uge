@@ -109,8 +109,10 @@ known branch cuts or include singular points.
 The `uge` calculator is `Ce`-valued end to end: variables, `last`, parser
 results, function parameters/returns, cached constants, and operators all carry
 the center and its retained componentwise uncertainty. Ordinary calculator
-output prints the center, so reconstruction can turn an unwieldy approximate
-center into a simple value such as `3` without adding visual noise. `debug()`
+output prints the center by default, so reconstruction can turn an unwieldy
+approximate center into a simple value such as `3` without adding visual noise.
+`errors on` appends the retained rectangular absolute error as `+/-`; `errors off`
+is the default. `error(x)` prints just the componentwise error pair, while `debug()`
 shows the center, `error`, `ierror`, and whether the value is exact.
 
 ## `Q`: exact rational numbers (ℚ)

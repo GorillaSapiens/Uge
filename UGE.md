@@ -1,10 +1,12 @@
 # `uge` calculator
 
-`uge` is an interactive exact rational/complex calculator built on Uge's `C`
-type.  Its command language intentionally resembles GNU `bc`.  Every calculator
-value is a complex number whose real and imaginary components are `Q` rationals.
-When the imaginary component is zero it is omitted from normal output, so ordinary
-real calculations retain the same appearance and exact-rational behavior.
+`uge` is an interactive exact rational/complex calculator built on Uge's `Ce`
+type.  Its command language intentionally resembles GNU `bc`. Every calculator
+value carries a `C` center whose real and imaginary components are `Q` rationals,
+plus independent nonnegative `Q` error bounds for those two components. Exact
+rational/complex calculations retain zero error. When the imaginary component is
+zero it is omitted from normal output, so ordinary real calculations retain the
+same appearance and exact-rational behavior.
 
 That distinction matters for non-decimal input.  For example:
 
@@ -637,6 +639,34 @@ foo
 "Decimal notation" is the special case of positional notation where the radix is
 10; it is not the right name for the same notation in another radix.
 
+Error display is controlled independently from positional/fraction formatting:
+
+```
+errors off
+errors on
+errors
+```
+
+`errors off` is the default. `errors on` appends `+/-` followed by the retained
+absolute error bound to ordinary output. Entering `errors` by itself reports the
+current setting. Exact results therefore show `+/- 0` when error display is enabled.
+For complex estimates, the error is a rectangular pair of independent componentwise
+bounds; it is printed in parentheses when the imaginary error is nonzero. For example:
+
+```text
+precision=16
+errors on
+sqrt(3)*sqrt(3)
+3 +/- 0.004658912085509447909004165921942330896854400634765625
+sqrt(-2)
+1.4141998291015625i +/- (0.001178808510303497314453125i)
+```
+
+The notation is an absolute numerical enclosure, not a statistical standard
+deviation or confidence interval. If the center is `a+bi` and the displayed error
+pair is `er+eii`, then the represented value satisfies
+`|Re(actual)-a| <= er` and `|Im(actual)-b| <= ei`.
+
 Several explicit top-level output forms are also provided:
 
 ```
@@ -645,22 +675,28 @@ pos(expression)
 fraction(expression)
 frac(expression)
 decimal(expression)
+error(expression)
 debug(expression)
 print expression
 ```
 
 `positional()` and `pos()` always print positional notation in `obase`, regardless
-of the current `format`.  `fraction()` and `frac()` always print the exact value
+of the current `format`.  `fraction()` and `frac()` always print the rational center
 as an integer, fraction, or mixed fraction, with the numerator and denominator
 themselves written in `obase`.  For complex values each component is formatted
 in that radix and a zero imaginary component is omitted.  `decimal()` always
-prints positional notation in radix 10 regardless of `obase` or `format`.
-`debug()` exposes the internal `Ce`: its `C` center, real `error`, imaginary
-`ierror`, and an `exact=true`/`exact=false` flag. Ordinary positional and fraction
-output print only the center. Thus a reconstructed result such as
-`sqrt(3)*sqrt(3)` prints `3`, while `debug()` still shows that the result carries
-nonzero uncertainty and is not the same internally as literal exact `3`.
-`print expression` uses the current persistent `format`.
+prints positional notation in radix 10 regardless of `obase` or `format`. When
+`errors on` is active, `positional()`, `fraction()`, `decimal()`, ordinary output,
+and `print` all append the corresponding error bound in the same radix/format.
+`error(expression)` prints only the retained rectangular error pair, using the
+current `format` and `obase`; it never appends another `+/-`. Like the other
+one-shot output forms, it leaves `last` set to the argument value rather than the
+printed error pair. `debug()` exposes the internal `Ce`: its `C` center, real
+`error`, imaginary `ierror`, and an `exact=true`/`exact=false` flag, and is not
+changed by the `errors` setting. Thus with the default `errors off`, a reconstructed
+result such as `sqrt(3)*sqrt(3)` prints `3`, while `debug()` still shows that the
+result carries nonzero uncertainty and is not the same internally as literal exact
+`3`. `print expression` uses the current persistent `format`.
 
 ### Base 10 examples
 

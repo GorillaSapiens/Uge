@@ -95,6 +95,7 @@ struct Context {
    uint64_t precision;
    TrigMode trigmode;
    OutputFormat output_format;
+   bool show_errors;
    std::map<std::string, Ce> vars;
    std::map<std::string, UserFunction> functions;
    std::vector<Frame> frames;
@@ -105,7 +106,7 @@ struct Context {
    Context()
       : ibase(10), obase(10), print_max(DEFAULT_PRINT_MAX),
         precision(DEFAULT_PRECISION), trigmode(TRIG_NORMALIZED),
-        output_format(FORMAT_POSITIONAL), last((int64_t)0),
+        output_format(FORMAT_POSITIONAL), show_errors(false), last((int64_t)0),
         pi_cache((int64_t)0), e_cache((int64_t)0) {}
 };
 
@@ -150,6 +151,10 @@ static void print_format_status(const Context &ctx) {
    else {
       printf("using positional format; enter 'format fraction' for fraction format\n");
    }
+}
+
+static void print_errors_status(const Context &ctx) {
+   printf("errors %s\n", ctx.show_errors ? "on" : "off");
 }
 
 static void set_precision(Context &ctx, uint64_t precision) {
@@ -946,13 +951,59 @@ static bool wrapped_call(const std::string &s, const char *name, std::string &in
    return true;
 }
 
-static void output_positional(Context &ctx, const Ce &c, uint64_t radix) {
-   printf("%s\n", GCSTR c.print(radix, ctx.print_max));
+static Ce error_value(const Ce &c) {
+   return Ce(c.error(), c.ierror());
+}
+
+static void output_positional(Context &ctx, const Ce &c, uint64_t radix,
+                              bool with_errors = true) {
+   if (!with_errors || !ctx.show_errors) {
+      printf("%s\n", GCSTR c.print(radix, ctx.print_max));
+      return;
+   }
+
+   Ce e = error_value(c);
+   if (c.ierror().sgn() != 0) {
+      printf("%s +/- (%s)\n", GCSTR c.print(radix, ctx.print_max),
+             GCSTR e.print(radix, ctx.print_max));
+   }
+   else {
+      printf("%s +/- %s\n", GCSTR c.print(radix, ctx.print_max),
+             GCSTR e.print(radix, ctx.print_max));
+   }
+}
+
+static void output_fraction(Context &ctx, const Ce &c, uint64_t radix,
+                            bool with_errors = true) {
+   if (!with_errors || !ctx.show_errors) {
+      printf("%s\n", GCSTR c.frac_print(radix));
+      return;
+   }
+
+   Ce e = error_value(c);
+   if (c.ierror().sgn() != 0) {
+      printf("%s +/- (%s)\n", GCSTR c.frac_print(radix),
+             GCSTR e.frac_print(radix));
+   }
+   else {
+      printf("%s +/- %s\n", GCSTR c.frac_print(radix),
+             GCSTR e.frac_print(radix));
+   }
+}
+
+static void output_error(Context &ctx, const Ce &c) {
+   Ce e = error_value(c);
+   if (ctx.output_format == FORMAT_FRACTION) {
+      output_fraction(ctx, e, ctx.obase, false);
+   }
+   else {
+      output_positional(ctx, e, ctx.obase, false);
+   }
 }
 
 static void output_default(Context &ctx, const Ce &c) {
    if (ctx.output_format == FORMAT_FRACTION) {
-      printf("%s\n", GCSTR c.frac_print(ctx.obase));
+      output_fraction(ctx, c, ctx.obase);
    }
    else {
       output_positional(ctx, c, ctx.obase);
@@ -994,7 +1045,8 @@ static bool execute_simple_statement(Context &ctx, std::string stmt) {
       printf("ibase/obase/base assignments are always interpreted in decimal.\n");
       printf("trigmode normalized (default) or trigmode direct selects ordinary trig evaluation.\n");
       printf("format positional (default) or format fraction selects ordinary output.\n");
-      printf("Output overrides: positional(x), fraction(x), decimal(x).\n");
+      printf("errors off (default) or errors on hides/shows +/- error bounds.\n");
+      printf("Output overrides: positional(x), fraction(x), decimal(x), error(x), debug(x).\n");
       printf("maxdigits controls rendering; precision controls approximations.\n");
       printf("Type 'warranty' for warranty and liability terms.\n");
       return true;
@@ -1023,6 +1075,26 @@ static bool execute_simple_statement(Context &ctx, std::string stmt) {
             return true;
          }
          throw std::string("format must be 'positional' or 'fraction'");
+      }
+   }
+
+   {
+      std::string rest;
+      if (starts_word(stmt, "errors", rest)) {
+         if (rest.empty()) {
+            print_errors_status(ctx);
+            return true;
+         }
+         if (rest[0] == '=') rest = trim(rest.substr(1));
+         if (rest == "on") {
+            ctx.show_errors = true;
+            return true;
+         }
+         if (rest == "off") {
+            ctx.show_errors = false;
+            return true;
+         }
+         throw std::string("errors must be 'on' or 'off'");
       }
    }
 
@@ -1069,7 +1141,7 @@ static bool execute_simple_statement(Context &ctx, std::string stmt) {
    bool assignment_statement = starts_assignment_statement(stmt);
 
    std::string inside;
-   enum OutMode { NORMAL, POSITIONAL, FRACTION, DECIMAL, DEBUG } mode = NORMAL;
+   enum OutMode { NORMAL, POSITIONAL, FRACTION, DECIMAL, ERROR, DEBUG } mode = NORMAL;
    if (wrapped_call(stmt, "fraction", inside) || wrapped_call(stmt, "frac", inside)) {
       mode = FRACTION;
       stmt = inside;
@@ -1080,6 +1152,10 @@ static bool execute_simple_statement(Context &ctx, std::string stmt) {
    }
    else if (wrapped_call(stmt, "decimal", inside)) {
       mode = DECIMAL;
+      stmt = inside;
+   }
+   else if (wrapped_call(stmt, "error", inside)) {
+      mode = ERROR;
       stmt = inside;
    }
    else if (wrapped_call(stmt, "debug", inside)) {
@@ -1098,7 +1174,7 @@ static bool execute_simple_statement(Context &ctx, std::string stmt) {
    Value v = p.parse();
 
    if (mode == FRACTION) {
-      printf("%s\n", GCSTR v.c.frac_print(ctx.obase));
+      output_fraction(ctx, v.c, ctx.obase);
       ctx.last = v.c;
    }
    else if (mode == POSITIONAL) {
@@ -1107,6 +1183,10 @@ static bool execute_simple_statement(Context &ctx, std::string stmt) {
    }
    else if (mode == DECIMAL) {
       output_positional(ctx, v.c, 10);
+      ctx.last = v.c;
+   }
+   else if (mode == ERROR) {
+      output_error(ctx, v.c);
       ctx.last = v.c;
    }
    else if (mode == DEBUG) {
@@ -1137,8 +1217,8 @@ static bool is_reserved_local_name(const std::string &name) {
           name == "last" || is_config_name(name) || name == "if" ||
           name == "else" || name == "while" || name == "for" ||
           name == "break" || name == "continue" || name == "return" ||
-          name == "define" || name == "local" || name == "quit" ||
-          name == "halt";
+          name == "define" || name == "local" || name == "errors" ||
+          name == "quit" || name == "halt";
 }
 
 static bool is_builtin_function_name(const std::string &name) {
@@ -1149,7 +1229,7 @@ static bool is_builtin_function_name(const std::string &name) {
       "sindeg", "cosdeg", "tandeg", "atandeg", "atan2deg",
       "ln", "pi", "tau", "e", "abs", "real", "imag", "conj",
       "norm", "arg", "floor", "sgn", "pow", "xor",
-      "fraction", "frac", "positional", "pos", "decimal", "debug"
+      "fraction", "frac", "positional", "pos", "decimal", "error", "debug"
    };
    for (size_t i = 0; i < sizeof(names) / sizeof(names[0]); i++) {
       if (name == names[i]) return true;

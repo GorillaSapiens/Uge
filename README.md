@@ -99,8 +99,10 @@ i
 
 `uge` is the main interactive face of the project. Its expression syntax and
 command-line feel are intentionally familiar to GNU `bc` users, but every
-calculator value is a `C`: a complex number whose real and imaginary components
-are exact rational `Q` values. If the imaginary component is zero, it is simply
+calculator value is a `Ce`: a rational-component complex center together with
+independent nonnegative error bounds for its real and imaginary components. Exact
+rational/complex calculations retain zero error; approximation-producing operations
+carry their uncertainty forward. If the imaginary component is zero, it is simply
 not printed, so ordinary real calculations still look ordinary.
 
 Highlights include:
@@ -112,7 +114,9 @@ Highlights include:
 - independent `ibase` and `obase`, plus `base` to set both;
 - persistent `format positional` / `format fraction` output selection, with
   `-positional` / `-fraction` startup options and `fraction()`, `positional()`,
-  `decimal()`, and `debug()` one-shot forms;
+  `decimal()`, `error()`, and `debug()` one-shot forms;
+- `errors on` / `errors off` control of `+/-` uncertainty display, defaulting
+  to `errors off`;
 - arbitrary-precision `sqrt`, exponential, logarithmic, trigonometric, and
   inverse-trigonometric functions, including complex principal values where
   applicable;
@@ -215,8 +219,9 @@ principal values where a single result is required.
 
 A `C` with a zero imaginary component prints exactly like its real `Q` value.
 `Ce` preserves that center formatting while adding hidden error bookkeeping;
-ordinary calculator output therefore remains uncluttered, and `debug()` exposes
-the retained bounds when they matter.
+ordinary calculator output therefore remains uncluttered by default. `errors on`
+adds the retained absolute componentwise bounds with `+/-`, `error(x)` prints just
+the bound pair, and `debug()` exposes the complete internal estimate.
 
 For more detail about the representation and design rationale, see
 [THEORY.md](THEORY.md).

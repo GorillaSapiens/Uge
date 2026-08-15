@@ -173,6 +173,51 @@ run_contains "debug exact value stays exact" \
 quit
 ' 'exact=true'
 
+run_exact "errors display toggle" \
+'precision=16
+errors
+3
+errors on
+3
+sqrt(3)*sqrt(3)
+errors
+errors off
+3
+errors
+quit
+' \
+'errors off
+3
+3 +/- 0
+3 +/- 0.004658912085509447909004165921942330896854400634765625
+errors on
+3
+errors off
+'
+
+run_exact "error output form" \
+'precision=16
+error(3)
+errors on
+error(3)
+error(sqrt(-2))
+format fraction
+error(sqrt(3)*sqrt(3))
+quit
+' \
+"0
+0
+0.001178808510303497314453125i
+using fraction format; enter 'format positional' for positional format
+83927498929009/18014398509481984
+"
+
+run_error "bad errors setting" \
+'errors maybe
+quit
+' \
+"errors must be 'on' or 'off'"
+
 
 run_exact "complex arithmetic" \
 'sqrt(-1)
