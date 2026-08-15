@@ -288,7 +288,7 @@ make test
 
 The suite has separate layers:
 
-- `tests/regression.cpp` directly exercises `N`, `Z`, `Q`, and `C`, including
+- `tests/regression.cpp` directly exercises `N`, `Z`, `Q`, `C`, and experimental `Ce`, including
   deterministic randomized algebraic/property tests and radix round-trips over
   bases 2, 3, 10, 12, 16, 36, 37, 256, and 65536;
 - `tests/uge_regression.sh` drives the calculator as a user would, covering
@@ -314,7 +314,7 @@ GitHub, cross-compiles the Windows x86-64 executable with MinGW-w64, and then
 runs that cross-built executable on a Windows runner. Tagged releases are gated
 by the ordinary and sanitized suites as well.
 
-The older `ntest`, `ztest`, `qtest`, and `ctest` programs remain useful as
+The older `ntest`, `ztest`, `qtest`, `ctest`, and experimental `cetest` programs remain useful as
 interactive low-level probes; they are not the automated regression suite.
 
 ## Releases
@@ -373,13 +373,15 @@ uge_n.hpp / uge_n.cpp       N implementation
 uge_z.hpp / uge_z.cpp       Z implementation
 uge_q.hpp / uge_q.cpp       Q implementation
 uge_c.hpp / uge_c.cpp       C implementation
+uge_ce.hpp / uge_ce.cpp     experimental C-with-error implementation
 uge.cpp                     interactive calculator
 gen_version_h.pl             build-time version.h generator
 ntest.cpp                   N test/interactive driver
 ztest.cpp                   Z test/interactive driver
 qtest.cpp                   Q test/interactive driver
 ctest.cpp                   C test/interactive driver
-tests/regression.cpp        automated N/Z/Q/C API regression suite
+cetest.cpp                  Ce test/interactive driver
+tests/regression.cpp        automated N/Z/Q/C/Ce API regression suite
 tests/uge_regression.sh     automated calculator regression suite
 tests/version_regression.sh automated version-selection regression
 tests/install_regression.sh automated install/uninstall regression

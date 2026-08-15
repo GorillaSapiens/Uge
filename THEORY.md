@@ -7,9 +7,10 @@ understand why a calculation that is mathematically exact can turn into a long
 nearby positional value, but it does not have to be this way for rational
 arithmetic.
 
-Uge provides four numeric classes: `N`, `Z`, `Q`, and `C`. Their names are
-motivated by familiar mathematical number-set notation, but the relationships
-are worth stating precisely:
+Uge provides four mathematical numeric classes, `N`, `Z`, `Q`, and `C`, plus
+an experimental numerical-estimate wrapper, `Ce`. The first four names are
+motivated by familiar mathematical number-set notation; `Ce` deliberately is
+not a number-set name. The relationships are worth stating precisely:
 
 - `N` represents **ℕ₀**, the natural numbers including zero. Uge uses
   ℕ₀ = {0, 1, 2, ...}; `N` is the unsigned magnitude layer used by the
@@ -22,6 +23,11 @@ are worth stating precisely:
 - `C` is the complex layer inspired by **ℂ**. Its real and imaginary components
   are `Q` values, so ℚ + iℚ is exact and irrational components are represented
   by rational approximations when required.
+- `Ce` wraps a `C` center with two nonnegative `Q` error bounds, one for the
+  real component and one for the imaginary component. It is an experimental
+  computational type intended to retain the uncertainty that `C` necessarily
+  loses when an irrational or transcendental result is approximated. The
+  calculator does not use `Ce` yet.
 
 ## `N`: arbitrary-precision natural numbers (ℕ₀)
 
@@ -53,6 +59,48 @@ roots of negative values are rejected.
 calculator does not use it. `Q` already stores its own sign, whole part,
 numerator, and denominator, so `Q` continues to use `N` directly rather than
 wrapping those components in `Z`.
+
+## `Ce`: complex values with retained numerical error
+
+`Ce` is deliberately different from `N`, `Z`, `Q`, and `C`: it is not meant to
+name a mathematical set. It stores a `C` center plus two nonnegative rational
+error bounds:
+
+```text
+C value
+Q error     absolute real-component error
+Q ierror    absolute imaginary-component error
+```
+
+An exact `Ce` has both bounds equal to zero. Exact rational/complex arithmetic
+therefore stays exact. Approximation-producing operations compare their result
+at the requested precision with a guarded-precision evaluation and retain the
+difference as numerical uncertainty. Existing input uncertainty is propagated
+exactly/conservatively through ordinary arithmetic. For nonlinear functions the
+current experimental implementation uses guarded-precision evaluation plus a
+padded sampling of the input error box; this is intended as a practical
+numerical enclosure for experimentation, not as proof-certified interval
+arithmetic. Exact special cases inherited from `C` remain exact when requested
+and guarded evaluations agree.
+
+The distinction is useful for values such as `sqrt(-2)`: its real center and
+real error are exactly zero, while the imaginary component contains the
+rational approximation to `sqrt(2)` and `ierror` records its uncertainty.
+Likewise, multiplying two `Ce` approximations to `sqrt(3)` produces an interval
+that contains exact `3`, without claiming that the rational center itself was
+exactly `sqrt(3)`. `recenter()` can move an enclosure to a simpler center while
+widening the error bounds, which is intended to support later rational
+reconstruction experiments without turning an approximation into a false exact
+result.
+
+`Ce` exposes the same arithmetic, complex helpers, powers, and ordinary/π/τ/
+degree trigonometric families as `C`. Discontinuous integer-like operations
+(bitwise operations, modulo, and shifts) require exact inputs. Ordering,
+`floor()`, and `sgn()` reject cases whose error intervals make the answer
+ambiguous. Principal-branch operations reject uncertain rectangles that cross
+known branch cuts or include singular points.
+
+At this stage `Ce` is a library experiment. `uge` itself remains `C`-valued.
 
 ## `Q`: exact rational numbers (ℚ)
 

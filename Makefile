@@ -18,10 +18,10 @@ OBJS=\
    uge_c.o \
    uge_ramprintf.o
 
-PROGS=ntest ztest qtest ctest
+PROGS=ntest ztest qtest ctest cetest
 TEST_PROGS=regression
-PROG_OBJS=ntest.o ztest.o qtest.o ctest.o uge.o
-DEPS=$(OBJS:.o=.d) uge_z.d $(PROG_OBJS:.o=.d)
+PROG_OBJS=ntest.o ztest.o qtest.o ctest.o cetest.o uge.o
+DEPS=$(OBJS:.o=.d) uge_z.d uge_ce.d $(PROG_OBJS:.o=.d)
 
 all: $(PROGS) $(UGE_EXE)
 
@@ -57,7 +57,10 @@ $(UGE_EXE): uge.o $(OBJS)
 ctest: ctest.o $(OBJS)
 	$(CXX) $(CXXFLAGS) $^ -o $@
 
-regression: tests/regression.cpp $(OBJS) uge_z.o
+cetest: cetest.o uge_ce.o $(OBJS)
+	$(CXX) $(CXXFLAGS) $^ -o $@
+
+regression: tests/regression.cpp $(OBJS) uge_z.o uge_ce.o
 	$(CXX) $(CXXFLAGS) -I. $^ -o $@
 
 test: regression $(UGE_EXE)

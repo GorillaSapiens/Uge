@@ -12,6 +12,7 @@
 #include "uge_z.hpp"
 #include "uge_q.hpp"
 #include "uge_c.hpp"
+#include "uge_ce.hpp"
 
 using namespace uge;
 
@@ -335,12 +336,119 @@ static void test_c(void) {
    expect_throw("C division by zero", "division by zero", [&] { (void)(a / C((int64_t)0)); });
 }
 
+
+static void test_ce(void) {
+   const uint64_t p = 96;
+   Ce a(Q((int64_t)1), Q((int64_t)2));
+   Ce b(Q((int64_t)3), Q((int64_t)-4));
+   Ce i(Q((int64_t)0), Q((int64_t)1));
+
+   expect_true("Ce exact constructor", a.exact());
+   expect_string("Ce exact add", take((a + b).frac_print()), "4-2i");
+   expect_string("Ce exact multiply", take((a * b).frac_print()), "11+2i");
+   expect_string("Ce exact divide", take((a / b).frac_print()), "-1/5+2/5i");
+   expect_string("Ce conjugate", take(a.conj().frac_print()), "1-2i");
+   expect_string("Ce norm center", take(a.norm().frac_print()), "5");
+   expect_true("Ce exact norm", a.norm().exact());
+
+   Ce root4 = Ce((int64_t)4).sqrt(p);
+   expect_true("Ce perfect sqrt exact", root4.exact());
+   expect_string("Ce perfect sqrt value", take(root4.frac_print()), "2");
+
+   Ce root3 = Ce((int64_t)3).sqrt(p);
+   expect_true("Ce irrational sqrt approximate", !root3.exact());
+   expect_true("Ce sqrt3 real error positive", root3.error().sgn() > 0);
+   expect_true("Ce sqrt3 imag error zero", root3.ierror().sgn() == 0);
+   expect_true("Ce sqrt3 encloses guarded value",
+               root3.contains(C(Q((int64_t)3).sqrt(128))));
+
+   Ce root_minus2 = Ce((int64_t)-2).sqrt(p);
+   expect_true("Ce sqrt(-2) real center zero", root_minus2.real().sgn() == 0);
+   expect_true("Ce sqrt(-2) real error zero", root_minus2.error().sgn() == 0);
+   expect_true("Ce sqrt(-2) imag error positive", root_minus2.ierror().sgn() > 0);
+
+   Ce spi6 = Ce(Q("1/6")).sinpi(p);
+   expect_true("Ce sinpi exact special", spi6.exact());
+   expect_string("Ce sinpi exact value", take(spi6.frac_print()), "1/2");
+
+   Ce spi3 = Ce(Q("1/3")).sinpi(p);
+   expect_true("Ce sinpi irrational approximate", !spi3.exact());
+   expect_true("Ce sinpi guarded containment",
+               spi3.contains(C(Q("1/3").sinpi(128))));
+
+   Ce squared = root3 * root3;
+   expect_true("Ce sqrt3 squared encloses 3", squared.contains(C((int64_t)3)));
+   Ce snapped = squared.recenter(C((int64_t)3));
+   expect_string("Ce recenter sqrt3 squared", take(snapped.frac_print()), "3");
+   expect_true("Ce recenter remains approximate", !snapped.exact());
+
+   Ce product = spi3 * root3;
+   expect_true("Ce sinpi sqrt3 product encloses 3/2",
+               product.contains(C(Q("3/2"))));
+
+   Ce ci = i.cos(p);
+   Ce si = i.sin(p);
+   expect_true("Ce cos(i) real center", ci.imag().sgn() == 0);
+   expect_true("Ce cos(i) imaginary error zero", ci.ierror().sgn() == 0);
+   expect_true("Ce cos(i) approximate", !ci.exact());
+   expect_true("Ce sin(i) imaginary center", si.real().sgn() == 0);
+   expect_true("Ce sin(i) real error zero", si.error().sgn() == 0);
+   expect_true("Ce sin(i) approximate", !si.exact());
+
+   Ce ep = Ce::pi(p);
+   Ce et = Ce::tau(p);
+   expect_true("Ce pi approximate", !ep.exact());
+   expect_true("Ce tau center twice pi", et.value() == ep.value() * C((int64_t)2));
+   expect_true("Ce tau error twice pi", et.error() == ep.error() * Q((int64_t)2));
+
+   Ce uncertain(C(Q("3.2")), Q("0.1"), Q((int64_t)0));
+   expect_string("Ce unambiguous floor", take(uncertain.floor().frac_print()), "3");
+   expect_i64("Ce unambiguous sign", uncertain.sgn(), 1);
+   expect_true("Ce disjoint approximate ordering", uncertain < Ce((int64_t)4));
+   expect_true("Ce disjoint approximate inequality", uncertain != Ce((int64_t)4));
+
+   Ce ambiguous(C(Q("3")), Q("1/2"), Q((int64_t)0));
+   expect_throw("Ce ambiguous ordering", "ambiguous", [&] { (void)(ambiguous < Ce((int64_t)3)); });
+   expect_throw("Ce approximate bitwise rejected", "requires an exact Ce", [&] { (void)(ambiguous & Ce((int64_t)1)); });
+   expect_throw("Ce uncertain divisor zero rejected", "include zero", [&] {
+      Ce divisor(C(Q("1/10")), Q("1/5"), Q((int64_t)0));
+      (void)(Ce((int64_t)1) / divisor);
+   });
+
+   // Smoke every C-family transcendental entry point so API drift is caught.
+   (void)Ce(Q("1/7")).sin(p);
+   (void)Ce(Q("1/7")).cos(p);
+   (void)Ce(Q("1/7")).tan(p);
+   (void)Ce(Q("1/7")).atan(p);
+   (void)Ce(Q("1/7")).sinpi(p);
+   (void)Ce(Q("1/7")).cospi(p);
+   (void)Ce(Q("1/7")).tanpi(p);
+   (void)Ce(Q("1/7")).atanpi(p);
+   (void)Ce(Q("1/7")).sintau(p);
+   (void)Ce(Q("1/7")).costau(p);
+   (void)Ce(Q("1/7")).tantau(p);
+   (void)Ce(Q("1/7")).atantau(p);
+   (void)Ce(Q("10")).sindeg(p);
+   (void)Ce(Q("10")).cosdeg(p);
+   (void)Ce(Q("10")).tandeg(p);
+   (void)Ce(Q("1/7")).atandeg(p);
+   (void)Ce(Q("2")).ln(p);
+   (void)Ce(Q("1/7")).e(p);
+   (void)Ce(Q("2")).pow(Ce(Q("1/3")), p);
+   (void)Ce(Q("1")).atan2(Ce(Q("2")), p);
+   (void)Ce(Q("1")).atan2pi(Ce(Q("2")), p);
+   (void)Ce(Q("1")).atan2tau(Ce(Q("2")), p);
+   (void)Ce(Q("1")).atan2deg(Ce(Q("2")), p);
+   checks += 24;
+}
+
 int main(void) {
    try {
       test_n();
       test_z();
       test_q();
       test_c();
+      test_ce();
       test_random_properties();
    }
    catch (const std::string &e) {

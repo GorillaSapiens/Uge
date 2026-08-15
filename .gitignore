@@ -4,6 +4,7 @@ qtest
 ntest
 ztest
 ctest
+cetest
 uge
 Makefile.bak
 regression

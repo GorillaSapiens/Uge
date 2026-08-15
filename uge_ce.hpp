@@ -24,6 +24,8 @@ namespace uge {
          Q ierr;
 
          static void require_nonnegative_error(const Q &q);
+         void require_exact(const char *operation) const;
+         void require_definitely_real(const char *operation) const;
 
       public:
          Ce();
@@ -32,7 +34,9 @@ namespace uge {
          // Exact-value constructors: both error bounds are zero.
          Ce(const C &value);
          Ce(const Q &real);
+         Ce(const Q &real, const Q &imag);
          Ce(int64_t i);
+         Ce(double d);
          Ce(const char *p, uint64_t radix = 10);
 
          // Estimated-value constructor.  Both errors must be nonnegative.
@@ -61,18 +65,37 @@ namespace uge {
 
          Ce operator + () const;
          Ce operator - () const;
+         Ce operator ~ () const;
 
          Ce operator + (Ce const &obj) const;
          Ce operator - (Ce const &obj) const;
          Ce operator * (Ce const &obj) const;
          Ce operator / (Ce const &obj) const;
+         Ce operator % (Ce const &obj) const;
+
+         Ce operator & (Ce const &obj) const;
+         Ce operator | (Ce const &obj) const;
+         Ce operator ^ (Ce const &obj) const;
+         Ce operator >> (int64_t bits) const;
+         Ce operator << (int64_t bits) const;
+
+         bool operator == (const Ce &other) const;
+         bool operator != (const Ce &other) const;
+         bool operator < (const Ce &other) const;
+         bool operator > (const Ce &other) const;
+         bool operator <= (const Ce &other) const;
+         bool operator >= (const Ce &other) const;
 
          Ce& operator+=(const Ce& other);
          Ce& operator-=(const Ce& other);
          Ce& operator*=(const Ce& other);
          Ce& operator/=(const Ce& other);
-
-         Ce conj(void) const;
+         Ce& operator%=(const Ce& other);
+         Ce& operator&=(const Ce& other);
+         Ce& operator|=(const Ce& other);
+         Ce& operator^=(const Ce& other);
+         Ce& operator>>=(int64_t bits);
+         Ce& operator<<=(int64_t bits);
 
          // These print the center value.  debu_print() also shows the bounds.
          // Returned pointers must be free'd by the caller.
@@ -80,6 +103,46 @@ namespace uge {
          char *frac_print(uint64_t radix = 10) const;
          char *print(uint64_t radix = 10, uint64_t max = 1024) const;
          char *deci_print(uint64_t max = 1024) const;
+
+         Ce conj(void) const;
+         Ce norm(void) const;
+         Ce abs(uint64_t precision) const;
+         Ce arg(uint64_t precision) const;
+
+         Ce floor(void) const;
+         int sgn(void) const;
+
+         Ce sqrt(uint64_t precision) const;
+         Ce ln(uint64_t precision) const;
+         Ce e(uint64_t precision) const;
+         Ce pow(const Ce &power, uint64_t precision) const;
+
+         Ce sin(uint64_t precision) const;
+         Ce cos(uint64_t precision) const;
+         Ce tan(uint64_t precision) const;
+         Ce atan(uint64_t precision) const;
+         Ce atan2(const Ce &x, uint64_t precision) const;
+
+         Ce sinpi(uint64_t precision) const;
+         Ce cospi(uint64_t precision) const;
+         Ce tanpi(uint64_t precision) const;
+         Ce atanpi(uint64_t precision) const;
+         Ce atan2pi(const Ce &x, uint64_t precision) const;
+
+         Ce sintau(uint64_t precision) const;
+         Ce costau(uint64_t precision) const;
+         Ce tantau(uint64_t precision) const;
+         Ce atantau(uint64_t precision) const;
+         Ce atan2tau(const Ce &x, uint64_t precision) const;
+
+         Ce sindeg(uint64_t precision) const;
+         Ce cosdeg(uint64_t precision) const;
+         Ce tandeg(uint64_t precision) const;
+         Ce atandeg(uint64_t precision) const;
+         Ce atan2deg(const Ce &x, uint64_t precision) const;
+
+         static Ce pi(uint64_t precision);
+         static Ce tau(uint64_t precision);
    };
 };
 
