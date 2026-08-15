@@ -230,8 +230,14 @@ Comparisons produce 0 or 1:
 ==  !=  <  <=  >  >=
 ```
 
-`==` and `!=` compare both complex components.  Complex numbers have no natural
-ordering, so `<`, `<=`, `>`, and `>=` require both operands to be real.  `%`,
+`==` and `!=` compare both complex components. Exact values behave normally.
+For approximate `Ce` values, an identical estimate is equal to itself and
+disjoint uncertainty boxes compare unequal; two different estimates whose
+boxes overlap have indeterminate equality and raise an ambiguity error rather
+than comparing only their centers. Complex numbers have no natural ordering,
+so `<`, `<=`, `>`, and `>=` require both operands to be definitely real;
+approximate real values may be ordered only when their intervals make the
+answer unambiguous. `%`,
 `~`, bitwise operators, shifts, `floor()`, `sgn()`, and the `atan2` family also
 require the relevant operands to be real.
 
@@ -329,7 +335,7 @@ variable; names such as `j`, `k`, or `n` are convenient alternatives.
 ## User-defined functions
 
 Scalar user-defined functions use `bc`-like `define` syntax.  Every
-argument, local, and return value is an ordinary `C` calculator value; arrays
+argument, local, and return value is an ordinary `Ce` calculator value; arrays
 are deliberately not implemented.
 
 ```
@@ -378,7 +384,7 @@ is limited to 64 calls.
 
 ## Built-in functions
 
-Functions implemented by the current `C` type are exposed directly:
+Functions implemented by the `C`/`Ce` numeric layers are exposed directly:
 
 ```
 sqrt(x)
@@ -549,11 +555,13 @@ value as bare `e` and `e(0)` is 1.  `tau` is derived exactly as twice the cached
 approximation of `pi`.
 
 `sqrt()`, non-rational powers, trigonometric functions, `ln()`, `e()`, and
-`pi` ultimately use `Q`'s rational approximation mechanism.  No floating-point
-type is introduced: a complex approximate result is still a `C` containing
-rational approximations in its `Q` components.  The special `precision` value
-controls the working precision used when Uge must approximate a result.  It
-defaults to 256:
+`pi` ultimately use `Q`'s rational approximation mechanism. No floating-point
+type is introduced. `C` supplies the rational-component complex center, and the
+calculator carries that center in a `Ce` together with nonnegative `Q` error
+bounds for its real and imaginary components. Exact rational/complex operations
+therefore retain zero error, while approximation-producing operations retain
+the uncertainty introduced at the requested working precision. The special
+`precision` value controls that working precision. It defaults to 256:
 
 ```
 precision = 8192
@@ -561,12 +569,13 @@ precision = 8192
 
 `precision` is always assigned using decimal input, regardless of `ibase`.
 
-The calculator caches `pi` and `e` (`e(1)`) at the current `precision`.  At the
-default precision of 256, the exact rational values produced by Uge's algorithms
-are baked into the program so startup does not have to recompute them.  Other
-precisions are computed normally.  Returning to precision 256 reloads the baked
-values.  `tau` is always derived as exactly `2*pi`.  Changing `maxdigits` does
-not invalidate the cache because it affects only output formatting.
+The calculator caches `pi` and `e` (`e(1)`) at the current `precision`. At the
+default precision of 256, both the rational centers produced by Uge's algorithms
+and their `Ce` error bounds are baked into the program so startup does not have
+to recompute them. Other precisions are computed normally. Returning to
+precision 256 reloads the baked centers and bounds. `tau` is derived as `2*pi`
+and carries twice `pi`'s real error. Changing `maxdigits` does not invalidate
+the cache because it affects only output formatting.
 
 The transcendental functions are implemented without floating point.  The `Q`
 layer supplies the real rational series and range reduction; `C` builds the
@@ -646,7 +655,11 @@ as an integer, fraction, or mixed fraction, with the numerator and denominator
 themselves written in `obase`.  For complex values each component is formatted
 in that radix and a zero imaginary component is omitted.  `decimal()` always
 prints positional notation in radix 10 regardless of `obase` or `format`.
-`debug()` exposes the internal `C` representation and its two `Q` components.
+`debug()` exposes the internal `Ce`: its `C` center, real `error`, imaginary
+`ierror`, and an `exact=true`/`exact=false` flag. Ordinary positional and fraction
+output print only the center. Thus a reconstructed result such as
+`sqrt(3)*sqrt(3)` prints `3`, while `debug()` still shows that the result carries
+nonzero uncertainty and is not the same internally as literal exact `3`.
 `print expression` uses the current persistent `format`.
 
 ### Base 10 examples

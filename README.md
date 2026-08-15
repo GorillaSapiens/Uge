@@ -135,19 +135,24 @@ Highlights include:
   warranty disclaimer and limitation of liability.
 
 Ordinary rational/complex arithmetic remains exact whenever the operation is
-rational. Transcendental results that cannot be represented exactly are stored
-as rational approximations in the real and imaginary components; Uge does not
-switch its underlying representation to floating point.
+rational. Transcendental results that cannot be represented exactly use rational
+approximation centers; the calculator carries componentwise rational error bounds
+alongside those centers rather than switching to floating point. When an ugly
+approximate center lies within its retained error bound of a much simpler
+rational, Uge can reconstruct/recenter it while keeping the nonzero uncertainty.
+For example, `sqrt(3)*sqrt(3)` prints `3` without pretending that the numerical
+path became symbolically exact.
 
 See [UGE.md](UGE.md) for the calculator language, commands, functions, radix
 syntax, output formats, and GNU `bc` compatibility notes.
 
 ## The numeric classes
 
-The numeric library provides four C++ classes whose names echo familiar
-mathematical number-set notation. The calculator itself continues to use the
-`N` -> `Q` -> `C` path; `Z` is a standalone signed-integer wrapper provided for
-completeness and is not used by the calculator.
+The numeric library provides four mathematical C++ classes whose names echo
+familiar number-set notation, plus the numerical-estimate wrapper `Ce`. The
+calculator uses the `N` -> `Q` -> `C` layers underneath a `Ce` value; `Z` is a
+standalone signed-integer wrapper provided for completeness and is not used by
+the calculator.
 
 - `N` -- **ℕ₀**: arbitrary-precision natural numbers including zero.
   `N` is the unsigned magnitude layer; Uge uses the convention
@@ -160,6 +165,10 @@ completeness and is not used by the calculator.
   Values in ℚ + iℚ are represented exactly; irrational real or imaginary
   components are represented by rational approximations at the requested
   working precision.
+- `Ce` -- a `C` numerical center plus independent nonnegative `Q` error bounds
+  for the real and imaginary components. The calculator uses `Ce` so numerical
+  approximation error survives later arithmetic and can guide conservative
+  rational reconstruction/recentering.
 
 ### `N` -- arbitrary-precision natural numbers (ℕ₀)
 
@@ -204,9 +213,10 @@ approximated component by component.
 trigonometric operations. Multi-valued complex operations use conventional
 principal values where a single result is required.
 
-A `C` with a zero imaginary component prints exactly like its real `Q` value,
-which lets `C` serve as the calculator's universal numeric type without making
-real-only calculations noisy.
+A `C` with a zero imaginary component prints exactly like its real `Q` value.
+`Ce` preserves that center formatting while adding hidden error bookkeeping;
+ordinary calculator output therefore remains uncluttered, and `debug()` exposes
+the retained bounds when they matter.
 
 For more detail about the representation and design rationale, see
 [THEORY.md](THEORY.md).
@@ -288,7 +298,7 @@ make test
 
 The suite has separate layers:
 
-- `tests/regression.cpp` directly exercises `N`, `Z`, `Q`, `C`, and experimental `Ce`, including
+- `tests/regression.cpp` directly exercises `N`, `Z`, `Q`, `C`, and `Ce`, including
   deterministic randomized algebraic/property tests and radix round-trips over
   bases 2, 3, 10, 12, 16, 36, 37, 256, and 65536;
 - `tests/uge_regression.sh` drives the calculator as a user would, covering
@@ -314,7 +324,7 @@ GitHub, cross-compiles the Windows x86-64 executable with MinGW-w64, and then
 runs that cross-built executable on a Windows runner. Tagged releases are gated
 by the ordinary and sanitized suites as well.
 
-The older `ntest`, `ztest`, `qtest`, `ctest`, and experimental `cetest` programs remain useful as
+The older `ntest`, `ztest`, `qtest`, `ctest`, and `cetest` programs remain useful as
 interactive low-level probes; they are not the automated regression suite.
 
 ## Releases
@@ -373,7 +383,7 @@ uge_n.hpp / uge_n.cpp       N implementation
 uge_z.hpp / uge_z.cpp       Z implementation
 uge_q.hpp / uge_q.cpp       Q implementation
 uge_c.hpp / uge_c.cpp       C implementation
-uge_ce.hpp / uge_ce.cpp     experimental C-with-error implementation
+uge_ce.hpp / uge_ce.cpp     complex estimate/error-bound implementation
 uge.cpp                     interactive calculator
 gen_version_h.pl             build-time version.h generator
 ntest.cpp                   N test/interactive driver

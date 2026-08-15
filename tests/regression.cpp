@@ -426,6 +426,13 @@ static void test_ce(void) {
    expect_true("Ce disjoint approximate ordering", uncertain < Ce((int64_t)4));
    expect_true("Ce disjoint approximate inequality", uncertain != Ce((int64_t)4));
 
+   expect_true("Ce approximate equality reflexive", root3 == root3);
+   expect_true("Ce approximate inequality reflexive", !(root3 != root3));
+   expect_throw("Ce overlapping unequal estimates equality ambiguous", "ambiguous", [&] {
+      Ce shifted = root3.recenter(C(root3.real() + root3.error() / Q((int64_t)2)));
+      (void)(root3 == shifted);
+   });
+
    Ce ambiguous(C(Q("3")), Q("1/2"), Q((int64_t)0));
    expect_throw("Ce ambiguous ordering", "ambiguous", [&] { (void)(ambiguous < Ce((int64_t)3)); });
    expect_throw("Ce approximate bitwise rejected", "requires an exact Ce", [&] { (void)(ambiguous & Ce((int64_t)1)); });

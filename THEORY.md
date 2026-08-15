@@ -24,10 +24,10 @@ not a number-set name. The relationships are worth stating precisely:
   are `Q` values, so ℚ + iℚ is exact and irrational components are represented
   by rational approximations when required.
 - `Ce` wraps a `C` center with two nonnegative `Q` error bounds, one for the
-  real component and one for the imaginary component. It is an experimental
-  computational type intended to retain the uncertainty that `C` necessarily
-  loses when an irrational or transcendental result is approximated. The
-  calculator does not use `Ce` yet.
+  real component and one for the imaginary component. It retains numerical
+  uncertainty when an irrational or transcendental result is approximated.
+  The calculator uses `Ce` as its universal numeric value type while `C` remains
+  the exact-rational-component complex layer underneath it.
 
 ## `N`: arbitrary-precision natural numbers (ℕ₀)
 
@@ -106,7 +106,12 @@ degree trigonometric families as `C`. Discontinuous integer-like operations
 ambiguous. Principal-branch operations reject uncertain rectangles that cross
 known branch cuts or include singular points.
 
-At this stage `Ce` is a library experiment. `uge` itself remains `C`-valued.
+The `uge` calculator is `Ce`-valued end to end: variables, `last`, parser
+results, function parameters/returns, cached constants, and operators all carry
+the center and its retained componentwise uncertainty. Ordinary calculator
+output prints the center, so reconstruction can turn an unwieldy approximate
+center into a simple value such as `3` without adding visual noise. `debug()`
+shows the center, `error`, `ierror`, and whether the value is exact.
 
 ## `Q`: exact rational numbers (ℚ)
 

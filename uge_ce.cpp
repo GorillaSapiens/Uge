@@ -87,115 +87,186 @@ namespace {
    }
 
    static std::vector<C> sample_box(const Ce &x) {
-      const Q zero((int64_t)0);
       std::vector<Q> rs;
       std::vector<Q> is;
-      rs.push_back(zero);
-      is.push_back(zero);
       if (x.error().sgn() != 0) {
          rs.push_back(x.error());
          rs.push_back(-x.error());
+      }
+      else {
+         rs.push_back(Q((int64_t)0));
       }
       if (x.ierror().sgn() != 0) {
          is.push_back(x.ierror());
          is.push_back(-x.ierror());
       }
+      else {
+         is.push_back(Q((int64_t)0));
+      }
 
+      // Sample only the boundary corners/endpoints.  The center has already
+      // been evaluated by the caller, so including the all-zero displacement
+      // here merely repeats an expensive transcendental evaluation.
       std::vector<C> ret;
       for (size_t r = 0; r < rs.size(); r++) {
          for (size_t i = 0; i < is.size(); i++) {
+            if (rs[r].sgn() == 0 && is[i].sgn() == 0) {
+               continue;
+            }
             ret.push_back(C(x.real() + rs[r], x.imag() + is[i]));
          }
       }
       return ret;
    }
 
-   static Q padded_error(const Q &observed, uint64_t precision) {
-      if (observed.sgn() == 0) {
-         return observed;
+   static Q numerical_error(const Q &center, uint64_t precision) {
+      // C/Q transcendental routines quantize at the requested binary
+      // precision.  Carry a deliberately generous numerical allowance rather
+      // than recomputing every result at precision+32, which is extremely
+      // expensive for arbitrary-precision trig.  Scale by result magnitude so
+      // large transcendental values retain a useful relative cushion too.
+      const Q cushion((int64_t)32);
+      return precision_epsilon(precision) * cushion *
+             (Q((int64_t)1) + center.abs());
+   }
+
+   static uint64_t probe_precision(uint64_t precision) {
+      // A low-precision second evaluation is enough to recognize C's
+      // precision-independent exact special cases.  For low requested
+      // precisions, probe slightly above instead.
+      if (precision > 32) {
+         return 32;
       }
-      // The nonlinear Ce layer is deliberately conservative: the perimeter
-      // samples measure local sensitivity while this factor/cushion leaves
-      // room for curvature and the finite-precision C evaluation itself.
-      return observed * Q((int64_t)2) +
-             precision_epsilon(precision) * Q((int64_t)8);
+      return guarded_precision(precision, 8);
    }
 
    template <typename Eval>
    static Ce unary_estimate(const Ce &x, uint64_t precision, Eval eval) {
-      uint64_t work = guarded_precision(precision, 32);
       C center = eval(x.value(), precision);
-      C high = eval(x.value(), work);
 
-      Q re_error = (high.real() - center.real()).abs();
-      Q im_error = (high.imag() - center.imag()).abs();
-
-      if (!x.exact()) {
-         std::vector<C> samples = sample_box(x);
-         for (size_t n = 0; n < samples.size(); n++) {
-            C y = eval(samples[n], work);
-            re_error = qmax(re_error, (y.real() - center.real()).abs());
-            im_error = qmax(im_error, (y.imag() - center.imag()).abs());
+      // Exact special cases are precision-independent.  Detect them with a
+      // cheap low-precision probe instead of an expensive precision+32 pass.
+      bool re_stable = false;
+      bool im_stable = false;
+      if (x.exact()) {
+         C probe = eval(x.value(), probe_precision(precision));
+         re_stable = probe.real() == center.real();
+         im_stable = probe.imag() == center.imag();
+         if (re_stable && im_stable) {
+            return Ce(center);
          }
       }
 
-      // Identical requested/guarded evaluations of an exact input preserve
-      // C's exact special cases (perfect roots, normalized special angles,
-      // integral powers, exp(0), log(1), and so on).
-      if (x.exact() && re_error.sgn() == 0 && im_error.sgn() == 0) {
-         return Ce(center);
+      Q re_error = re_stable ? Q((int64_t)0) :
+                               numerical_error(center.real(), precision);
+      Q im_error = im_stable ? Q((int64_t)0) :
+                               numerical_error(center.imag(), precision);
+
+      if (!x.exact()) {
+         std::vector<C> samples = sample_box(x);
+         Q observed_re((int64_t)0);
+         Q observed_im((int64_t)0);
+         for (size_t n = 0; n < samples.size(); n++) {
+            C y = eval(samples[n], precision);
+            observed_re = qmax(observed_re,
+                               (y.real() - center.real()).abs());
+            observed_im = qmax(observed_im,
+                               (y.imag() - center.imag()).abs());
+         }
+         if (observed_re.sgn() != 0) {
+            re_error += observed_re * Q((int64_t)2);
+         }
+         if (observed_im.sgn() != 0) {
+            im_error += observed_im * Q((int64_t)2);
+         }
       }
 
-      return Ce(center,
-                padded_error(re_error, precision),
-                padded_error(im_error, precision)).reconstruct();
+      return Ce(center, re_error, im_error);
+   }
+
+   template <typename Eval>
+   static Ce unary_real_lipschitz(const Ce &x, uint64_t precision,
+                                  const Q &factor, Eval eval) {
+      if (!x.is_real()) {
+         return unary_estimate(x, precision, eval);
+      }
+
+      C center = eval(x.value(), precision);
+      if (x.exact()) {
+         C probe = eval(x.value(), probe_precision(precision));
+         if (probe == center) {
+            return Ce(center);
+         }
+      }
+
+      // For real inputs whose derivative magnitude is bounded by factor,
+      // componentwise input uncertainty propagates directly without extra
+      // transcendental evaluations at the interval endpoints.
+      Q re_error = numerical_error(center.real(), precision) +
+                   factor * x.error();
+      Q im_error = numerical_error(center.imag(), precision);
+      if (center.imag().sgn() == 0 && x.ierror().sgn() == 0) {
+         im_error = Q((int64_t)0);
+      }
+      return Ce(center, re_error, im_error);
    }
 
    template <typename Eval>
    static Ce binary_estimate(const Ce &a, const Ce &b,
                              uint64_t precision, Eval eval) {
-      uint64_t work = guarded_precision(precision, 32);
       C center = eval(a.value(), b.value(), precision);
-      C high = eval(a.value(), b.value(), work);
 
-      Q re_error = (high.real() - center.real()).abs();
-      Q im_error = (high.imag() - center.imag()).abs();
+      bool re_stable = false;
+      bool im_stable = false;
+      if (a.exact() && b.exact()) {
+         C probe = eval(a.value(), b.value(), probe_precision(precision));
+         re_stable = probe.real() == center.real();
+         im_stable = probe.imag() == center.imag();
+         if (re_stable && im_stable) {
+            return Ce(center);
+         }
+      }
+
+      Q re_error = re_stable ? Q((int64_t)0) :
+                               numerical_error(center.real(), precision);
+      Q im_error = im_stable ? Q((int64_t)0) :
+                               numerical_error(center.imag(), precision);
 
       if (!a.exact() || !b.exact()) {
          std::vector<C> as = sample_box(a);
          std::vector<C> bs = sample_box(b);
+         if (as.empty()) as.push_back(a.value());
+         if (bs.empty()) bs.push_back(b.value());
+
+         Q observed_re((int64_t)0);
+         Q observed_im((int64_t)0);
          for (size_t i = 0; i < as.size(); i++) {
             for (size_t j = 0; j < bs.size(); j++) {
-               C y = eval(as[i], bs[j], work);
-               re_error = qmax(re_error, (y.real() - center.real()).abs());
-               im_error = qmax(im_error, (y.imag() - center.imag()).abs());
+               C y = eval(as[i], bs[j], precision);
+               observed_re = qmax(observed_re,
+                                  (y.real() - center.real()).abs());
+               observed_im = qmax(observed_im,
+                                  (y.imag() - center.imag()).abs());
             }
+         }
+         if (observed_re.sgn() != 0) {
+            re_error += observed_re * Q((int64_t)2);
+         }
+         if (observed_im.sgn() != 0) {
+            im_error += observed_im * Q((int64_t)2);
          }
       }
 
-      if (a.exact() && b.exact() &&
-          re_error.sgn() == 0 && im_error.sgn() == 0) {
-         return Ce(center);
-      }
-
-      return Ce(center,
-                padded_error(re_error, precision),
-                padded_error(im_error, precision)).reconstruct();
+      return Ce(center, re_error, im_error).reconstruct();
    }
 
    static Ce constant_estimate(uint64_t precision,
                                C (*eval)(uint64_t)) {
-      uint64_t work = guarded_precision(precision, 32);
       C center = eval(precision);
-      C high = eval(work);
-      Q re_error = (high.real() - center.real()).abs();
-      Q im_error = (high.imag() - center.imag()).abs();
-      if (re_error.sgn() == 0 && im_error.sgn() == 0) {
-         return Ce(center);
-      }
       return Ce(center,
-                padded_error(re_error, precision),
-                padded_error(im_error, precision)).reconstruct();
+                numerical_error(center.real(), precision),
+                center.imag().sgn() == 0 ? Q((int64_t)0) :
+                                           numerical_error(center.imag(), precision));
    }
 
    static bool spans_zero(const Q &center, const Q &error) {
@@ -224,9 +295,10 @@ void Ce::require_exact(const char *operation) const {
 }
 
 void Ce::require_definitely_real(const char *operation) const {
+   (void)operation;
    if (!is_real()) {
-      throw(UGE_ERR(std::string(operation) +
-                    " requires a definitely real Ce value"));
+      // Preserve C's public diagnostic for calculator compatibility.
+      throw(UGE_ERR("operation requires a real value"));
    }
 }
 
@@ -435,8 +507,14 @@ Ce Ce::operator << (int64_t bits) const {
 }
 
 bool Ce::operator == (const Ce &other) const {
+   // Equality is reflexive for an identical numerical estimate.  This also
+   // preserves identities such as pi == pi() without pretending that two
+   // merely overlapping but different estimates are equal.
+   if (val == other.val && err == other.err && ierr == other.ierr) {
+      return true;
+   }
    if (exact() && other.exact()) {
-      return val == other.val;
+      return false;
    }
    if (intervals_disjoint(real(), err, other.real(), other.err) ||
        intervals_disjoint(imag(), ierr, other.imag(), other.ierr)) {
@@ -446,8 +524,11 @@ bool Ce::operator == (const Ce &other) const {
 }
 
 bool Ce::operator != (const Ce &other) const {
+   if (val == other.val && err == other.err && ierr == other.ierr) {
+      return false;
+   }
    if (exact() && other.exact()) {
-      return val != other.val;
+      return true;
    }
    if (intervals_disjoint(real(), err, other.real(), other.err) ||
        intervals_disjoint(imag(), ierr, other.imag(), other.ierr)) {
@@ -633,12 +714,12 @@ Ce Ce::pow(const Ce &power, uint64_t precision) const {
 }
 
 Ce Ce::sin(uint64_t precision) const {
-   return unary_estimate(*this, precision,
+   return unary_real_lipschitz(*this, precision, Q((int64_t)1),
       [](const C &z, uint64_t p) { return z.sin(p); });
 }
 
 Ce Ce::cos(uint64_t precision) const {
-   return unary_estimate(*this, precision,
+   return unary_real_lipschitz(*this, precision, Q((int64_t)1),
       [](const C &z, uint64_t p) { return z.cos(p); });
 }
 
@@ -648,7 +729,7 @@ Ce Ce::tan(uint64_t precision) const {
 }
 
 Ce Ce::atan(uint64_t precision) const {
-   return unary_estimate(*this, precision,
+   return unary_real_lipschitz(*this, precision, Q((int64_t)1),
       [](const C &z, uint64_t p) { return z.atan(p); });
 }
 
@@ -665,12 +746,14 @@ Ce Ce::atan2(const Ce &x, uint64_t precision) const {
 }
 
 Ce Ce::sinpi(uint64_t precision) const {
-   return unary_estimate(*this, precision,
+   // |d sin(pi*x)/dx| <= pi < 4 for real x.
+   return unary_real_lipschitz(*this, precision, Q((int64_t)4),
       [](const C &z, uint64_t p) { return z.sinpi(p); });
 }
 
 Ce Ce::cospi(uint64_t precision) const {
-   return unary_estimate(*this, precision,
+   // |d cos(pi*x)/dx| <= pi < 4 for real x.
+   return unary_real_lipschitz(*this, precision, Q((int64_t)4),
       [](const C &z, uint64_t p) { return z.cospi(p); });
 }
 
@@ -680,7 +763,8 @@ Ce Ce::tanpi(uint64_t precision) const {
 }
 
 Ce Ce::atanpi(uint64_t precision) const {
-   return unary_estimate(*this, precision,
+   // |d atan(x)/pi dx| < 1 for real x.
+   return unary_real_lipschitz(*this, precision, Q((int64_t)1),
       [](const C &z, uint64_t p) { return z.atanpi(p); });
 }
 
@@ -692,12 +776,14 @@ Ce Ce::atan2pi(const Ce &x, uint64_t precision) const {
 }
 
 Ce Ce::sintau(uint64_t precision) const {
-   return unary_estimate(*this, precision,
+   // |d sin(tau*x)/dx| <= tau < 7 for real x.
+   return unary_real_lipschitz(*this, precision, Q((int64_t)7),
       [](const C &z, uint64_t p) { return z.sintau(p); });
 }
 
 Ce Ce::costau(uint64_t precision) const {
-   return unary_estimate(*this, precision,
+   // |d cos(tau*x)/dx| <= tau < 7 for real x.
+   return unary_real_lipschitz(*this, precision, Q((int64_t)7),
       [](const C &z, uint64_t p) { return z.costau(p); });
 }
 
@@ -707,7 +793,8 @@ Ce Ce::tantau(uint64_t precision) const {
 }
 
 Ce Ce::atantau(uint64_t precision) const {
-   return unary_estimate(*this, precision,
+   // |d atan(x)/tau dx| < 1 for real x.
+   return unary_real_lipschitz(*this, precision, Q((int64_t)1),
       [](const C &z, uint64_t p) { return z.atantau(p); });
 }
 
@@ -719,12 +806,14 @@ Ce Ce::atan2tau(const Ce &x, uint64_t precision) const {
 }
 
 Ce Ce::sindeg(uint64_t precision) const {
-   return unary_estimate(*this, precision,
+   // pi/180 < 1, so 1 is a conservative real Lipschitz bound.
+   return unary_real_lipschitz(*this, precision, Q((int64_t)1),
       [](const C &z, uint64_t p) { return z.sindeg(p); });
 }
 
 Ce Ce::cosdeg(uint64_t precision) const {
-   return unary_estimate(*this, precision,
+   // pi/180 < 1, so 1 is a conservative real Lipschitz bound.
+   return unary_real_lipschitz(*this, precision, Q((int64_t)1),
       [](const C &z, uint64_t p) { return z.cosdeg(p); });
 }
 
@@ -734,7 +823,8 @@ Ce Ce::tandeg(uint64_t precision) const {
 }
 
 Ce Ce::atandeg(uint64_t precision) const {
-   return unary_estimate(*this, precision,
+   // 180/pi < 58 for real x.
+   return unary_real_lipschitz(*this, precision, Q((int64_t)58),
       [](const C &z, uint64_t p) { return z.atandeg(p); });
 }
 
@@ -756,10 +846,11 @@ Ce Ce::tau(uint64_t precision) {
 }
 
 char *Ce::debu_print(void) const {
-   return mprintf("[value=%s,error=%s,ierror=%s]",
+   return mprintf("[value=%s,error=%s,ierror=%s,exact=%s]",
                   GCSTR val.debu_print(),
                   GCSTR err.debu_print(),
-                  GCSTR ierr.debu_print());
+                  GCSTR ierr.debu_print(),
+                  exact() ? "true" : "false");
 }
 
 char *Ce::frac_print(uint64_t radix) const {

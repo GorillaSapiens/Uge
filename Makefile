@@ -51,7 +51,7 @@ ztest: ztest.o uge_z.o uge_n.o uge_ramprintf.o
 qtest: qtest.o $(OBJS)
 	$(CXX) $(CXXFLAGS) $^ -o $@
 
-$(UGE_EXE): uge.o $(OBJS)
+$(UGE_EXE): uge.o uge_ce.o $(OBJS)
 	$(CXX) $(CXXFLAGS) $^ -o $@
 
 ctest: ctest.o $(OBJS)

@@ -47,6 +47,24 @@ run_error() {
    }
 }
 
+run_contains() {
+   name=$1
+   input=$2
+   needle=$3
+   checks=$((checks + 1))
+   printf '%s' "$input" | "$UGE" -q >"$WORK/out" 2>"$WORK/err" || fail "$name: uge exited nonzero"
+   [ ! -s "$WORK/err" ] || {
+      echo "--- stderr ---" >&2
+      cat "$WORK/err" >&2
+      fail "$name: unexpected stderr"
+   }
+   grep -F "$needle" "$WORK/out" >/dev/null || {
+      echo "--- stdout ---" >&2
+      cat "$WORK/out" >&2
+      fail "$name: expected stdout containing '$needle'"
+   }
+}
+
 run_cli_error() {
    name=$1
    expected_status=$2
@@ -127,6 +145,34 @@ quit
 1
 1
 '
+
+run_exact "Ce reconstruction" \
+'sqrt(3)*sqrt(3)
+sin(pi/3)*sqrt(3)
+sin(pi/3)/sqrt(3)
+quit
+' \
+'3
+1.5
+0.5
+'
+
+run_exact "exact nearby rational is not reconstructed" \
+'fraction(3000000000000000000000000000001/1000000000000000000000000000000)
+quit
+' \
+"3'1/1000000000000000000000000000000
+"
+
+run_contains "debug reconstructed value remains approximate" \
+'debug(sqrt(3)*sqrt(3))
+quit
+' 'exact=false'
+run_contains "debug exact value stays exact" \
+'debug(3)
+quit
+' 'exact=true'
+
 
 run_exact "complex arithmetic" \
 'sqrt(-1)
@@ -294,6 +340,9 @@ quit
 run_error "complex ordering" '1 < i
 quit
 ' 'operation requires a real value'
+run_error "approximate equality ambiguity" 'sqrt(3)*sqrt(3)==3
+quit
+' 'equality is ambiguous within Ce error bounds'
 run_error "break outside loop" 'break
 quit
 ' 'break used outside a loop'
