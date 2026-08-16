@@ -1141,7 +1141,7 @@ static bool execute_simple_statement(Context &ctx, std::string stmt) {
    bool assignment_statement = starts_assignment_statement(stmt);
 
    std::string inside;
-   enum OutMode { NORMAL, POSITIONAL, FRACTION, DECIMAL, ERROR, DEBUG } mode = NORMAL;
+   enum OutMode { NORMAL, POSITIONAL, FRACTION, DECIMAL, ERROR_ONLY, DEBUG } mode = NORMAL;
    if (wrapped_call(stmt, "fraction", inside) || wrapped_call(stmt, "frac", inside)) {
       mode = FRACTION;
       stmt = inside;
@@ -1155,7 +1155,7 @@ static bool execute_simple_statement(Context &ctx, std::string stmt) {
       stmt = inside;
    }
    else if (wrapped_call(stmt, "error", inside)) {
-      mode = ERROR;
+      mode = ERROR_ONLY;
       stmt = inside;
    }
    else if (wrapped_call(stmt, "debug", inside)) {
@@ -1185,7 +1185,7 @@ static bool execute_simple_statement(Context &ctx, std::string stmt) {
       output_positional(ctx, v.c, 10);
       ctx.last = v.c;
    }
-   else if (mode == ERROR) {
+   else if (mode == ERROR_ONLY) {
       output_error(ctx, v.c);
       ctx.last = v.c;
    }
